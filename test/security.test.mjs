@@ -50,7 +50,7 @@ test('migration store rejects foreign tenant context',async()=>{
   assert.throws(()=>store.shipments(ctx),e=>e.code==='TENANT_SCOPE_VIOLATION');
 });
 
-test('legacy users are normalized into the Professional 0.6 role set',async()=>{
+test('legacy users are normalized into the Professional 0.7 role set',async()=>{
   const payload=sample(); payload.users=[
     {username:'a',role:'Globaler Administrator',permissions:['*']},
     {username:'b',role:'Teamleiter'},

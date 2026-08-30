@@ -1,8 +1,18 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0c1f35"><title>ExportHUB Professional 0.6</title><link rel="stylesheet" href="/assets/css/app.css"></head><body>
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0c1f35"><title>ExportHUB Professional 0.7</title><link rel="stylesheet" href="/assets/css/app.css"></head><body>
 <div id="authGate" class="auth-gate">
   <div class="auth-card">
     <div class="auth-brand"><div class="kicker">EXPORT & LOGISTICS MANAGEMENT</div><h1>ExportHUB Professional</h1><p>Serverseitige Anmeldung mit Firmen-Workspace und Benutzerkonto.</p></div>
     <div id="identityStatus" class="auth-status">Identity Service wird geprüft …</div>
+    <section id="credentialActionPanel" class="credential-action hidden">
+      <div class="auth-subhead"><strong id="credentialActionTitle">Zugang einrichten</strong><span id="credentialActionHint">Sicherer Einmal-Link.</span></div>
+      <form id="credentialActionForm" class="auth-form">
+        <div><label for="credentialPassword">Neues Passwort</label><input id="credentialPassword" type="password" autocomplete="new-password" minlength="12" required><small>Mindestens 12 Zeichen.</small></div>
+        <div><label for="credentialPassword2">Passwort wiederholen</label><input id="credentialPassword2" type="password" autocomplete="new-password" minlength="12" required></div>
+        <button class="btn" type="submit">Passwort sicher setzen</button>
+        <div id="credentialActionMessage" class="muted"></div>
+      </form>
+      <button id="cancelCredentialAction" class="ghost compact" type="button">Zur normalen Anmeldung</button>
+    </section>
     <form id="loginForm" class="auth-form" autocomplete="on">
       <div><label for="loginWorkspace">Workspace</label><input id="loginWorkspace" name="workspace" autocomplete="organization" placeholder="z. B. muster-gmbh" required></div>
       <div><label for="loginName">Benutzer / E-Mail</label><input id="loginName" name="username" autocomplete="username" required></div>
@@ -26,12 +36,12 @@
       <button class="btn" type="submit">Ersten Firmenmandanten anlegen</button>
       <div id="onboardingMessage" class="muted"></div>
     </form>
-    <div class="auth-foot">Professional 0.6 · Operative Bestandsdaten bleiben im Migrationsmodus schreibgeschützt.</div>
+    <div class="auth-foot">Professional 0.7 · Benutzerverwaltung aktivierbar, operative Bestandsdaten bleiben schreibgeschützt.</div>
   </div>
 </div>
 <div id="appShell" class="shell hidden">
   <aside class="side">
-    <div class="brand">ExportHUB Professional<small>Identity & Tenant 0.6</small></div>
+    <div class="brand">ExportHUB Professional<small>Identity Administration 0.7</small></div>
     <span class="tag">READ-ONLY MIGRATION MODE</span>
     <nav class="nav">
       <button data-nav="overview" class="active">Übersicht</button>
@@ -50,9 +60,9 @@
     <header class="top"><strong id="pageTitle">Übersicht</strong><div class="top-right"><div class="status"><span class="pill good">Internal unangetastet</span><span class="pill warn">Kein Cutover</span></div><div id="identityBadge" class="identity-badge hidden"></div><button id="logoutBtn" class="ghost compact hidden" type="button">Abmelden</button></div></header>
     <div class="content">
       <section class="view active" data-view="overview">
-        <div class="hero"><div class="kicker" style="color:#b7d9ef">EXPORT & LOGISTICS MANAGEMENT</div><h1>ExportHUB Professional</h1><p>Professional 0.6 ergänzt die serverseitige Anmeldung, Firmen-Onboarding und die verbindliche Benutzer-/Mandantenzuordnung. Der Bestandsimport bleibt weiterhin read-only; ExportHUB Internal wird nicht beschrieben.</p></div>
+        <div class="hero"><div class="kicker" style="color:#b7d9ef">EXPORT & LOGISTICS MANAGEMENT</div><h1>ExportHUB Professional</h1><p>Professional 0.7 ergänzt Benutzerverwaltung, sichere Einladungen, Passwort-Reset und Rollenänderungen mit Audit. Der Bestandsimport bleibt weiterhin read-only; ExportHUB Internal wird nicht beschrieben.</p></div>
         <div class="grid">
-          <div class="card metric"><strong>0.6</strong><span>Identity & Tenant Onboarding</span></div>
+          <div class="card metric"><strong>0.7</strong><span>User Administration & Audit</span></div>
           <div class="card metric"><strong>READ ONLY</strong><span>Altbestand ohne Schreibzugriff</span></div>
           <div class="card metric"><strong>SHA-256</strong><span>Backup- und Dokumentprüfung</span></div>
           <div class="card metric"><strong>RESET</strong><span>keine Legacy-Passwörter migrieren</span></div>
@@ -70,7 +80,23 @@
       </section>
 
       <section class="view" data-view="tenants"><div class="card needs-migration empty"><h2>Mandanten</h2><p>Nach der lokalen Migrationsprüfung erscheint hier die isolierte Read-only-Mandantenvorschau.</p></div><div id="tenantCard" class="card has-migration hidden"></div></section>
-      <section class="view" data-view="users"><div class="card needs-migration empty"><h2>Benutzer & Rollen</h2><p>Backup zuerst unter Migration prüfen.</p></div><div class="has-migration hidden"><div class="section-head"><div><h2>Benutzer & Rollen</h2><p id="usersCount" class="muted"></p></div><span class="pill warn">Passwörter werden neu vergeben</span></div><div class="table-wrap"><table><thead><tr><th>Benutzer</th><th>Legacy-Rolle</th><th>Professional-Rolle</th><th>Status</th><th>Anmeldung</th></tr></thead><tbody id="usersRows"></tbody></table></div></div></section>
+      <section class="view" data-view="users">
+        <div id="liveUserAdmin" class="hidden">
+          <div class="section-head"><div><div class="kicker">IDENTITY CONTROL PLANE</div><h2>Benutzerverwaltung</h2><p id="liveUsersCount" class="muted">Benutzer werden geladen …</p></div><span id="userAdminModePill" class="pill">Serverseitig geschützt</span></div>
+          <div id="userAdminNotice" class="notice">Rollen und Mandant werden serverseitig geprüft. Einladungs- und Reset-Tokens werden nur einmal angezeigt und ausschließlich gehasht gespeichert.</div>
+          <form id="inviteUserForm" class="card admin-form section hidden">
+            <div class="section-head"><div><h3>Benutzer einladen</h3><p class="muted">Noch kein automatischer Mailversand: den erzeugten Einmal-Link sicher an den Benutzer weitergeben.</p></div></div>
+            <div class="admin-grid"><div><label>Anzeigename</label><input id="inviteDisplayName" required></div><div><label>E-Mail</label><input id="inviteEmail" type="email" required></div><div><label>Anmeldename</label><input id="inviteLogin" placeholder="optional – Standard ist E-Mail"></div><div><label>Rolle</label><select id="inviteRole"><option value="OPERATOR">Sachbearbeiter</option><option value="WAREHOUSE">Lager</option><option value="TEAM_LEAD">Teamleiter</option><option value="EXPORT_ADMIN">Export-Admin</option><option value="AUDITOR">Auditor</option><option value="TENANT_ADMIN">Firmen-Admin</option></select></div></div>
+            <div class="toolbar"><button class="btn" type="submit">Einladung erzeugen</button></div><div id="inviteMessage" class="muted"></div>
+            <div id="oneTimeLinkBox" class="one-time-box hidden"><b id="oneTimeLinkTitle">Einmal-Link</b><input id="oneTimeLinkOutput" readonly><button id="copyOneTimeLink" class="ghost compact" type="button">Link kopieren</button><span>Dieser Link wird serverseitig nicht im Klartext gespeichert.</span></div>
+          </form>
+          <div class="table-wrap section"><table><thead><tr><th>Benutzer</th><th>Rolle</th><th>Status</th><th>Passwort</th><th>Aktionen</th></tr></thead><tbody id="liveUsersRows"><tr><td colspan="5" class="muted">Noch nicht geladen.</td></tr></tbody></table></div>
+          <div class="card section"><div class="section-head"><div><h3>Offene Einladungen</h3><p class="muted">Nur aktive, noch nicht eingelöste Einladungen.</p></div></div><div id="pendingInvites" class="identity-events"></div></div>
+          <div class="card section"><div class="section-head"><div><h3>Identity-Audit</h3><p class="muted">Einladungen, Rollen, Kontostatus und Passwort-Resets.</p></div></div><div id="identityAuditRows" class="identity-events"></div></div>
+        </div>
+        <div class="card needs-migration empty"><h2>Legacy-Benutzer aus Migration</h2><p>Backup zuerst unter Migration prüfen.</p></div>
+        <div class="has-migration hidden section"><div class="section-head"><div><h2>Legacy-Benutzer aus Migration</h2><p id="usersCount" class="muted"></p></div><span class="pill warn">Keine Legacy-Passwörter</span></div><div class="table-wrap"><table><thead><tr><th>Benutzer</th><th>Legacy-Rolle</th><th>Professional-Rolle</th><th>Status</th><th>Anmeldung</th></tr></thead><tbody id="usersRows"></tbody></table></div></div>
+      </section>
       <section class="view" data-view="customers"><div class="card needs-migration empty"><h2>Kunden</h2><p>Backup zuerst unter Migration prüfen.</p></div><div class="has-migration hidden"><div class="section-head"><div><h2>Kundenbestand</h2><p id="customersCount" class="muted"></p></div><span class="pill good">Read only</span></div><div class="table-wrap"><table><thead><tr><th>Kundennummer</th><th>Kunde</th><th>Land</th><th>Spedition</th></tr></thead><tbody id="customerRows"></tbody></table></div></div></section>
       <section class="view" data-view="locations"><div class="card needs-migration empty"><h2>Standorte</h2><p>Backup zuerst unter Migration prüfen.</p></div><div class="has-migration hidden"><div class="section-head"><div><h2>Kundenstandorte</h2><p id="locationsCount" class="muted"></p></div><span class="pill good">Mandant + Kunde gebunden</span></div><div class="table-wrap"><table><thead><tr><th>Kunde</th><th>Standort</th><th>Adresse</th><th>Land</th><th>Quelle</th></tr></thead><tbody id="locationRows"></tbody></table></div></div></section>
       <section class="view" data-view="shipments"><div class="card needs-migration empty"><h2>Sendungen</h2><p>Backup zuerst unter Migration prüfen.</p></div><div class="has-migration hidden"><div class="section-head"><div><h2>Bestehende Sendungen</h2><p id="shipmentsCount" class="muted"></p></div><span class="pill good">Referenzen bleiben erhalten</span></div><div class="table-wrap"><table><thead><tr><th>Referenz</th><th>Kunde</th><th>Status</th><th>POD</th><th>Sperre</th><th>Abholdatum</th></tr></thead><tbody id="shipmentRows"></tbody></table></div></div></section>

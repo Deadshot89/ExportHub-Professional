@@ -1,23 +1,26 @@
-# ExportHUB Professional Roadmap
+# ExportHUB Professional – Roadmap
 
-## 0.6 – abgeschlossen
-- serverseitige Workspace-Anmeldung
-- scrypt-Passworthashes
-- HttpOnly/Secure/SameSite-Strict Sitzungen
-- serverseitige Benutzer-/Mandantenzuordnung
-- Erst-Onboarding für den ersten Firmenmandanten
-- getrennte Control-Plane- und operative Write Gates
-- RC826-Bestandsmigration bleibt read-only
+## 0.7 – abgeschlossen
 
-## 0.7 – nächster Schritt
-- Firmenadministration für Benutzer und Einladungen
-- Passwort-Erstvergabe / Reset-Token
-- serverseitige Session- und Benutzerverwaltung
-- Rollenänderungen mit Audit
-- Tenant Branding-Grunddaten
-- Plattform-Admin-Control-Plane getrennt von operativen Mandantendaten
+- serverseitige Benutzerverwaltung
+- Einladung / Erstpasswort
+- Passwort-Reset
+- Rollen-/Statusverwaltung
+- Identity-Audit
+- CSRF-Schutz für mutierende Admin-Aktionen
+- Schutz des letzten Firmen-Admins
 
-## Danach
-- 0.8 Kunden + Standorte als echte Professional-DB-Module
-- 0.9 Sendungskern + Statusmaschine
-- 1.0 kontrollierter Parallelbetrieb / Pilotmandant
+## 0.8 – nächster Schritt
+
+- Firmen-/Mandanten-Konfiguration
+- Standorte und Branding
+- Arbeitskalender / Feiertagsregion
+- konfigurierbare Dokument- und Prozessregeln
+- vorbereiteter Import der geprüften Kunden-/Standortdaten in eine Staging-Datenbank, weiterhin ohne Produktiv-Cutover
+
+## Später
+
+- operative Sendungsmigration in Staging
+- Dokument-Capture und Remote-POD-Verifikation
+- kontrollierter Parallelbetrieb
+- Cutover erst nach vollständigem Soll/Ist-Abgleich

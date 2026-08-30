@@ -1,5 +1,5 @@
 const BACKUP_TYPE = 'ExportHUB_BACKUP';
-const PROFESSIONAL_VERSION = '0.6.0';
+const PROFESSIONAL_VERSION = '0.7.0';
 
 function q(v){ return v == null ? '' : String(v).trim(); }
 function low(v){ return q(v).toLowerCase(); }
@@ -480,7 +480,7 @@ export function createNormalizedSkeleton(payload, inventory, options={}){
   const auditEvents=collectAuditEvents(payload.state,tenantId);
   const generatedArtifacts=collectGeneratedArtifacts(inventory,tenantId,shipmentTargetByKey,shipmentReferenceById);
   return {
-    schemaVersion:'professional-0.6',
+    schemaVersion:'professional-0.7',
     tenant:{id:tenantId,name:tenantName,migrationOnly:true},
     users,customers,locations,shipments,documents,auditEvents,generatedArtifacts,
     tasks:arr(payload.state.tasks).map((x,i)=>({id:'task-'+String(i+1).padStart(7,'0'),tenantId,sourcePointer:`tasks[${i}]`,title:q(x&&x.title),status:q(x&&x.status)})),

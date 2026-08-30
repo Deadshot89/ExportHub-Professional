@@ -1,0 +1,2 @@
+const authz=require('../shared/authorization');const users=require('../shared/user-admin-store');const http=require('../shared/http');
+module.exports=async function(context,req){try{const {session}=await authz.requireSession(req,{permission:'audit.read'});const events=await users.listIdentityAudit(session.tenant_id,req?.query?.limit);http.json(context,200,{ok:true,events});}catch(err){http.error(context,err);}};

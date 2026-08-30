@@ -51,10 +51,13 @@ function sessionSecret(){
   if(s.length<32) throw Object.assign(new Error('PROFESSIONAL_SESSION_SECRET ist nicht sicher konfiguriert.'),{code:'SESSION_SECRET_NOT_CONFIGURED'});
   return s;
 }
-function newSessionToken(tenantId){
+function newScopedToken(tenantId){
   const tid=String(tenantId||'').trim();
   if(!/^[0-9a-f-]{36}$/i.test(tid)) throw Object.assign(new Error('Tenant-ID ist ungültig.'),{code:'TENANT_INVALID'});
   return tid+'.'+crypto.randomBytes(32).toString('base64url');
+}
+function newSessionToken(tenantId){
+  return newScopedToken(tenantId);
 }
 function tenantIdFromSessionToken(token){
   const tid=String(token||'').split('.',1)[0];
@@ -83,4 +86,4 @@ function assertBootstrapToken(req){
   if(!safeEqual(got,expected)) throw Object.assign(new Error('Bootstrap-Berechtigung abgelehnt.'),{code:'BOOTSTRAP_DENIED'});
   return true;
 }
-module.exports={SESSION_COOKIE,SESSION_HOURS,DUMMY_PASSWORD_HASH,normalizeLogin,normalizeSlug,validatePassword,validateLogin,validateSlug,hashPassword,verifyPassword,newSessionToken,tenantIdFromSessionToken,tokenHash,csrfToken,sessionExpiresAt,cookieHeader,sessionTokenFromRequest,assertBootstrapToken};
+module.exports={SESSION_COOKIE,SESSION_HOURS,DUMMY_PASSWORD_HASH,normalizeLogin,normalizeSlug,validatePassword,validateLogin,validateSlug,hashPassword,verifyPassword,newScopedToken,newSessionToken,tenantIdFromSessionToken,tokenHash,csrfToken,sessionExpiresAt,cookieHeader,sessionTokenFromRequest,safeEqual,assertBootstrapToken};

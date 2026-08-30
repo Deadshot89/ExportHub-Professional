@@ -7,7 +7,7 @@ const sec=require('../api/shared/auth-security.js');
 
 const TENANT='11111111-2222-4333-8444-555555555555';
 
-test('Professional 0.6 hashes new passwords with scrypt and never returns cleartext',async()=>{
+test('Professional 0.7 hashes new passwords with scrypt and never returns cleartext',async()=>{
   const hash=await sec.hashPassword('SehrSicheresPasswort!2026');
   assert.match(hash,/^scrypt\$16384\$8\$1\$/);
   assert.equal(hash.includes('SehrSicheresPasswort'),false);

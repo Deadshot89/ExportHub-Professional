@@ -1,0 +1,2 @@
+const authz=require('../shared/authorization');const users=require('../shared/user-admin-store');const http=require('../shared/http');
+module.exports=async function(context,req){try{const {session}=await authz.requireSession(req,{permission:'users.manage',csrf:true});const result=await users.createInvitation(session.tenant_id,session.user_id,http.bodyOf(req));http.json(context,201,{ok:true,invitation:result.invitation,inviteToken:result.token});}catch(err){http.error(context,err);}};

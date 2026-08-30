@@ -1,0 +1,2 @@
+const authz=require('../shared/authorization');const users=require('../shared/user-admin-store');const http=require('../shared/http');
+module.exports=async function(context,req){try{const {session}=await authz.requireSession(req,{permission:'users.manage',csrf:true});const b=http.bodyOf(req);const result=await users.issuePasswordReset(session.tenant_id,session.user_id,b.userId);http.json(context,201,{ok:true,user:result.user,reset:result.reset,resetToken:result.token});}catch(err){http.error(context,err);}};

@@ -1,4 +1,4 @@
--- ExportHUB Professional 0.6 – SaaS-Zielschema mit Identity Control Plane
+-- ExportHUB Professional 0.7 – SaaS-Zielschema mit Identity Administration
 -- Noch nicht an den RC826-Bestand schreibend angeschlossen.
 create extension if not exists pgcrypto;
 
@@ -68,6 +68,40 @@ create table if not exists auth_sessions (
 );
 create index if not exists auth_sessions_tenant_hash_idx on auth_sessions(tenant_id,session_hash);
 create index if not exists auth_sessions_expiry_idx on auth_sessions(expires_at);
+
+create table if not exists user_invitations (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references tenants(id),
+  email text not null,
+  login_name text not null,
+  display_name text not null,
+  role text not null check (role in ('TENANT_ADMIN','EXPORT_ADMIN','TEAM_LEAD','OPERATOR','WAREHOUSE','AUDITOR')),
+  token_hash text not null,
+  expires_at timestamptz not null,
+  created_by uuid references app_users(id),
+  accepted_user_id uuid references app_users(id),
+  accepted_at timestamptz,
+  revoked_at timestamptz,
+  created_at timestamptz not null default now(),
+  unique(tenant_id,token_hash)
+);
+create index if not exists user_invitations_tenant_login_idx on user_invitations(tenant_id,login_name);
+create index if not exists user_invitations_expiry_idx on user_invitations(expires_at);
+
+create table if not exists password_reset_tokens (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references tenants(id),
+  user_id uuid not null references app_users(id) on delete cascade,
+  token_hash text not null,
+  expires_at timestamptz not null,
+  created_by uuid references app_users(id),
+  used_at timestamptz,
+  revoked_at timestamptz,
+  created_at timestamptz not null default now(),
+  unique(tenant_id,token_hash)
+);
+create index if not exists password_reset_tokens_tenant_user_idx on password_reset_tokens(tenant_id,user_id);
+create index if not exists password_reset_tokens_expiry_idx on password_reset_tokens(expires_at);
 
 create table if not exists tenant_settings (
   tenant_id uuid primary key references tenants(id),
@@ -197,7 +231,7 @@ create index if not exists audit_events_tenant_time_idx on audit_events(tenant_i
 do $$
 declare t text;
 begin
-  foreach t in array array['app_users','tenant_memberships','app_user_auth','auth_sessions','tenant_settings','customers','customer_locations','shipments','documents','generated_artifacts','migration_runs','migration_source_map','audit_events']
+  foreach t in array array['app_users','tenant_memberships','app_user_auth','auth_sessions','user_invitations','password_reset_tokens','tenant_settings','customers','customer_locations','shipments','documents','generated_artifacts','migration_runs','migration_source_map','audit_events']
   loop
     execute format('alter table %I enable row level security',t);
     execute format('drop policy if exists tenant_isolation on %I',t);

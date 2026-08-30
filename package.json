@@ -1,14 +1,16 @@
 {
   "name": "exporthub-professional",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
-  "description": "ExportHUB Professional - tenant isolated SaaS foundation with server-side authentication and onboarding",
+  "description": "ExportHUB Professional - tenant isolated SaaS foundation with server-side user administration, invitations, reset and audit",
   "scripts": {
     "test": "node --test test/*.test.mjs",
     "analyze": "node migration/analyze-exporthub-backup.mjs",
     "verify": "node migration/verify-migration-package.mjs",
     "baseline": "node migration/verify-source-profile.mjs"
   },
-  "engines": {"node": ">=20"}
+  "engines": {
+    "node": ">=20"
+  }
 }

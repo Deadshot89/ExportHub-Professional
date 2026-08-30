@@ -1,26 +1,45 @@
-# ExportHUB Professional 0.6.0
+# ExportHUB Professional 0.7.0
 
-Separates SaaS-Projekt für ExportHUB. **Nicht** in `Deadshot89/ExportHub` hochladen.
+Separates SaaS-Projekt für ExportHUB. **Nur** in `Deadshot89/ExportHub-Professional` verwenden. Nicht in `Deadshot89/ExportHub` hochladen.
 
-## Neu in 0.6
+## Neu in 0.7
 
-- serverseitige Anmeldung mit Workspace + Benutzer + Passwort
-- scrypt-Passworthashes statt Legacy-Klartextpasswörter
-- HttpOnly/Secure/SameSite-Strict Sitzungen
-- serverseitige Benutzer-/Mandantenzuordnung über PostgreSQL
-- Erst-Onboarding für den ersten Firmenmandanten
-- getrennte Write Gates für Identity-Control-Plane und operative Migrationsdaten
-- PostgreSQL RLS bleibt zweite Mandantenschutzschicht
-- RC826-Migration bleibt read-only und unverändert
+- serverseitige Benutzerverwaltung pro Firmenmandant
+- Einladungen mit einmaligen, gehasht gespeicherten Tokens
+- sichere Erstpasswortvergabe über URL-Fragment statt Query-Token
+- Admin-Passwort-Reset mit einmaligem Token und sofortiger Sitzungsrevokation
+- Rollenänderungen ausschließlich durch `TENANT_ADMIN`
+- Aktivieren/Deaktivieren von Benutzerkonten mit Sitzungsrevokation
+- Schutz vor Selbst-Deaktivierung und vor Verlust des letzten aktiven Firmen-Admins
+- CSRF-Prüfung für alle mutierenden Benutzer-Admin-APIs
+- strukturierter Identity-Audit-Trail für Einladung, Rollen, Status und Passwort-Reset
+- offene Einladungen und Identity-Audit direkt im Bereich `Benutzer & Rollen`
 
-## Sicherheitszustand
+## Bestehende Sicherheitsbasis
 
-`PROFESSIONAL_ENABLE_WRITES=false` bleibt Standard. Das bedeutet: Kunden, Sendungen, PODs und Dokumente aus der Bestandsmigration können weiterhin nicht produktiv überschrieben werden.
+- Workspace + Benutzer + Passwort werden serverseitig aufgelöst
+- scrypt-Passworthashes
+- HttpOnly / Secure / SameSite-Strict Session-Cookie
+- serverseitige Mandantenbindung
+- PostgreSQL Row Level Security als zweite Mandantenschutzschicht
+- 5 Fehlversuche → 30 Minuten Kontosperre
 
-Identity-/Onboarding-Schreibzugriffe sind separat über `PROFESSIONAL_ENABLE_CONTROL_WRITES` gesperrt und müssen bewusst aktiviert werden.
+## Schreibschutz der Bestandsmigration
+
+`PROFESSIONAL_DATA_MODE=migration-read-only` und `PROFESSIONAL_ENABLE_WRITES=false` bleiben Standard. Kunden, Sendungen, PODs und Dokumente aus dem RC826-Bestand können damit weiterhin nicht produktiv überschrieben werden.
+
+Benutzer-/Identity-Schreibzugriffe laufen getrennt über `PROFESSIONAL_ENABLE_CONTROL_WRITES=true`. Diese Freigabe aktiviert **nicht** automatisch operative Sendungs-/Dokumentschreibzugriffe.
+
+## Einladungs- und Reset-Links
+
+Professional speichert nur SHA-256-Hashes der Einmal-Tokens. Der Klartext-Token wird genau beim Erzeugen an den Firmen-Admin zurückgegeben. Browserlinks verwenden `#invite=` bzw. `#reset=` im URL-Fragment, damit der Token nicht als normale URL-Query an den Webserver übertragen wird.
+
+Ein automatischer E-Mail-Versand ist in 0.7 bewusst noch nicht aktiviert. Der Admin kopiert den erzeugten Einmal-Link und übermittelt ihn über einen geeigneten sicheren Kanal.
 
 ## Tests
 
-`npm test`
+```text
+npm test
+```
 
-Der CI-Workflow prüft zusätzlich API-Module und verhindert weiterhin Internal-Dateien wie `TESTVERSION.html` oder `production-version.js` im Professional-Repository.
+Der CI-Workflow prüft zusätzlich alle API-Module sowie die eindeutige Repository-Identität und blockiert Internal-Dateien wie `TESTVERSION.html` oder `production-version.js`.

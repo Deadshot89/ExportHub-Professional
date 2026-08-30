@@ -1,12 +1,16 @@
 {
   "project": "ExportHUB Professional",
   "repository": "ExportHub-Professional",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "mustNotBeUploadedTo": "Deadshot89/ExportHub",
   "dataMode": "migration-read-only",
   "identity": "server-session-cookie",
   "tenantAssociation": "server-database-membership",
   "tenantIsolation": "api-plus-postgres-rls",
   "operationalWritesDefault": false,
-  "controlWritesDefault": false
+  "controlWritesDefault": false,
+  "identityAdministration": "invite-reset-role-audit",
+  "inviteTokens": "single-use-hashed",
+  "passwordResetTokens": "single-use-hashed",
+  "userAdminWrites": "control-plane-only"
 }

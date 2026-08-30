@@ -1,0 +1,2 @@
+const authz=require('../shared/authorization');const users=require('../shared/user-admin-store');const http=require('../shared/http');
+module.exports=async function(context,req){try{const {session}=await authz.requireSession(req,{permission:'users.manage',csrf:true});const b=http.bodyOf(req);const result=await users.changeRole(session.tenant_id,session.user_id,b.userId,b.role);http.json(context,200,{ok:true,...result});}catch(err){http.error(context,err);}};

@@ -1,4 +1,4 @@
-# ExportHUB Professional 0.6 – Architektur
+# ExportHUB Professional 0.7 – Architektur
 
 Professional ist ein vollständig getrenntes Repository. ExportHUB Internal bleibt das Ursprungssystem, bis ein späterer Cutover separat freigegeben wurde.
 

@@ -12,7 +12,7 @@ async function loginCandidate(tenantId,login){
   const key=sec.validateLogin(login);
   return db.withTenantControlClient(tenantId,async client=>{
     const r=await client.query(`
-      select u.id as user_id,u.username,u.display_name,u.email,u.active,
+      select u.id as user_id,u.username,u.display_name,u.email,u.active,u.password_reset_required,
              m.role,m.active as membership_active,a.password_hash,a.failed_attempts,a.locked_until
       from app_users u
       join tenant_memberships m on m.tenant_id=u.tenant_id and m.user_id=u.id
