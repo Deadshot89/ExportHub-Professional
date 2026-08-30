@@ -1,0 +1,52 @@
+name: ExportHUB Professional CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'index.html'
+      - 'assets/**'
+      - 'api/**'
+      - 'shared/**'
+      - 'schema/**'
+      - 'migration/**'
+      - 'test/**'
+      - 'tools/**'
+      - 'docs/**'
+      - 'package.json'
+      - 'staticwebapp.config.json'
+      - 'professional-project.json'
+      - '.github/workflows/professional-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify Professional repository identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f professional-project.json
+          node -e "const p=require('./professional-project.json'); if(p.project!=='ExportHUB Professional') process.exit(1); console.log('OK: ExportHUB Professional repository');"
+          if [[ -f TESTVERSION.html || -f production-version.js ]]; then
+            echo "FEHLER: Internal-Dateien wurden im Professional-Repository gefunden."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run Professional migration tests
+        run: npm test
+
+      - name: Validate Professional API
+        run: node --check api/health/index.js
