@@ -1,25 +1,24 @@
-# ExportHUB Professional 0.4.0
+# ExportHUB Professional 0.5.0
 
-Separate Professional-/SaaS-Basis. ExportHUB Internal wird nicht beschrieben oder automatisch verändert.
+Eigenständige Professional-/SaaS-Basis. Dieses Repository darf nicht in `Deadshot89/ExportHub` hochgeladen werden.
 
-## Neu in 0.4
+## Neu in 0.5
 
-- Kundenstandorte werden mandanten- und kundenbezogen normalisiert; eine vorhandene Hauptadresse wird nur als abgeleiteter Standort ergänzt, wenn sie nicht bereits als Standort existiert.
-- Sendungen erhalten eine Professional-Standortzuordnung, soweit die Legacy-Daten sie eindeutig zulassen. Nicht eindeutige Standorte werden nicht geraten.
-- `state.audit` und `state.auditLog` werden als strukturierte Audit-Ereignisse übernommen. Bekannte Secret-Felder wie Passwort, Token, Session, Authorization oder Connection String werden in der normalisierten Sicht redigiert. Der Source Snapshot bleibt unverändert.
-- Dokumente erhalten einen Wiederherstellungsplan: autorisierter SharePoint-Capture, Legacy-API-Capture, sonstiger Remote-Capture, Originaldatei erforderlich oder – nur bei generierbaren Ausgabedokumenten – Regeneration aus einem gesperrten Sendungsstand.
-- Metadaten bereits generierter Deckblätter/Ladelisten/CMRs werden separat als `generatedArtifacts` erhalten. Sie gelten nicht als Ersatz für eine tatsächlich migrierte Originaldatei.
-- POD/ABD/Lieferschein werden niemals aus Metadaten als erfolgreich migriert markiert.
-- `READ_ONLY_READY` und `CUTOVER_READY` bleiben getrennte Gates.
+- serverseitig nutzbares Rollen- und Berechtigungsmodell mit sieben klaren Rollen
+- harte Tenant-Scope-Prüfung gegen mandantenübergreifende Zugriffe
+- mandantengefilterter Read-only-Store für den bestehenden Migrationsbestand
+- PostgreSQL-Zielschema mit Row Level Security als zweite Tenant-Schutzschicht
+- vorbereitete PostgreSQL-Datenzugriffsschicht; Standardmodus bleibt `migration-read-only`
+- Schreibzugriff benötigt später zwei bewusste Freigaben (`live` + `PROFESSIONAL_ENABLE_WRITES=true`)
+- neuer `/api/professional-meta`-Endpunkt für technische Plattformfähigkeiten ohne Secrets
+- RC826-Migrationslogik, Dokumentregister, POD-Schutz, Kundenstandorte und Audit bleiben erhalten
 
 ## Sicherheitsregel
 
-Ein Cutover bleibt blockiert, solange Remote-Dokumente, fehlende Dateiinhalte oder nicht vollständig erfasste POD-Dokumente vorhanden sind. Es findet in 0.4 kein automatischer Zugriff auf SharePoint oder andere Remote-Quellen statt.
+Professional 0.5 schreibt nicht in ExportHUB Internal und führt keinen automatischen Cutover durch. Das alte Quellsystem bleibt unangetastet. Remote-/fehlende Dokumente blockieren weiterhin den endgültigen Cutover.
 
-## Lokal testen
+## Lokal prüfen
 
-```text
-npm test
-```
+`npm test`
 
-Der Browser-Migrationschecker verarbeitet das ausgewählte Backup ausschließlich lokal.
+Optional für die API-Abhängigkeiten: `npm install --prefix api`.

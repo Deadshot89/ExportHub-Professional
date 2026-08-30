@@ -71,20 +71,20 @@ test('ABD request document is linked to shipment by reference',async()=>{
   assert.equal(abd.shipmentId,pkg.normalized.shipments[0].id);
 });
 
-test('Professional 0.4 normalizes customer locations and resolves shipment location',async()=>{
+test('Professional 0.5 normalizes customer locations and resolves shipment location',async()=>{
   const payload=typedSample(false);
   payload.state.customers[0].address='Hauptstraße 1, 12345 Test';
   payload.state.customers[0].country='Deutschland';
   payload.state.customers[0].locations=[{id:'LOC-2',name:'Werk 2',address:'Werkstraße 2, 12345 Test',country:'Deutschland'}];
   payload.state.shipments[0].locationId='LOC-2'; payload.state.shipments[0].locationName='Werk 2';
   const pkg=await buildMigrationPackage(payload,JSON.stringify(payload));
-  assert.equal(pkg.normalized.schemaVersion,'professional-0.4');
+  assert.equal(pkg.normalized.schemaVersion,'professional-0.5');
   assert.equal(pkg.normalized.locations.length,2);
   assert.ok(pkg.normalized.shipments[0].locationId);
   assert.equal(pkg.manifest.locations.shipmentsResolved,1);
 });
 
-test('Professional 0.4 structures audit and redacts secret keys',async()=>{
+test('Professional 0.5 structures audit and redacts secret keys',async()=>{
   const payload=typedSample(false);
   payload.state.audit=[{time:'30.8.2026, 12:00:00',user:'Admin',action:'Lieferschein angehängt',detail:'LS_123.pdf'}];
   payload.state.auditLog=[{id:'AUD-1',type:'LOGIN_SUCCESS',actor:'Admin',at:'2026-08-30T10:00:00Z',details:{sessionToken:'SECRET',ip:'127.0.0.1'}}];
@@ -96,7 +96,7 @@ test('Professional 0.4 structures audit and redacts secret keys',async()=>{
   assert.equal(pkg.manifest.audit.total,2);
 });
 
-test('Professional 0.4 assigns recovery actions without pretending missing source files exist',async()=>{
+test('Professional 0.5 assigns recovery actions without pretending missing source files exist',async()=>{
   const payload=typedSample(true);
   payload.state.shipments[0].documents=[{id:'CMR1',name:'CMR_ABC123.pdf',type:'application/pdf'}];
   const pkg=await buildMigrationPackage(payload,JSON.stringify(payload));
@@ -107,7 +107,7 @@ test('Professional 0.4 assigns recovery actions without pretending missing sourc
   assert.equal(pkg.manifest.gates.cutoverReady,false);
 });
 
-test('Professional 0.4 preserves generated document metadata separately from migrated files',async()=>{
+test('Professional 0.5 preserves generated document metadata separately from migrated files',async()=>{
   const payload=typedSample(false);
   payload.state.shipments[0].generatedDocuments=[{id:'GEN-1-CMR',type:'CMR',version:3,status:'active',signature:'abc',generatedAt:'2026-08-10T09:42:59.043Z'}];
   const pkg=await buildMigrationPackage(payload,JSON.stringify(payload));

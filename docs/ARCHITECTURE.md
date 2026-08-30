@@ -1,31 +1,16 @@
-# ExportHUB Professional 0.4 – Architektur
+# ExportHUB Professional 0.5 – Architektur
 
-Professional wird parallel zu ExportHUB Internal entwickelt. Internal bleibt das aktive Ursprungssystem, bis ein späterer Cutover separat freigegeben wurde.
+Professional ist ein vollständig getrenntes Repository. ExportHUB Internal bleibt das Ursprungssystem, bis ein späterer Cutover separat freigegeben wurde.
 
-## Phase 0.4
+## Schichten
 
-- modulare Web-App
-- Azure-Functions-kompatible API-Struktur
-- noch keine produktive Datenbankverbindung
-- Read-only-Migrationsprüfung
-- Legacy-Importadapter für ältere ExportHUB-Backups
-- Mandantenmodell und Tenant-ID an jedem normalisierten Datensatz
-- Read-only-Ansicht für Benutzer/Rollen, Kunden und Sendungen
-- POD-/Abhol-Sperrerhalt
-- Dokumentinventur mit Inline-Hash, Remote-Erfassung und Metadatenstatus
-- vollständige Herkunftszuordnung über Source Pointer
+- Web-App: Migration/Read-only-Ansichten und später operative Module
+- Security Core: Rollen, Berechtigungen, Tenant-Scope
+- API: Health/Meta und später fachliche Endpunkte
+- Data Access: PostgreSQL-Adapter mit standardmäßig deaktivierten Writes
+- PostgreSQL: `tenant_id` an operativen Tabellen + Row Level Security
+- Migration: unveränderte Quelle, Source Pointer, Hashes, READ_ONLY-/CUTOVER-Gates
 
-## Sicherheitsprinzip
+## 0.5-Grenze
 
-Frontend-Read-only ist nur die erste Ebene. Sobald eine produktive Datenbank/API aktiviert wird, muss jede API-Operation die Tenant-ID und Rolle serverseitig prüfen. Kein Mandant darf Daten eines anderen Mandanten über IDs, URLs oder API-Aufrufe erreichen.
-
-## Nächste Zielmodule
-
-- produktive Authentifizierung mit Passwort-Neuvergabe/SSO-Option
-- serverseitige Tenant- und Rollenprüfung
-- Dokumentenspeicher
-- Kundenstandorte
-- Sendungserstellung
-- Aufgaben & Planung
-- strukturiertes Audit
-- Plattformadministration
+Es gibt noch keine produktive Benutzeranmeldung und keinen produktiven RC826-Datenbankimport. 0.5 schafft die sichere technische Grenze, bevor operative Schreibfunktionen aktiviert werden.

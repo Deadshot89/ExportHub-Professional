@@ -1,38 +1,36 @@
-# ExportHUB Professional 0.4 – Architektur
+# ExportHUB Professional – Roadmap ab 0.5
 
-Professional wird parallel zu ExportHUB Internal entwickelt. Internal bleibt das aktive Ursprungssystem, bis ein späterer Cutover separat freigegeben wurde.
+## 0.5 – SaaS-Sicherheitsbasis (aktueller Stand)
 
-## Phase 0.4
+- Rollen- und Berechtigungsmodell
+- Tenant-Scope vor Datenzugriff
+- Read-only-Store für Migrationsdaten
+- PostgreSQL-Zielschema mit Row Level Security
+- vorbereiteter DB-Adapter mit standardmäßig deaktivierten Writes
+- `/api/professional-meta` und Health-Endpunkt
+- RC826-Baseline und Dokument-Cutover-Gates unverändert erhalten
 
-- modulare Web-App
-- Azure-Functions-kompatible API-Struktur
-- noch keine produktive Datenbankverbindung
-- Read-only-Migrationsprüfung
-- Legacy-Importadapter für ältere ExportHUB-Backups
-- Mandantenmodell und Tenant-ID an jedem normalisierten Datensatz
-- Read-only-Ansicht für Benutzer/Rollen, Kunden und Sendungen
-- POD-/Abhol-Sperrerhalt
-- Dokumentinventur mit Inline-Hash, Remote-Erfassung und Metadatenstatus
-- vollständige Herkunftszuordnung über Source Pointer
+## 0.6 – Authentifizierung & Firmen-Onboarding
 
-## Sicherheitsprinzip
+- sichere Benutzeridentität
+- Firmen-/Mandantenzuordnung serverseitig
+- Einladungen und Passwort-Neuvergabe/SSO-Option
+- Plattform-Admin getrennt von operativen Mandantendaten
+- Session-/Login-Audit
 
-Frontend-Read-only ist nur die erste Ebene. Sobald eine produktive Datenbank/API aktiviert wird, muss jede API-Operation die Tenant-ID und Rolle serverseitig prüfen. Kein Mandant darf Daten eines anderen Mandanten über IDs, URLs oder API-Aufrufe erreichen.
+## 0.7 – Produktive Read-only-Datenbankmigration
 
-## Nächste Zielmodule
+- Migrationslauf in PostgreSQL schreiben, weiterhin ohne operativen Write-Cutover
+- Source Map + Hashes dauerhaft speichern
+- Bestandsvergleich Alt/Neu
+- Remote-POD-Capture-Queue
 
-- produktive Authentifizierung mit Passwort-Neuvergabe/SSO-Option
-- serverseitige Tenant- und Rollenprüfung
-- Dokumentenspeicher
-- Kundenstandorte
+## Danach
+
 - Sendungserstellung
+- Dokumentenspeicher
 - Aufgaben & Planung
-- strukturiertes Audit
+- Abholung/POD
+- Paletten
+- Reports
 - Plattformadministration
-
-
-## 0.4 – aktueller Stand
-- Kundenstandorte normalisieren und Sendungen zuordnen
-- Audit strukturiert migrieren, Secret-Felder in der Normalform redigieren
-- Dokument-Capture-/Recovery-Plan ohne falsche Vollständigkeitsbehauptung
-- Generierte Artefakt-Metadaten separat erhalten

@@ -1,5 +1,5 @@
 const BACKUP_TYPE = 'ExportHUB_BACKUP';
-const PROFESSIONAL_VERSION = '0.4.0';
+const PROFESSIONAL_VERSION = '0.5.0';
 
 function q(v){ return v == null ? '' : String(v).trim(); }
 function low(v){ return q(v).toLowerCase(); }
@@ -285,8 +285,12 @@ export function inventoryBackup(payload, options={}){
 function professionalRole(u){
   const role=low(u&&u.role), perms=arr(u&&u.permissions).map(low);
   if(/global.*admin|globaler administrator|plattform/.test(role)||perms.includes('*')) return 'PLATFORM_ADMIN';
-  if(/admin/.test(role)) return 'TENANT_ADMIN';
-  return 'USER';
+  if(/funktions.*admin|tenant.*admin|firmen.*admin|admin/.test(role)) return 'TENANT_ADMIN';
+  if(/export.*admin|exportleitung/.test(role)) return 'EXPORT_ADMIN';
+  if(/team.*lead|teamleit/.test(role)) return 'TEAM_LEAD';
+  if(/lager|warehouse|verlad/.test(role)) return 'WAREHOUSE';
+  if(/audit|leser|reader/.test(role)) return 'AUDITOR';
+  return 'OPERATOR';
 }
 
 function remoteSourceClass(url){
@@ -476,7 +480,7 @@ export function createNormalizedSkeleton(payload, inventory, options={}){
   const auditEvents=collectAuditEvents(payload.state,tenantId);
   const generatedArtifacts=collectGeneratedArtifacts(inventory,tenantId,shipmentTargetByKey,shipmentReferenceById);
   return {
-    schemaVersion:'professional-0.4',
+    schemaVersion:'professional-0.5',
     tenant:{id:tenantId,name:tenantName,migrationOnly:true},
     users,customers,locations,shipments,documents,auditEvents,generatedArtifacts,
     tasks:arr(payload.state.tasks).map((x,i)=>({id:'task-'+String(i+1).padStart(7,'0'),tenantId,sourcePointer:`tasks[${i}]`,title:q(x&&x.title),status:q(x&&x.status)})),

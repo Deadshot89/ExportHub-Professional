@@ -1,6 +1,7 @@
 {
   "name": "exporthub-professional-api",
-  "version": "0.3.0",
+  "version": "0.5.0",
   "private": true,
-  "dependencies": {}
+  "engines": {"node": ">=20"},
+  "dependencies": {"pg": "8.13.1"}
 }

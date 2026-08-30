@@ -1,7 +1,7 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0c1f35"><title>ExportHUB Professional 0.4</title><link rel="stylesheet" href="/assets/css/app.css"></head><body>
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0c1f35"><title>ExportHUB Professional 0.5</title><link rel="stylesheet" href="/assets/css/app.css"></head><body>
 <div class="shell">
   <aside class="side">
-    <div class="brand">ExportHUB Professional<small>Platform Foundation 0.4</small></div>
+    <div class="brand">ExportHUB Professional<small>SaaS Foundation 0.5</small></div>
     <span class="tag">READ-ONLY MIGRATION MODE</span>
     <nav class="nav">
       <button data-nav="overview" class="active">Übersicht</button>
@@ -20,13 +20,14 @@
     <header class="top"><strong id="pageTitle">Übersicht</strong><div class="status"><span class="pill good">Internal unangetastet</span><span class="pill warn">Kein Cutover</span></div></header>
     <div class="content">
       <section class="view active" data-view="overview">
-        <div class="hero"><div class="kicker" style="color:#b7d9ef">EXPORT & LOGISTICS MANAGEMENT</div><h1>ExportHUB Professional</h1><p>Professional 0.4 ergänzt Standorte, strukturiertes Audit und einen sicheren Dokument-Wiederherstellungsplan. Remote-PODs werden weiterhin nicht als migriert gewertet, solange ihre tatsächliche Datei nicht autorisiert erfasst und geprüft wurde. ExportHUB Internal wird dabei nicht beschrieben.</p></div>
+        <div class="hero"><div class="kicker" style="color:#b7d9ef">EXPORT & LOGISTICS MANAGEMENT</div><h1>ExportHUB Professional</h1><p>Professional 0.5 ergänzt die echte SaaS-Sicherheitsbasis: Mandanten-Scope, Rollen und Berechtigungen sowie eine vorbereitete PostgreSQL-Schicht mit Row Level Security. Der RC826-Bestand bleibt weiterhin read-only und ExportHUB Internal wird nicht beschrieben.</p></div>
         <div class="grid">
-          <div class="card metric"><strong>0.4</strong><span>Professional Foundation</span></div>
+          <div class="card metric"><strong>0.5</strong><span>SaaS Foundation</span></div>
           <div class="card metric"><strong>READ ONLY</strong><span>Altbestand ohne Schreibzugriff</span></div>
           <div class="card metric"><strong>SHA-256</strong><span>Backup- und Dokumentprüfung</span></div>
           <div class="card metric"><strong>RESET</strong><span>keine Legacy-Passwörter migrieren</span></div>
         </div>
+        <section class="section card"><div class="section-head"><div><div class="kicker">SAAS SECURITY</div><h2>Mandant und Rolle werden vor jedem Datenzugriff geprüft</h2></div><span class="pill good">Writes standardmäßig aus</span></div><div class="steps"><div class="step"><b>1</b><div><strong>Tenant Scope</strong><div class="muted">Operative Daten gehören immer genau zu einem Mandanten. Fremde Tenant-IDs werden blockiert.</div></div></div><div class="step"><b>2</b><div><strong>Rollen & Rechte</strong><div class="muted">Plattform-Admin, Firmen-Admin, Export-Admin, Teamleitung, Sachbearbeitung, Lager und Auditor sind getrennt.</div></div></div><div class="step"><b>3</b><div><strong>PostgreSQL RLS</strong><div class="muted">Die Datenbank erhält zusätzlich Row Level Security als zweite Schutzschicht unterhalb der API.</div></div></div><div class="step"><b>4</b><div><strong>Read-only Migration</strong><div class="muted">Professional 0.5 kann den Bestandsimport prüfen, aber noch keine produktiven Migrationsdaten schreiben.</div></div></div></div></section>
         <section class="section card"><div class="section-head"><div><div class="kicker">P0 MIGRATIONSSCHUTZ</div><h2>Bestand sichtbar machen, bevor irgendetwas umgeschaltet wird</h2></div></div><div class="steps"><div class="step"><b>1</b><div><strong>Legacy-Backup akzeptieren</strong><div class="muted">Auch ältere Exporte mit nur <span class="mono">state</span> und <span class="mono">users</span> werden erkannt und eindeutig als Legacy-Quelle markiert.</div></div></div><div class="step"><b>2</b><div><strong>Dubletten nicht doppelt migrieren</strong><div class="muted">Sendungen aus <span class="mono">shipments</span> und <span class="mono">savedShipments</span> werden auf eine Professional-Sendung abgebildet.</div></div></div><div class="step"><b>3</b><div><strong>POD-Schutz erhalten</strong><div class="muted">POD-Datei, POD-Status, Signatur und bestätigte Abholung werden als Evidenz berücksichtigt. Gesperrte Sendungen bleiben gesperrt.</div></div></div><div class="step"><b>4</b><div><strong>Benutzer sicher neu aufsetzen</strong><div class="muted">Benutzernamen und Rollen werden übernommen; bestehende Klartextpasswörter werden nicht in Professional übernommen.</div></div></div></div></section>
       </section>
 

@@ -1,16 +1,14 @@
 {
   "name": "exporthub-professional",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
-  "description": "ExportHUB Professional - separated repository baseline based on Professional 0.4",
+  "description": "ExportHUB Professional - SaaS foundation with tenant and role isolation",
   "scripts": {
     "test": "node --test test/*.test.mjs",
     "analyze": "node migration/analyze-exporthub-backup.mjs",
     "verify": "node migration/verify-migration-package.mjs",
     "baseline": "node migration/verify-source-profile.mjs"
   },
-  "engines": {
-    "node": ">=20"
-  }
+  "engines": {"node": ">=20"}
 }

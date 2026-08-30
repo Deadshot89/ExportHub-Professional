@@ -1,7 +1,9 @@
 {
   "project": "ExportHUB Professional",
   "repository": "ExportHub-Professional",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "mustNotBeUploadedTo": "Deadshot89/ExportHub",
-  "dataMode": "migration-read-only"
+  "dataMode": "migration-read-only",
+  "tenantIsolation": "api-plus-postgres-rls",
+  "writesDefault": false
 }
