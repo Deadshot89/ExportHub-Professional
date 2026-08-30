@@ -3,8 +3,7 @@ name: ExportHUB Professional CI
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - 'index.html'
       - 'assets/**'
@@ -29,24 +28,35 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-
       - name: Verify Professional repository identity
         shell: bash
         run: |
           set -euo pipefail
           test -f professional-project.json
-          node -e "const p=require('./professional-project.json'); if(p.project!=='ExportHUB Professional') process.exit(1); console.log('OK: ExportHUB Professional repository');"
+          node -e "const p=require('./professional-project.json'); if(p.project!=='ExportHUB Professional'||p.version!=='0.5.0') process.exit(1); console.log('OK: ExportHUB Professional 0.5.0 repository');"
           if [[ -f TESTVERSION.html || -f production-version.js ]]; then
             echo "FEHLER: Internal-Dateien wurden im Professional-Repository gefunden."
             exit 1
           fi
-
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-
-      - name: Run Professional migration tests
+          node-version: '20'
+      - name: Run Professional tests
         run: npm test
-
-      - name: Validate Professional API
-        run: node --check api/health/index.js
+      - name: Install Professional API dependencies
+        run: npm install --prefix api --ignore-scripts --no-audit --no-fund
+      - name: Validate Professional API runtime
+        shell: bash
+        run: |
+          node --check api/health/index.js
+          node --check api/professional-meta/index.js
+          node --check api/shared/database.js
+          cd api && node -e "require('./shared/database.js'); require('pg'); console.log('OK: API runtime loads');"
+      - name: Verify no legacy source backup is committed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if find . -type f \( -iname '*backup*.json' -o -iname '*fehlerdiagnose*.json' \) ! -path './migration/sample-backup.json' | grep -q .; then
+            echo 'FEHLER: Echtes Backup/Diagnosefile im Professional-Repository gefunden.'
+            exit 1
+          fi
