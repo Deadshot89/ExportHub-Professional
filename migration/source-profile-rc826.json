@@ -1,0 +1,70 @@
+{
+  "profile": "ExportHUB Internal Legacy Backup",
+  "sourceVersionHint": "RC826",
+  "format": "legacy-state-users",
+  "validatedAgainstRealBackup": true,
+  "expectedCoreCounts": {
+    "customers": 65,
+    "shipments": 128,
+    "shipmentSourceRecords": 208,
+    "users": 23,
+    "podFileEntriesDirect": 65,
+    "podFileShipments": 59,
+    "podEvidenceShipments": 61,
+    "canonicalDocuments": 305,
+    "documentSourceRecords": 602,
+    "canonicalPodDocuments": 68
+  },
+  "expectedDirectPodStorage": {
+    "inline": 33,
+    "remote": 29,
+    "metadataOnly": 3
+  },
+  "expectedCanonicalDocumentStatus": {
+    "verifiedInline": 61,
+    "remoteCaptureRequired": 32,
+    "contentMissing": 212
+  },
+  "expectedCanonicalDocumentKinds": {
+    "POD": 68,
+    "LIEFERSCHEIN": 151,
+    "ABD": 35,
+    "DOKUMENT": 48,
+    "RECHNUNG": 2,
+    "LADELISTE": 1
+  },
+  "expectedProcessStatusCounts": {
+    "POD vorhanden": 60,
+    "Abgeholt": 52,
+    "Bereit zur Abholung": 13,
+    "Erstellt": 2,
+    "Vorbereitet": 1
+  },
+  "migrationRules": [
+    "shipments + savedShipments must map to 128 canonical shipments",
+    "processStatus takes precedence over stale historical completion helpers",
+    "pickup/POD evidence keeps shipment locked even if status fields conflict",
+    "POD documents must have a dedicated cutover gate",
+    "ABD request documents must relink to their shipment reference",
+    "remote URLs are classified but not exposed in the safe document register",
+    "legacy passwords are never copied into normalized Professional users",
+    "customer locations are deduplicated per customer and no unresolved shipment location is guessed",
+    "audit detail text is preserved while structured secret keys are redacted in normalized audit details",
+    "generated document metadata is kept separately and never counted as a successfully migrated source file"
+  ],
+  "expectedProfessional04": {
+    "locations": 66,
+    "customersWithLocations": 63,
+    "shipmentsWithResolvedLocation": 92,
+    "shipmentsWithUnresolvedNamedLocation": 27,
+    "auditEvents": 12278,
+    "legacyAuditEvents": 11480,
+    "securityAuditEvents": 798,
+    "remoteCaptureActions": 32,
+    "sourceFileRequired": 211,
+    "regenerableDocuments": 1,
+    "generatedArtifactMetadata": 2029,
+    "mappingExpected": 898,
+    "mappingMapped": 898
+  }
+}

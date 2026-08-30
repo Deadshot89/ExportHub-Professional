@@ -1,0 +1,11 @@
+EXPORTHUB PROFESSIONAL - WICHTIG
+================================
+
+Dieses Paket darf NICHT in das bestehende Repository Deadshot89/ExportHub hochgeladen werden.
+
+Zielrepository:
+  ExportHub-Professional
+
+Das bestehende Repository Deadshot89/ExportHub bleibt ausschließlich ExportHUB Internal (RC-Versionen).
+
+Echte RC826-Backups, POD-Dateien, Kunden- oder Sendungsdaten niemals in das Professional-GitHub-Repository hochladen.

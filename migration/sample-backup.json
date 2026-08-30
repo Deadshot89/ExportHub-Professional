@@ -1,0 +1,14 @@
+{
+  "type": "ExportHUB_BACKUP",
+  "version": "RC880",
+  "exportedAt": "2026-08-30T08:00:00.000Z",
+  "exportedBy": "DEMO",
+  "state": {
+    "customers": [{"id":"DEMO-C1","account":"100000","name":"Demo Kunde"}],
+    "shipments": [{"id":"DEMO-S1","ref":"ABC123","customerId":"DEMO-C1","status":"Abgeholt","deliveryFiles":[{"id":"DEMO-D1","name":"Demo_Lieferschein.pdf","type":"application/pdf","data":"data:application/pdf;base64,JVBERi0xLjQK"}],"podFiles":[{"id":"DEMO-P1","name":"POD_ABC123.pdf","url":"https://example.invalid/pod.pdf"}]}],
+    "tasks": [],
+    "abdRequests": [],
+    "archive": []
+  },
+  "users": [{"name":"Demo Admin"}]
+}

@@ -1,0 +1,7 @@
+{
+  "project": "ExportHUB Professional",
+  "repository": "ExportHub-Professional",
+  "version": "0.4.1",
+  "mustNotBeUploadedTo": "Deadshot89/ExportHub",
+  "dataMode": "migration-read-only"
+}
