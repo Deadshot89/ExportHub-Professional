@@ -29,12 +29,31 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -f professional-project.json
-          node -e "const p=require('./professional-project.json'); if(p.project!=='ExportHUB Professional'||p.version!=='0.6.0') process.exit(1); console.log('OK: ExportHUB Professional 0.6.0 repository');"
-          if [[ -f TESTVERSION.html || -f production-version.js ]]; then
-            echo "FEHLER: Internal-Dateien wurden im Professional-Repository gefunden."
+          echo "Repository: $GITHUB_REPOSITORY"
+          echo "Root files:"
+          ls -la
+          repo_name="${GITHUB_REPOSITORY##*/}"
+          if [[ "${repo_name,,}" != "exporthub-professional" ]]; then
+            echo "::error::Falsches Repository. Erwartet: ExportHub-Professional, aktuell: $GITHUB_REPOSITORY"
             exit 1
           fi
+          if [[ ! -f professional-project.json ]]; then
+            echo "::error::professional-project.json fehlt am Repository-Root. Wahrscheinlich wurde der komplette Ordner statt seines Inhalts hochgeladen."
+            echo "Gefundene Marker:"
+            find . -maxdepth 4 -name professional-project.json -type f -print || true
+            exit 1
+          fi
+          node - <<'NODE'
+          const p=require('./professional-project.json');
+          console.log('Project marker:', p);
+          if(p.project!=='ExportHUB Professional') throw new Error('project marker mismatch');
+          if(p.version!=='0.6.0') throw new Error(`version mismatch: expected 0.6.0, got ${p.version}`);
+          NODE
+          if [[ -f TESTVERSION.html || -f production-version.js ]]; then
+            echo "::error::Internal-Dateien wurden im Professional-Repository gefunden (TESTVERSION.html/production-version.js)."
+            exit 1
+          fi
+          echo "OK: ExportHUB Professional 0.6.0 repository identity"
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
