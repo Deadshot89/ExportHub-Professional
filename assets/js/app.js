@@ -3,6 +3,45 @@ import {inventoryBackup,buildMigrationPackage,summarizePackage} from '../../shar
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 let sourceText='', sourcePayload=null, migrationPackage=null, currentInventory=null, currentDocumentRows=[];
 
+let identitySession=null, localMigrationLab=false;
+
+async function apiJson(url,options={}){
+  const res=await fetch(url,{credentials:'same-origin',headers:{'content-type':'application/json',...(options.headers||{})},...options});
+  let body={}; try{body=await res.json()}catch{}
+  if(!res.ok){const e=new Error(body.message||('HTTP '+res.status));e.code=body.code||('HTTP_'+res.status);e.status=res.status;throw e;}
+  return body;
+}
+function showApplication({local=false,session=null}={}){
+  localMigrationLab=!!local;identitySession=session||null;
+  $('#authGate').classList.add('hidden');$('#appShell').classList.remove('hidden');
+  const badge=$('#identityBadge');badge.classList.remove('hidden');$('#logoutBtn').classList.remove('hidden');
+  if(local){badge.innerHTML='<b>Lokales Migrationslabor</b><span>keine Serverdaten</span>';$('#logoutBtn').textContent='Zur Anmeldung';setView('migration');}
+  else {badge.innerHTML=`<b>${esc(session?.user?.displayName||session?.user?.username||'Benutzer')}</b><span>${esc(session?.tenant?.name||'Mandant')} · ${esc(session?.user?.role||'')}</span>`;$('#logoutBtn').textContent='Abmelden';setView('overview');}
+}
+function showAuthGate(message='',kind=''){
+  identitySession=null;localMigrationLab=false;$('#appShell').classList.add('hidden');$('#authGate').classList.remove('hidden');
+  const st=$('#identityStatus');if(message){st.textContent=message;st.className='auth-status '+kind;}
+}
+async function refreshOnboardingStatus(){
+  try{
+    const s=await apiJson('/api/professional-onboarding/status',{method:'GET',headers:{}});
+    if(s.databaseConfigured&&s.controlWritesEnabled&&s.bootstrapConfigured&&Number(s.tenantCount)===0){$('#openOnboardingBtn').classList.remove('hidden');}
+    else $('#openOnboardingBtn').classList.add('hidden');
+    return s;
+  }catch{$('#openOnboardingBtn').classList.add('hidden');return null;}
+}
+async function bootIdentity(){
+  showAuthGate('Identity Service wird geprüft …');
+  try{const session=await apiJson('/api/professional-auth/session',{method:'GET',headers:{}});showApplication({session});return;}
+  catch(err){
+    if(err.status===401) showAuthGate('Bitte mit Firmen-Workspace und Benutzerkonto anmelden.','');
+    else if(err.status===503) showAuthGate('Identity Service ist noch nicht mit der Professional-Datenbank aktiviert. Das lokale Migrationslabor bleibt verfügbar.','warn');
+    else showAuthGate('Anmeldedienst derzeit nicht erreichbar. Das lokale Migrationslabor bleibt verfügbar.','warn');
+  }
+  await refreshOnboardingStatus();
+}
+
+
 function setView(name){
   $$('.view').forEach(v=>v.classList.toggle('active',v.dataset.view===name));
   $$('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.nav===name));
@@ -79,7 +118,7 @@ function renderReadOnlyViews(pkg){
   renderDocumentRows();
   const audits=(n.auditEvents||[]).slice();
   $('#auditCount').textContent=fmt(audits.length)+' Audit-Ereignisse · Anzeige der letzten '+fmt(Math.min(200,audits.length));
-  $('#auditPreview').innerHTML=`<div class="read-grid"><div class="read-kpi"><b>${fmt(m.mapping?.mapped)}</b><span>Quellobjekte zugeordnet</span></div><div class="read-kpi"><b>${fmt(m.audit?.total)}</b><span>Audit-Ereignisse strukturiert</span></div><div class="read-kpi"><b>${fmt(m.recovery?.captureRequired)}</b><span>Remote-Captures offen</span></div><div class="read-kpi"><b>${fmt(m.recovery?.sourceFileRequired)}</b><span>Originaldateien erforderlich</span></div></div><div class="notice" style="margin-top:14px">Professional 0.5 bewahrt Audittexte, redigiert aber bekannte Secret-Felder in strukturierten Details. Es werden keine fehlenden POD-/Quelldateien erfunden oder als erfolgreich migriert markiert.</div>`;
+  $('#auditPreview').innerHTML=`<div class="read-grid"><div class="read-kpi"><b>${fmt(m.mapping?.mapped)}</b><span>Quellobjekte zugeordnet</span></div><div class="read-kpi"><b>${fmt(m.audit?.total)}</b><span>Audit-Ereignisse strukturiert</span></div><div class="read-kpi"><b>${fmt(m.recovery?.captureRequired)}</b><span>Remote-Captures offen</span></div><div class="read-kpi"><b>${fmt(m.recovery?.sourceFileRequired)}</b><span>Originaldateien erforderlich</span></div></div><div class="notice" style="margin-top:14px">Professional 0.6 bewahrt Audittexte, redigiert aber bekannte Secret-Felder in strukturierten Details. Es werden keine fehlenden POD-/Quelldateien erfunden oder als erfolgreich migriert markiert.</div>`;
   $('#auditRows').innerHTML=audits.slice(-200).reverse().map(a=>`<tr><td>${esc(a.at||'–')}</td><td>${esc(a.actor||'System')}</td><td>${esc(a.category)}</td><td><b>${esc(a.action)}</b><div class="muted">${esc(a.detail||'')}</div></td><td>${esc(a.source)}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">Keine Audit-Ereignisse gefunden.</td></tr>';
   $$('.needs-migration').forEach(x=>x.classList.add('hidden'));$$('.has-migration').forEach(x=>x.classList.remove('hidden'));
 }
@@ -131,4 +170,30 @@ $('#downloadDocumentRegistryBtn').addEventListener('click',()=>{
 });
 ['documentSearch','documentKindFilter','documentStatusFilter'].forEach(id=>document.getElementById(id)?.addEventListener(id==='documentSearch'?'input':'change',renderDocumentRows));
 
+$('#loginForm')?.addEventListener('submit',async e=>{
+  e.preventDefault();const btn=e.currentTarget.querySelector('button[type=submit]');btn.disabled=true;$('#loginMessage').textContent='Anmeldung wird geprüft …';
+  try{
+    const result=await apiJson('/api/professional-auth/login',{method:'POST',body:JSON.stringify({workspace:$('#loginWorkspace').value,login:$('#loginName').value,password:$('#loginPassword').value})});
+    $('#loginPassword').value='';$('#loginMessage').textContent='';showApplication({session:result});
+  }catch(err){$('#loginMessage').textContent=err.code==='AUTH_LOCKED'?'Konto vorübergehend gesperrt. Bitte später erneut versuchen.':(err.message||'Anmeldung fehlgeschlagen.');}
+  finally{btn.disabled=false;}
+});
+$('#openMigrationLabBtn')?.addEventListener('click',()=>showApplication({local:true}));
+$('#openOnboardingBtn')?.addEventListener('click',()=>$('#onboardingForm').classList.toggle('hidden'));
+$('#onboardingForm')?.addEventListener('submit',async e=>{
+  e.preventDefault();const btn=e.currentTarget.querySelector('button[type=submit]');btn.disabled=true;$('#onboardingMessage').textContent='Firmenmandant wird angelegt …';
+  try{
+    const payload={companyName:$('#companyName').value,workspace:$('#workspaceName').value,adminName:$('#adminName').value,adminEmail:$('#adminEmail').value,adminLogin:$('#adminLogin').value,password:$('#adminPassword').value};
+    await apiJson('/api/professional-onboarding/tenant',{method:'POST',headers:{'x-professional-bootstrap-token':$('#bootstrapToken').value},body:JSON.stringify(payload)});
+    $('#onboardingMessage').textContent='Ersteinrichtung abgeschlossen. Jetzt mit Workspace und Administrator anmelden.';$('#loginWorkspace').value=$('#workspaceName').value;$('#loginName').value=$('#adminLogin').value;$('#adminPassword').value='';$('#bootstrapToken').value='';$('#openOnboardingBtn').classList.add('hidden');
+  }catch(err){$('#onboardingMessage').textContent=err.message||'Ersteinrichtung fehlgeschlagen.';}
+  finally{btn.disabled=false;}
+});
+$('#logoutBtn')?.addEventListener('click',async()=>{
+  if(localMigrationLab){showAuthGate('Bitte mit Firmen-Workspace und Benutzerkonto anmelden.');await refreshOnboardingStatus();return;}
+  try{await apiJson('/api/professional-auth/logout',{method:'POST',body:'{}'});}catch{}
+  showAuthGate('Abgemeldet.');await refreshOnboardingStatus();
+});
+
 setView('overview');
+bootIdentity();

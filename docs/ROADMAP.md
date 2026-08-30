@@ -1,36 +1,23 @@
-# ExportHUB Professional – Roadmap ab 0.5
+# ExportHUB Professional Roadmap
 
-## 0.5 – SaaS-Sicherheitsbasis (aktueller Stand)
+## 0.6 – abgeschlossen
+- serverseitige Workspace-Anmeldung
+- scrypt-Passworthashes
+- HttpOnly/Secure/SameSite-Strict Sitzungen
+- serverseitige Benutzer-/Mandantenzuordnung
+- Erst-Onboarding für den ersten Firmenmandanten
+- getrennte Control-Plane- und operative Write Gates
+- RC826-Bestandsmigration bleibt read-only
 
-- Rollen- und Berechtigungsmodell
-- Tenant-Scope vor Datenzugriff
-- Read-only-Store für Migrationsdaten
-- PostgreSQL-Zielschema mit Row Level Security
-- vorbereiteter DB-Adapter mit standardmäßig deaktivierten Writes
-- `/api/professional-meta` und Health-Endpunkt
-- RC826-Baseline und Dokument-Cutover-Gates unverändert erhalten
-
-## 0.6 – Authentifizierung & Firmen-Onboarding
-
-- sichere Benutzeridentität
-- Firmen-/Mandantenzuordnung serverseitig
-- Einladungen und Passwort-Neuvergabe/SSO-Option
-- Plattform-Admin getrennt von operativen Mandantendaten
-- Session-/Login-Audit
-
-## 0.7 – Produktive Read-only-Datenbankmigration
-
-- Migrationslauf in PostgreSQL schreiben, weiterhin ohne operativen Write-Cutover
-- Source Map + Hashes dauerhaft speichern
-- Bestandsvergleich Alt/Neu
-- Remote-POD-Capture-Queue
+## 0.7 – nächster Schritt
+- Firmenadministration für Benutzer und Einladungen
+- Passwort-Erstvergabe / Reset-Token
+- serverseitige Session- und Benutzerverwaltung
+- Rollenänderungen mit Audit
+- Tenant Branding-Grunddaten
+- Plattform-Admin-Control-Plane getrennt von operativen Mandantendaten
 
 ## Danach
-
-- Sendungserstellung
-- Dokumentenspeicher
-- Aufgaben & Planung
-- Abholung/POD
-- Paletten
-- Reports
-- Plattformadministration
+- 0.8 Kunden + Standorte als echte Professional-DB-Module
+- 0.9 Sendungskern + Statusmaschine
+- 1.0 kontrollierter Parallelbetrieb / Pilotmandant

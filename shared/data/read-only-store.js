@@ -24,7 +24,7 @@ export class TenantReadOnlyStore{
     const found=this.shipments(context).find(x=>x.id===id || x.reference===id);
     return found||null;
   }
-  insert(){ throw Object.assign(new Error('Professional 0.5 migration store is read-only.'),{code:'WRITE_DISABLED_MIGRATION_MODE'}); }
+  insert(){ throw Object.assign(new Error('Professional 0.6 migration store is read-only.'),{code:'WRITE_DISABLED_MIGRATION_MODE'}); }
   update(){ return this.insert(); }
   delete(){ return this.insert(); }
 }

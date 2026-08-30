@@ -1,24 +1,26 @@
-# ExportHUB Professional 0.5.0
+# ExportHUB Professional 0.6.0
 
-Eigenständige Professional-/SaaS-Basis. Dieses Repository darf nicht in `Deadshot89/ExportHub` hochgeladen werden.
+Separates SaaS-Projekt für ExportHUB. **Nicht** in `Deadshot89/ExportHub` hochladen.
 
-## Neu in 0.5
+## Neu in 0.6
 
-- serverseitig nutzbares Rollen- und Berechtigungsmodell mit sieben klaren Rollen
-- harte Tenant-Scope-Prüfung gegen mandantenübergreifende Zugriffe
-- mandantengefilterter Read-only-Store für den bestehenden Migrationsbestand
-- PostgreSQL-Zielschema mit Row Level Security als zweite Tenant-Schutzschicht
-- vorbereitete PostgreSQL-Datenzugriffsschicht; Standardmodus bleibt `migration-read-only`
-- Schreibzugriff benötigt später zwei bewusste Freigaben (`live` + `PROFESSIONAL_ENABLE_WRITES=true`)
-- neuer `/api/professional-meta`-Endpunkt für technische Plattformfähigkeiten ohne Secrets
-- RC826-Migrationslogik, Dokumentregister, POD-Schutz, Kundenstandorte und Audit bleiben erhalten
+- serverseitige Anmeldung mit Workspace + Benutzer + Passwort
+- scrypt-Passworthashes statt Legacy-Klartextpasswörter
+- HttpOnly/Secure/SameSite-Strict Sitzungen
+- serverseitige Benutzer-/Mandantenzuordnung über PostgreSQL
+- Erst-Onboarding für den ersten Firmenmandanten
+- getrennte Write Gates für Identity-Control-Plane und operative Migrationsdaten
+- PostgreSQL RLS bleibt zweite Mandantenschutzschicht
+- RC826-Migration bleibt read-only und unverändert
 
-## Sicherheitsregel
+## Sicherheitszustand
 
-Professional 0.5 schreibt nicht in ExportHUB Internal und führt keinen automatischen Cutover durch. Das alte Quellsystem bleibt unangetastet. Remote-/fehlende Dokumente blockieren weiterhin den endgültigen Cutover.
+`PROFESSIONAL_ENABLE_WRITES=false` bleibt Standard. Das bedeutet: Kunden, Sendungen, PODs und Dokumente aus der Bestandsmigration können weiterhin nicht produktiv überschrieben werden.
 
-## Lokal prüfen
+Identity-/Onboarding-Schreibzugriffe sind separat über `PROFESSIONAL_ENABLE_CONTROL_WRITES` gesperrt und müssen bewusst aktiviert werden.
+
+## Tests
 
 `npm test`
 
-Optional für die API-Abhängigkeiten: `npm install --prefix api`.
+Der CI-Workflow prüft zusätzlich API-Module und verhindert weiterhin Internal-Dateien wie `TESTVERSION.html` oder `production-version.js` im Professional-Repository.

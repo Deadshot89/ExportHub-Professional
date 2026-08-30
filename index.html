@@ -1,7 +1,37 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0c1f35"><title>ExportHUB Professional 0.5</title><link rel="stylesheet" href="/assets/css/app.css"></head><body>
-<div class="shell">
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0c1f35"><title>ExportHUB Professional 0.6</title><link rel="stylesheet" href="/assets/css/app.css"></head><body>
+<div id="authGate" class="auth-gate">
+  <div class="auth-card">
+    <div class="auth-brand"><div class="kicker">EXPORT & LOGISTICS MANAGEMENT</div><h1>ExportHUB Professional</h1><p>Serverseitige Anmeldung mit Firmen-Workspace und Benutzerkonto.</p></div>
+    <div id="identityStatus" class="auth-status">Identity Service wird geprüft …</div>
+    <form id="loginForm" class="auth-form" autocomplete="on">
+      <div><label for="loginWorkspace">Workspace</label><input id="loginWorkspace" name="workspace" autocomplete="organization" placeholder="z. B. muster-gmbh" required></div>
+      <div><label for="loginName">Benutzer / E-Mail</label><input id="loginName" name="username" autocomplete="username" required></div>
+      <div><label for="loginPassword">Passwort</label><input id="loginPassword" type="password" name="password" autocomplete="current-password" required></div>
+      <button class="btn auth-primary" type="submit">Anmelden</button>
+      <div id="loginMessage" class="muted"></div>
+    </form>
+    <div class="auth-actions">
+      <button id="openOnboardingBtn" type="button" class="ghost hidden">Ersteinrichtung</button>
+      <button id="openMigrationLabBtn" type="button" class="ghost">Lokales Migrationslabor</button>
+    </div>
+    <form id="onboardingForm" class="auth-form onboarding hidden">
+      <div class="auth-subhead"><strong>Ersteinrichtung der Professional-Instanz</strong><span>Nur für den ersten Firmenmandanten.</span></div>
+      <div><label for="companyName">Firma</label><input id="companyName" required></div>
+      <div><label for="workspaceName">Workspace-ID</label><input id="workspaceName" placeholder="muster-gmbh" required></div>
+      <div><label for="adminName">Administrator</label><input id="adminName" required></div>
+      <div><label for="adminEmail">E-Mail</label><input id="adminEmail" type="email" autocomplete="email" required></div>
+      <div><label for="adminLogin">Anmeldename</label><input id="adminLogin" autocomplete="username" required></div>
+      <div><label for="adminPassword">Neues Passwort</label><input id="adminPassword" type="password" autocomplete="new-password" minlength="12" required><small>Mindestens 12 Zeichen.</small></div>
+      <div><label for="bootstrapToken">Bootstrap-Code</label><input id="bootstrapToken" type="password" autocomplete="off" required></div>
+      <button class="btn" type="submit">Ersten Firmenmandanten anlegen</button>
+      <div id="onboardingMessage" class="muted"></div>
+    </form>
+    <div class="auth-foot">Professional 0.6 · Operative Bestandsdaten bleiben im Migrationsmodus schreibgeschützt.</div>
+  </div>
+</div>
+<div id="appShell" class="shell hidden">
   <aside class="side">
-    <div class="brand">ExportHUB Professional<small>SaaS Foundation 0.5</small></div>
+    <div class="brand">ExportHUB Professional<small>Identity & Tenant 0.6</small></div>
     <span class="tag">READ-ONLY MIGRATION MODE</span>
     <nav class="nav">
       <button data-nav="overview" class="active">Übersicht</button>
@@ -17,17 +47,17 @@
     <footer>Professional ist vollständig von ExportHUB Internal getrennt.</footer>
   </aside>
   <main class="main">
-    <header class="top"><strong id="pageTitle">Übersicht</strong><div class="status"><span class="pill good">Internal unangetastet</span><span class="pill warn">Kein Cutover</span></div></header>
+    <header class="top"><strong id="pageTitle">Übersicht</strong><div class="top-right"><div class="status"><span class="pill good">Internal unangetastet</span><span class="pill warn">Kein Cutover</span></div><div id="identityBadge" class="identity-badge hidden"></div><button id="logoutBtn" class="ghost compact hidden" type="button">Abmelden</button></div></header>
     <div class="content">
       <section class="view active" data-view="overview">
-        <div class="hero"><div class="kicker" style="color:#b7d9ef">EXPORT & LOGISTICS MANAGEMENT</div><h1>ExportHUB Professional</h1><p>Professional 0.5 ergänzt die echte SaaS-Sicherheitsbasis: Mandanten-Scope, Rollen und Berechtigungen sowie eine vorbereitete PostgreSQL-Schicht mit Row Level Security. Der RC826-Bestand bleibt weiterhin read-only und ExportHUB Internal wird nicht beschrieben.</p></div>
+        <div class="hero"><div class="kicker" style="color:#b7d9ef">EXPORT & LOGISTICS MANAGEMENT</div><h1>ExportHUB Professional</h1><p>Professional 0.6 ergänzt die serverseitige Anmeldung, Firmen-Onboarding und die verbindliche Benutzer-/Mandantenzuordnung. Der Bestandsimport bleibt weiterhin read-only; ExportHUB Internal wird nicht beschrieben.</p></div>
         <div class="grid">
-          <div class="card metric"><strong>0.5</strong><span>SaaS Foundation</span></div>
+          <div class="card metric"><strong>0.6</strong><span>Identity & Tenant Onboarding</span></div>
           <div class="card metric"><strong>READ ONLY</strong><span>Altbestand ohne Schreibzugriff</span></div>
           <div class="card metric"><strong>SHA-256</strong><span>Backup- und Dokumentprüfung</span></div>
           <div class="card metric"><strong>RESET</strong><span>keine Legacy-Passwörter migrieren</span></div>
         </div>
-        <section class="section card"><div class="section-head"><div><div class="kicker">SAAS SECURITY</div><h2>Mandant und Rolle werden vor jedem Datenzugriff geprüft</h2></div><span class="pill good">Writes standardmäßig aus</span></div><div class="steps"><div class="step"><b>1</b><div><strong>Tenant Scope</strong><div class="muted">Operative Daten gehören immer genau zu einem Mandanten. Fremde Tenant-IDs werden blockiert.</div></div></div><div class="step"><b>2</b><div><strong>Rollen & Rechte</strong><div class="muted">Plattform-Admin, Firmen-Admin, Export-Admin, Teamleitung, Sachbearbeitung, Lager und Auditor sind getrennt.</div></div></div><div class="step"><b>3</b><div><strong>PostgreSQL RLS</strong><div class="muted">Die Datenbank erhält zusätzlich Row Level Security als zweite Schutzschicht unterhalb der API.</div></div></div><div class="step"><b>4</b><div><strong>Read-only Migration</strong><div class="muted">Professional 0.5 kann den Bestandsimport prüfen, aber noch keine produktiven Migrationsdaten schreiben.</div></div></div></div></section>
+        <section class="section card"><div class="section-head"><div><div class="kicker">IDENTITY SECURITY</div><h2>Workspace, Benutzer, Rolle und Mandant werden serverseitig aufgelöst</h2></div><span class="pill good">HttpOnly Session</span></div><div class="steps"><div class="step"><b>1</b><div><strong>Server Login</strong><div class="muted">Anmeldung über Workspace + Benutzer. Der Browser darf keine Rolle oder Tenant-ID selbst festlegen.</div></div></div><div class="step"><b>2</b><div><strong>Scrypt + Session Cookie</strong><div class="muted">Neue Passwörter werden gehasht; Sitzungen liegen nur in HttpOnly/Secure/SameSite-Strict Cookies.</div></div></div><div class="step"><b>3</b><div><strong>Tenant Scope + PostgreSQL RLS</strong><div class="muted">Jeder Datenzugriff erhält serverseitig seinen Tenant Scope und zusätzlich die Datenbank-RLS.</div></div></div><div class="step"><b>4</b><div><strong>Getrennte Write Gates</strong><div class="muted">Identity-Onboarding kann separat aktiviert werden, während operative Bestandsdaten weiterhin read-only bleiben.</div></div></div></div></section>
         <section class="section card"><div class="section-head"><div><div class="kicker">P0 MIGRATIONSSCHUTZ</div><h2>Bestand sichtbar machen, bevor irgendetwas umgeschaltet wird</h2></div></div><div class="steps"><div class="step"><b>1</b><div><strong>Legacy-Backup akzeptieren</strong><div class="muted">Auch ältere Exporte mit nur <span class="mono">state</span> und <span class="mono">users</span> werden erkannt und eindeutig als Legacy-Quelle markiert.</div></div></div><div class="step"><b>2</b><div><strong>Dubletten nicht doppelt migrieren</strong><div class="muted">Sendungen aus <span class="mono">shipments</span> und <span class="mono">savedShipments</span> werden auf eine Professional-Sendung abgebildet.</div></div></div><div class="step"><b>3</b><div><strong>POD-Schutz erhalten</strong><div class="muted">POD-Datei, POD-Status, Signatur und bestätigte Abholung werden als Evidenz berücksichtigt. Gesperrte Sendungen bleiben gesperrt.</div></div></div><div class="step"><b>4</b><div><strong>Benutzer sicher neu aufsetzen</strong><div class="muted">Benutzernamen und Rollen werden übernommen; bestehende Klartextpasswörter werden nicht in Professional übernommen.</div></div></div></div></section>
       </section>
 
