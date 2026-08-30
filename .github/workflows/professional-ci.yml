@@ -29,31 +29,26 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "Repository: $GITHUB_REPOSITORY"
-          echo "Root files:"
-          ls -la
           repo_name="${GITHUB_REPOSITORY##*/}"
           if [[ "${repo_name,,}" != "exporthub-professional" ]]; then
-            echo "::error::Falsches Repository. Erwartet: ExportHub-Professional, aktuell: $GITHUB_REPOSITORY"
+            echo "::error::Falsches Repository: $GITHUB_REPOSITORY. Erwartet: ExportHub-Professional."
             exit 1
           fi
           if [[ ! -f professional-project.json ]]; then
-            echo "::error::professional-project.json fehlt am Repository-Root. Wahrscheinlich wurde der komplette Ordner statt seines Inhalts hochgeladen."
-            echo "Gefundene Marker:"
+            echo "::error::professional-project.json fehlt am Repository-Root. Bitte den Inhalt des Professional-Pakets direkt ins Repository-Root hochladen."
             find . -maxdepth 4 -name professional-project.json -type f -print || true
             exit 1
           fi
           node - <<'NODE'
           const p=require('./professional-project.json');
-          console.log('Project marker:', p);
           if(p.project!=='ExportHUB Professional') throw new Error('project marker mismatch');
-          if(p.version!=='0.6.0') throw new Error(`version mismatch: expected 0.6.0, got ${p.version}`);
+          if(p.version!=='0.7.0') throw new Error(`version mismatch: expected 0.7.0, got ${p.version}`);
+          console.log('OK: ExportHUB Professional 0.7.0 repository identity');
           NODE
           if [[ -f TESTVERSION.html || -f production-version.js ]]; then
-            echo "::error::Internal-Dateien wurden im Professional-Repository gefunden (TESTVERSION.html/production-version.js)."
+            echo "::error::ExportHUB-Internal-Dateien wurden im Professional-Repository gefunden."
             exit 1
           fi
-          echo "OK: ExportHUB Professional 0.6.0 repository identity"
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -65,8 +60,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for f in api/health/index.js api/professional-meta/index.js api/shared/database.js api/shared/auth-security.js api/shared/auth-store.js api/shared/http.js api/auth-login/index.js api/auth-session/index.js api/auth-logout/index.js api/onboarding-status/index.js api/onboarding-create/index.js; do node --check "$f"; done
-          cd api && node -e "require('./shared/database.js'); require('./shared/auth-security.js'); require('./shared/auth-store.js'); require('pg'); console.log('OK: Professional 0.6 API runtime loads');"
+          files=(
+            api/health/index.js api/professional-meta/index.js
+            api/shared/database.js api/shared/auth-security.js api/shared/auth-store.js api/shared/authorization.js api/shared/user-admin-store.js api/shared/http.js
+            api/auth-login/index.js api/auth-session/index.js api/auth-logout/index.js api/onboarding-status/index.js api/onboarding-create/index.js
+            api/admin-users-list/index.js api/admin-user-invite/index.js api/admin-user-role/index.js api/admin-user-status/index.js api/admin-password-reset/index.js api/admin-identity-audit/index.js
+            api/invite-redeem/index.js api/password-reset-redeem/index.js
+          )
+          for f in "${files[@]}"; do node --check "$f"; done
+          cd api
+          node -e "require('./shared/database.js'); require('./shared/auth-security.js'); require('./shared/auth-store.js'); require('./shared/authorization.js'); require('./shared/user-admin-store.js'); require('pg'); console.log('OK: Professional 0.7 API runtime loads');"
       - name: Verify no legacy source backup is committed
         shell: bash
         run: |
