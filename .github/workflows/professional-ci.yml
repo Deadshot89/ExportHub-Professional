@@ -1,5 +1,4 @@
 name: ExportHUB Professional CI
-
 on:
   workflow_dispatch:
   push:
@@ -18,10 +17,8 @@ on:
       - 'staticwebapp.config.json'
       - 'professional-project.json'
       - '.github/workflows/professional-ci.yml'
-
 permissions:
   contents: read
-
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -33,7 +30,7 @@ jobs:
         run: |
           set -euo pipefail
           test -f professional-project.json
-          node -e "const p=require('./professional-project.json'); if(p.project!=='ExportHUB Professional'||p.version!=='0.5.0') process.exit(1); console.log('OK: ExportHUB Professional 0.5.0 repository');"
+          node -e "const p=require('./professional-project.json'); if(p.project!=='ExportHUB Professional'||p.version!=='0.6.0') process.exit(1); console.log('OK: ExportHUB Professional 0.6.0 repository');"
           if [[ -f TESTVERSION.html || -f production-version.js ]]; then
             echo "FEHLER: Internal-Dateien wurden im Professional-Repository gefunden."
             exit 1
@@ -48,10 +45,9 @@ jobs:
       - name: Validate Professional API runtime
         shell: bash
         run: |
-          node --check api/health/index.js
-          node --check api/professional-meta/index.js
-          node --check api/shared/database.js
-          cd api && node -e "require('./shared/database.js'); require('pg'); console.log('OK: API runtime loads');"
+          set -euo pipefail
+          for f in api/health/index.js api/professional-meta/index.js api/shared/database.js api/shared/auth-security.js api/shared/auth-store.js api/shared/http.js api/auth-login/index.js api/auth-session/index.js api/auth-logout/index.js api/onboarding-status/index.js api/onboarding-create/index.js; do node --check "$f"; done
+          cd api && node -e "require('./shared/database.js'); require('./shared/auth-security.js'); require('./shared/auth-store.js'); require('pg'); console.log('OK: Professional 0.6 API runtime loads');"
       - name: Verify no legacy source backup is committed
         shell: bash
         run: |
