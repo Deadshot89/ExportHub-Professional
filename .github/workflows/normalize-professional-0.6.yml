@@ -1,0 +1,127 @@
+name: ONE-TIME Normalize ExportHUB Professional 0.6
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type NORMALIZE_PRO_060'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  normalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify target repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ inputs.confirmation }}" != "NORMALIZE_PRO_060" ]]; then
+            echo "FEHLER: Bestaetigung muss NORMALIZE_PRO_060 lauten."
+            exit 1
+          fi
+          repo_name="${GITHUB_REPOSITORY##*/}"
+          if [[ "${repo_name,,}" != "exporthub-professional" ]]; then
+            echo "FEHLER: Dieser Workflow darf nur in ExportHub-Professional laufen. Aktuell: $GITHUB_REPOSITORY"
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Locate and promote Professional 0.6.0 to repository root
+        shell: bash
+        run: |
+          set -euo pipefail
+          root_marker=""
+          if [[ -f professional-project.json ]]; then
+            root_version="$(node -p "require('./professional-project.json').version || ''" 2>/dev/null || true)"
+            root_project="$(node -p "require('./professional-project.json').project || ''" 2>/dev/null || true)"
+            if [[ "$root_project" == "ExportHUB Professional" && "$root_version" == "0.6.0" ]]; then
+              root_marker="professional-project.json"
+            fi
+          fi
+
+          source_dir="."
+          if [[ -z "$root_marker" ]]; then
+            while IFS= read -r f; do
+              [[ "$f" == "./professional-project.json" ]] && continue
+              project="$(node -p "require('./${f#./}').project || ''" 2>/dev/null || true)"
+              version="$(node -p "require('./${f#./}').version || ''" 2>/dev/null || true)"
+              if [[ "$project" == "ExportHUB Professional" && "$version" == "0.6.0" ]]; then
+                source_dir="$(dirname "$f")"
+                break
+              fi
+            done < <(find . -mindepth 2 -maxdepth 4 -name professional-project.json -type f | sort)
+          fi
+
+          if [[ "$source_dir" != "." ]]; then
+            echo "Gefundener Professional-0.6.0-Unterordner: $source_dir"
+            shopt -s dotglob nullglob
+            for item in "$source_dir"/*; do
+              base="$(basename "$item")"
+              [[ "$base" == ".git" ]] && continue
+              cp -a "$item" ./
+            done
+            shopt -u dotglob nullglob
+          elif [[ -z "$root_marker" ]]; then
+            echo "FEHLER: Professional 0.6.0 wurde weder am Root noch in einem Unterordner gefunden."
+            echo "Vorhandene professional-project.json Dateien:"
+            find . -maxdepth 4 -name professional-project.json -type f -print || true
+            exit 1
+          else
+            echo "Professional 0.6.0 liegt bereits am Repository-Root."
+          fi
+
+          node -e "const p=require('./professional-project.json'); if(p.project!=='ExportHUB Professional'||p.version!=='0.6.0') throw new Error('Root identity mismatch'); console.log('OK: Professional 0.6.0 liegt jetzt am Root');"
+
+      - name: Remove Internal leftovers from Professional repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f TESTVERSION.html production-version.js
+          rm -f .github/workflows/exporthub-testservice.yml
+          rm -f .github/workflows/azure-static-web-apps-*.yml
+          rm -f .github/workflows/cleanup-professional-from-internal*.yml
+          rm -f .github/workflows/restore-exporthub-internal*.yml
+          rm -f .github/workflows/build-exporthub-android*.yml
+          rm -f .github/workflows/normalize-professional-0.6.yml
+
+          for d in ExportHUB_Professional_0.1* ExportHUB_Professional_0.2* ExportHUB_Professional_0.3* ExportHUB_Professional_0.4* ExportHUB_Professional_0.5* ExportHUB_Professional_0.6* ExportHub_Professional_0.1* ExportHub_Professional_0.2* ExportHub_Professional_0.3* ExportHub_Professional_0.4* ExportHub_Professional_0.5* ExportHub_Professional_0.6*; do
+            [[ -d "$d" ]] && rm -rf "$d"
+          done
+
+      - name: Validate normalized Professional 0.6.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm test
+          npm install --prefix api --ignore-scripts --no-audit --no-fund
+          for f in api/health/index.js api/professional-meta/index.js api/shared/database.js api/shared/auth-security.js api/shared/auth-store.js api/shared/http.js api/auth-login/index.js api/auth-session/index.js api/auth-logout/index.js api/onboarding-status/index.js api/onboarding-create/index.js; do
+            node --check "$f"
+          done
+          cd api
+          node -e "require('./shared/database.js'); require('./shared/auth-security.js'); require('./shared/auth-store.js'); require('pg'); console.log('OK: Professional 0.6 API runtime loads');"
+
+      - name: Commit normalized repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Keine Repository-Aenderung notwendig."
+          else
+            git commit -m "Normalize ExportHUB Professional 0.6.0 repository root"
+            git push origin HEAD:main
+          fi
