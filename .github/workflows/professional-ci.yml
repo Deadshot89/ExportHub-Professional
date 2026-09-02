@@ -17,6 +17,7 @@ on:
       - 'staticwebapp.config.json'
       - 'professional-project.json'
       - '.github/workflows/professional-ci.yml'
+      - '.github/workflows/professional-deploy.yml'
 permissions:
   contents: read
 jobs:
