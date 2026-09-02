@@ -51,6 +51,23 @@ test('bootstrap token comparison denies wrong token',()=>{
   }finally{if(old===undefined)delete process.env.PROFESSIONAL_BOOTSTRAP_TOKEN;else process.env.PROFESSIONAL_BOOTSTRAP_TOKEN=old;}
 });
 
+test('Azure Headers.get request shape is supported for bootstrap and session cookies',()=>{
+  const old=process.env.PROFESSIONAL_BOOTSTRAP_TOKEN;
+  process.env.PROFESSIONAL_BOOTSTRAP_TOKEN='bootstrap-secret-01234567890123456789';
+  const session=TENANT+'.opaque-session';
+  try{
+    const req={headers:{get(name){
+      const key=String(name).toLowerCase();
+      if(key==='x-professional-bootstrap-token')return process.env.PROFESSIONAL_BOOTSTRAP_TOKEN;
+      if(key==='cookie')return `exporthub_professional_session=${encodeURIComponent(session)}`;
+      return null;
+    }}};
+    assert.equal(sec.headerValue(req,'X-Professional-Bootstrap-Token'),process.env.PROFESSIONAL_BOOTSTRAP_TOKEN);
+    assert.equal(sec.assertBootstrapToken(req),true);
+    assert.equal(sec.sessionTokenFromRequest(req),session);
+  }finally{if(old===undefined)delete process.env.PROFESSIONAL_BOOTSTRAP_TOKEN;else process.env.PROFESSIONAL_BOOTSTRAP_TOKEN=old;}
+});
+
 test('schema contains auth identities, sessions, tenant slug and RLS coverage',()=>{
   const sql=fs.readFileSync(new URL('../schema/postgres.sql',import.meta.url),'utf8');
   assert.match(sql,/create table if not exists app_user_auth/i);

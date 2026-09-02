@@ -20,11 +20,6 @@ function assertPermission(session,permission){
   if(!session||!hasPermission(session.role,permission)) throw Object.assign(new Error('Keine Berechtigung für diese Aktion.'),{code:'FORBIDDEN'});
   return true;
 }
-function header(req,name){
-  const h=req?.headers||{},key=String(name||'').toLowerCase();
-  for(const [k,v] of Object.entries(h)) if(String(k).toLowerCase()===key) return String(v||'');
-  return '';
-}
 async function requireSession(req,{permission,csrf=false}={}){
   const raw=sec.sessionTokenFromRequest(req);
   if(!raw) throw Object.assign(new Error('Keine gültige Sitzung.'),{code:'SESSION_INVALID'});
@@ -32,7 +27,7 @@ async function requireSession(req,{permission,csrf=false}={}){
   if(!session) throw Object.assign(new Error('Sitzung ist ungültig oder abgelaufen.'),{code:'SESSION_INVALID'});
   if(permission) assertPermission(session,permission);
   if(csrf){
-    const got=header(req,'x-professional-csrf');
+    const got=sec.headerValue(req,'x-professional-csrf');
     const expected=sec.csrfToken(raw);
     if(!sec.safeEqual(got,expected)) throw Object.assign(new Error('Sicherheitsprüfung fehlgeschlagen.'),{code:'CSRF_INVALID'});
   }

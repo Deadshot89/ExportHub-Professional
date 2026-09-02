@@ -70,8 +70,22 @@ function cookieHeader(token,{clear=false}={}){
   const maxAge=clear?0:SESSION_HOURS*3600;
   return `${SESSION_COOKIE}=${clear?'':encodeURIComponent(String(token||''))}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`;
 }
+function headerValue(req,name){
+  const headers=req?.headers;if(!headers)return '';
+  const key=String(name||'').toLowerCase();
+  if(typeof headers.get==='function'){
+    const value=headers.get(key);
+    return value==null?'':String(value);
+  }
+  for(const [k,v] of Object.entries(headers)){
+    if(String(k).toLowerCase()!==key)continue;
+    if(Array.isArray(v))return v.length?String(v[0]??''):'';
+    return v==null?'':String(v);
+  }
+  return '';
+}
 function parseCookies(req){
-  const raw=String(req?.headers?.cookie||req?.headers?.Cookie||'');
+  const raw=headerValue(req,'cookie');
   const out={}; raw.split(';').forEach(part=>{const i=part.indexOf('=');if(i>0)out[part.slice(0,i).trim()]=decodeURIComponent(part.slice(i+1).trim())});return out;
 }
 function sessionTokenFromRequest(req){return parseCookies(req)[SESSION_COOKIE]||'';}
@@ -82,8 +96,8 @@ function safeEqual(a,b){
 function assertBootstrapToken(req){
   const expected=String(process.env.PROFESSIONAL_BOOTSTRAP_TOKEN||'');
   if(expected.length<24) throw Object.assign(new Error('Bootstrap ist nicht konfiguriert.'),{code:'BOOTSTRAP_NOT_CONFIGURED'});
-  const got=String(req?.headers?.['x-professional-bootstrap-token']||req?.headers?.['X-Professional-Bootstrap-Token']||'');
+  const got=headerValue(req,'x-professional-bootstrap-token');
   if(!safeEqual(got,expected)) throw Object.assign(new Error('Bootstrap-Berechtigung abgelehnt.'),{code:'BOOTSTRAP_DENIED'});
   return true;
 }
-module.exports={SESSION_COOKIE,SESSION_HOURS,DUMMY_PASSWORD_HASH,normalizeLogin,normalizeSlug,validatePassword,validateLogin,validateSlug,hashPassword,verifyPassword,newScopedToken,newSessionToken,tenantIdFromSessionToken,tokenHash,csrfToken,sessionExpiresAt,cookieHeader,sessionTokenFromRequest,safeEqual,assertBootstrapToken};
+module.exports={SESSION_COOKIE,SESSION_HOURS,DUMMY_PASSWORD_HASH,normalizeLogin,normalizeSlug,validatePassword,validateLogin,validateSlug,hashPassword,verifyPassword,newScopedToken,newSessionToken,tenantIdFromSessionToken,tokenHash,csrfToken,sessionExpiresAt,cookieHeader,headerValue,sessionTokenFromRequest,safeEqual,assertBootstrapToken};
