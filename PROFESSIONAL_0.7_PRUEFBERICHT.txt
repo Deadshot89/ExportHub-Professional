@@ -1,0 +1,45 @@
+ExportHUB Professional 0.7.0 – Prüfbericht
+Erstellt: 30.08.2026
+
+ERGEBNIS
+- Automatische Tests: 43/43 bestanden
+- API-JavaScript Syntaxprüfung: 21/21 bestanden
+- Frontend app.js Syntaxprüfung: bestanden
+- JSON-Strukturprüfung: 21 JSON-Dateien gültig
+- RC826 Baseline: bestanden, 0 Abweichungen
+- Mapping: 898/898
+- Eindeutige Kunden: 65
+- Eindeutige Sendungen: 128
+- Benutzer im Legacy-Bestand: 23
+- Eindeutige Dokumente: 305
+- POD-Dokumentartefakte: 68
+- Standorte: 66
+- Audit-Ereignisse: 12.278
+
+NEU IN 0.7
+- Benutzerverwaltung pro Tenant
+- Einmal-Einladungen, serverseitig nur als Token-Hash gespeichert
+- Erstpasswortvergabe über URL-Fragment
+- Passwort-Reset mit Einmal-Token
+- Rollenänderung / Aktivierung / Deaktivierung
+- Schutz des letzten Firmen-Admins
+- sofortige Sitzungsrevokation bei Deaktivierung und Reset-Anforderung
+- CSRF-Prüfung für schreibende Benutzer-Admin-Endpunkte
+- Identity-Audit für Einladungen, Rollen, Status und Passwort-Reset
+- offene Einladungen und Identity-Audit in der Benutzeroberfläche
+
+SICHERHEIT
+- Mandant und Rolle werden aus der serverseitigen Sitzung ermittelt.
+- Browser kann tenantId/role bei Admin-Aktionen nicht bestimmen.
+- Einladungs-/Reset-Roh-Tokens werden nicht in der Datenbank gespeichert.
+- Klartextpasswörter werden nicht gespeichert oder auditiert.
+- Operative Legacy-Daten bleiben standardmäßig migration-read-only.
+- PROFESSIONAL_ENABLE_CONTROL_WRITES aktiviert nur Identity-Control-Plane-Schreibzugriffe, nicht operative Migration Writes.
+
+NICHT ALS LIVE-INTEGRATION GETESTET
+- Ein echter PostgreSQL-/Azure-Live-Lauf konnte lokal nicht ausgeführt werden, da keine Professional-Live-Datenbankverbindung vorliegt.
+- Der CI-Workflow prüft Module, Tests und API-Ladefähigkeit nach Installation von pg.
+
+RC826 DATENSCHUTZ
+- Das echte RC826-Backup ist NICHT Bestandteil dieses Repository-Pakets.
+- Die Baseline wurde extern gegen die bereitgestellte Quelle geprüft.

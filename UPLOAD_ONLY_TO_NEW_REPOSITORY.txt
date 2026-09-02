@@ -1,11 +1,12 @@
-EXPORTHUB PROFESSIONAL - WICHTIG
-================================
+EXPORTHUB PROFESSIONAL 0.7.0
 
-Dieses Paket darf NICHT in das bestehende Repository Deadshot89/ExportHub hochgeladen werden.
+AUSSCHLIESSLICH hochladen nach:
+Deadshot89/ExportHub-Professional
 
-Zielrepository:
-  ExportHub-Professional
+NICHT hochladen nach:
+Deadshot89/ExportHub
 
-Das bestehende Repository Deadshot89/ExportHub bleibt ausschließlich ExportHUB Internal (RC-Versionen).
+Das Paket ist ein vollständiger Professional-Stand. Ältere Versionen 0.1 bis 0.6 müssen nicht zusätzlich hochgeladen werden.
 
-Echte RC826-Backups, POD-Dateien, Kunden- oder Sendungsdaten niemals in das Professional-GitHub-Repository hochladen.
+Beim GitHub-Browserupload muss der INHALT dieses Ordners direkt am Repository-Root liegen.
+Wenn .github nicht übernommen wird, professional-ci.yml separat nach .github/workflows/professional-ci.yml hochladen.

@@ -1,0 +1,12 @@
+# Never commit real ExportHUB customer/shipment/POD backup data
+*backup*.json
+*BACKUP*.json
+RC826_PROFESSIONAL_*.json
+RC826_PROFESSIONAL_*.txt
+migration/private/
+private-data/
+*.local.json
+.env
+.env.*
+node_modules/
+.DS_Store
