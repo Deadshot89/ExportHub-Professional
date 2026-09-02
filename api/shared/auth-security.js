@@ -97,7 +97,11 @@ function assertBootstrapToken(req){
   const expected=String(process.env.PROFESSIONAL_BOOTSTRAP_TOKEN||'');
   if(expected.length<24) throw Object.assign(new Error('Bootstrap ist nicht konfiguriert.'),{code:'BOOTSTRAP_NOT_CONFIGURED'});
   const got=headerValue(req,'x-professional-bootstrap-token');
-  if(!safeEqual(got,expected)) throw Object.assign(new Error('Bootstrap-Berechtigung abgelehnt.'),{code:'BOOTSTRAP_DENIED'});
+  if(!safeEqual(got,expected)){
+    const gotLen=Buffer.byteLength(got,'utf8');
+    const expectedLen=Buffer.byteLength(expected,'utf8');
+    throw Object.assign(new Error(`Bootstrap-Berechtigung abgelehnt (empfangen: ${gotLen} Zeichen, erwartet: ${expectedLen} Zeichen).`),{code:'BOOTSTRAP_DENIED'});
+  }
   return true;
 }
 module.exports={SESSION_COOKIE,SESSION_HOURS,DUMMY_PASSWORD_HASH,normalizeLogin,normalizeSlug,validatePassword,validateLogin,validateSlug,hashPassword,verifyPassword,newScopedToken,newSessionToken,tenantIdFromSessionToken,tokenHash,csrfToken,sessionExpiresAt,cookieHeader,headerValue,sessionTokenFromRequest,safeEqual,assertBootstrapToken};
