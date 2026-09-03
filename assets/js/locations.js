@@ -1,7 +1,7 @@
 const $=s=>document.querySelector(s);
 let globalLocationSearchTimer=null;
 
-function esc(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[ch]));}
+function esc(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 function statusPill(active){return active===false?'<span class="status-pill lock">Inaktiv</span>':'<span class="status-pill good">Aktiv</span>';}
 async function apiJson(url){
   const res=await fetch(url,{credentials:'same-origin',headers:{'content-type':'application/json'}});
