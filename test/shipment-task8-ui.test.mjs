@@ -72,6 +72,18 @@ test('one-off modal enforces preview-first duplicate and similar-name workflow w
   assert.match(src,/convertOneOffExistingCustomerBtn/);
 });
 
+test('carrier drawer and one-off modal remain usable under CSP and responsive layout',()=>{
+  const html=read('index.html');
+  const carrierJs=read('assets/js/carriers.js');
+  assert.doesNotMatch(html,/\sonclick\s*=/i,'inline onclick is blocked by current script-src CSP');
+  assert.match(carrierJs,/cancelCarrierBtn/);
+  assert.equal(exists('assets/css/carriers.css'),true,'assets/css/carriers.css fehlt');
+  assert.match(html,/\/assets\/css\/carriers\.css/);
+  const css=read('assets/css/carriers.css');
+  for(const marker of ['carrier-toolbar','carrier-table','modal-backdrop','one-off-modal','one-off-candidates'])assert.match(css,new RegExp(marker));
+  assert.match(css,/@media\s*\(max-width:\s*700px\)/);
+});
+
 test('task 8 frontend is syntax checked and deploy payload guarded',()=>{
   const ci=read('.github/workflows/professional-ci.yml');
   const deploy=read('.github/workflows/professional-deploy.yml');
