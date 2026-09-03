@@ -17,7 +17,7 @@ async function loginCandidate(tenantId,login){
       from app_users u
       join tenant_memberships m on m.tenant_id=u.tenant_id and m.user_id=u.id
       join app_user_auth a on a.tenant_id=u.tenant_id and a.user_id=u.id
-      where u.tenant_id=$1 and a.login_name=$2
+      where u.tenant_id=$1 and (a.login_name=$2 or lower(u.email)=$2)
       limit 1`,[tenantId,key]);
     return r.rows[0]||null;
   });
