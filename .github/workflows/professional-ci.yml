@@ -116,7 +116,7 @@ jobs:
             api/invite-redeem/index.js api/password-reset-redeem/index.js
             api/masterdata-customers/index.js api/masterdata-customer/index.js api/masterdata-customer-status/index.js api/masterdata-customer-locations/index.js
             api/masterdata-location/index.js api/masterdata-location-status/index.js api/masterdata-locations/index.js
-            api/shipments/index.js api/shipment/index.js api/shipment-dashboard/index.js api/workspace-shipping-settings/index.js
+            api/shipments/index.js api/shipment/index.js api/shipment-dashboard/index.js api/shipment-lock/index.js api/shipment-action/index.js api/workspace-shipping-settings/index.js
           )
           for f in "${files[@]}"; do node --check "$f"; done
           cd api
