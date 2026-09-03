@@ -7,6 +7,14 @@ module.exports=async function(context,req){
     if(String(req.method||'GET').toUpperCase()==='POST'){
       const {session}=await authz.requireSession(req,{permission:'shipments.write',csrf:true});
       const body=http.bodyOf(req);
+      if(Object.prototype.hasOwnProperty.call(body,'colliRows')){
+        const result=await store.replaceColliRows(session.tenant_id,req.params?.shipmentId,session.user_id,{
+          lockToken:body.lockToken,
+          revision:body.revision,
+          rows:body.colliRows
+        });
+        return http.json(context,200,{ok:true,...result});
+      }
       const shipment=await store.updateShipment(session.tenant_id,req.params?.shipmentId,session.user_id,{
         lockToken:body.lockToken,
         revision:body.revision,
