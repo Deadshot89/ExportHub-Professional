@@ -1,5 +1,5 @@
 import { CUSTOMER_BY_ID, EMPLOYEE_BY_ID, LOCATION_BY_ID, getMissingDocuments } from './demo-data.js';
-import { getState, setDocumentState, transitionShipment } from './demo-store.js';
+import { getState, setDocumentState, transitionShipment, canRole } from './demo-store.js';
 
 const STATUS_ORDER = ['Entwurf','Erstellt','Bereit zur Abholung','Abgeholt','POD vorhanden','Abgeschlossen','Archiviert'];
 const DOC_LABELS = { delivery:'Lieferschein', l1:'L1 / QR', l2:'L2', cmr:'CMR', abd:'ABD', pod:'POD' };
@@ -51,15 +51,15 @@ function filterShipments(shipments, filters) {
 }
 
 function nextAction(shipment) {
-  if (shipment.status === 'Entwurf') return { label:'Sendung erstellen', action:'advance' };
+  if (shipment.status === 'Entwurf') return { label:'Sendung erstellen', action:'advance', capability:'editShipments' };
   if (shipment.status === 'Erstellt') {
-    if (shipment.requiresAbd && shipment.documents?.abd !== true) return { label:'DEMO-ABD hinzufügen', action:'add-abd', warn:true };
-    return { label:'Bereit zur Abholung', action:'advance' };
+    if (shipment.requiresAbd && shipment.documents?.abd !== true) return { label:'DEMO-ABD hinzufügen', action:'add-abd', capability:'editShipments', warn:true };
+    return { label:'Bereit zur Abholung', action:'advance', capability:'editShipments' };
   }
-  if (shipment.status === 'Bereit zur Abholung') return { label:'Abholung bestätigen', action:'advance' };
-  if (shipment.status === 'Abgeholt') return { label:'DEMO-POD hinzufügen', action:'add-pod' };
-  if (shipment.status === 'POD vorhanden') return { label:'Sendung abschließen', action:'advance' };
-  if (shipment.status === 'Abgeschlossen') return { label:'Archivieren', action:'advance' };
+  if (shipment.status === 'Bereit zur Abholung') return { label:'Abholung bestätigen', action:'advance', capability:'confirmPickup' };
+  if (shipment.status === 'Abgeholt') return { label:'DEMO-POD hinzufügen', action:'add-pod', capability:'addPod' };
+  if (shipment.status === 'POD vorhanden') return { label:'Sendung abschließen', action:'advance', capability:'editShipments' };
+  if (shipment.status === 'Abgeschlossen') return { label:'Archivieren', action:'advance', capability:'editShipments' };
   return null;
 }
 
@@ -95,11 +95,14 @@ function renderDetail(shipment) {
     return;
   }
 
+  const state = getState();
+  const role = state.role.role;
   const customer = CUSTOMER_BY_ID[shipment.customerId];
   const location = LOCATION_BY_ID[shipment.locationId];
   const owner = EMPLOYEE_BY_ID[shipment.ownerId];
   const missing = getMissingDocuments(shipment);
   const action = nextAction(shipment);
+  const allowedAction = action && canRole(role, action.capability) ? action : null;
   const docs = Object.entries(DOC_LABELS).filter(([type]) => type !== 'abd' || shipment.requiresAbd || shipment.documents?.abd).filter(([type]) => type !== 'pod' || ['Abgeholt','POD vorhanden','Abgeschlossen','Archiviert'].includes(shipment.status) || shipment.documents?.pod);
 
   detail.innerHTML = `<div class="shipment-detail-head">
@@ -133,8 +136,8 @@ function renderDetail(shipment) {
   </section>
 
   <div class="shipment-detail-actions">
-    <div><small>Bearbeitung</small><strong>${['Abgeholt','POD vorhanden','Abgeschlossen','Archiviert'].includes(shipment.status) ? 'Operative Daten gesperrt' : 'Demo-Bearbeitung möglich'}</strong></div>
-    ${action ? `<button type="button" class="shipment-primary-action${action.warn ? ' warn' : ''}" data-shipment-action="${action.action}" data-shipment-id="${escapeHtml(shipment.id)}">${escapeHtml(action.label)}</button>` : '<span class="shipment-finished">Vorgang archiviert</span>'}
+    <div><small>Präsentationsrolle ${escapeHtml(role)}</small><strong>${['Abgeholt','POD vorhanden','Abgeschlossen','Archiviert'].includes(shipment.status) ? 'Operative Daten gesperrt' : allowedAction ? 'Passende Demo-Aktion verfügbar' : 'Nur Ansicht für diese Rolle'}</strong></div>
+    ${allowedAction ? `<button type="button" class="shipment-primary-action${allowedAction.warn ? ' warn' : ''}" data-shipment-action="${allowedAction.action}" data-shipment-id="${escapeHtml(shipment.id)}">${escapeHtml(allowedAction.label)}</button>` : action ? '<span class="shipment-finished">Aktion in dieser Rolle ausgeblendet</span>' : '<span class="shipment-finished">Vorgang archiviert</span>'}
   </div>`;
 }
 
