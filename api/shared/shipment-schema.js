@@ -36,6 +36,21 @@ create table if not exists carriers (
 create unique index if not exists carriers_tenant_name_uq on carriers(tenant_id,lower(name));
 create unique index if not exists carriers_tenant_id_id_uq on carriers(tenant_id,id);
 
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+     where conname='customer_locations_tenant_carrier_fk'
+       and conrelid='customer_locations'::regclass
+  ) then
+    alter table customer_locations
+      add constraint customer_locations_tenant_carrier_fk
+      foreign key (tenant_id,carrier_id)
+      references carriers(tenant_id,id)
+      not valid;
+  end if;
+end $$;
+
 create table if not exists packaging_types (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references tenants(id),
