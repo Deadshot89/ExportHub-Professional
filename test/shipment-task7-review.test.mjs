@@ -23,3 +23,16 @@ test('CI and deploy validate packaging runtime explicitly',()=>{
   assert.match(ci,/require\('\.\/shared\/packaging-store\.js'\)/);
   assert.match(deploy,/require\('\.\/shared\/packaging-store\.js'\)/);
 });
+
+test('packaging load failure leaves shipment readable but disables colli mutation controls',async()=>{
+  const {renderShipmentEditor}=await import('../assets/js/shipment-editor.js');
+  const root={innerHTML:''};
+  renderShipmentEditor(root,{
+    shipment:{id:'s1',reference:'PKG001',sourceKind:'LIVE',status:'Entwurf',revision:1,plannedPickupDate:'2026-09-04',colliRows:[{packagingTypeId:'p1',packagingName:'Euro Palette',quantity:1,weightKg:100,lengthCm:120,widthCm:80,heightCm:150,ldm:0.2}],colliTotals:{totalColli:1,totalWeightKg:100,totalLdm:0.2}},
+    packagingTypes:[],packagingReady:false
+  },{canWrite:true,lock:{lockToken:'lock-1'},saveState:'saved'});
+  assert.match(root.innerHTML,/id="shipmentPlannedPickupDate"[^>]*(?!disabled)/);
+  assert.match(root.innerHTML,/data-colli-field="quantity"[^>]*disabled/);
+  assert.match(root.innerHTML,/data-colli-field="weightKg"[^>]*disabled/);
+  assert.doesNotMatch(root.innerHTML,/data-colli-action="add"/);
+});
