@@ -1,0 +1,54 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+test('customers view is master-detail with reusable right drawer',()=>{
+  const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+  assert.match(html,/id="liveCustomerMasterdata"/);
+  assert.match(html,/id="customerMasterList"/);
+  assert.match(html,/id="customerDetailPane"/);
+  assert.match(html,/id="customerSearch"/);
+  assert.match(html,/id="customerStatusFilter"/);
+  assert.match(html,/id="newCustomerBtn"/);
+  assert.match(html,/id="masterdataDrawer"/);
+  assert.match(html,/id="masterdataDrawerBackdrop"/);
+  assert.match(html,/id="masterdataDrawerBody"/);
+});
+
+test('customer UI supports multiple open locations and role-aware write controls',()=>{
+  const js=fs.readFileSync(new URL('../assets/js/app.js',import.meta.url),'utf8');
+  assert.match(js,/openLocationIds\s*=\s*new Set/);
+  assert.match(js,/function canWriteCustomers/);
+  assert.match(js,/async function loadCustomers/);
+  assert.match(js,/async function selectCustomer/);
+  assert.match(js,/function renderCustomerList/);
+  assert.match(js,/function renderCustomerDetail/);
+  assert.match(js,/function toggleLocationAccordion/);
+  assert.match(js,/function openCustomerDrawer/);
+  assert.match(js,/function openLocationDrawer/);
+  assert.match(js,/function closeMasterdataDrawer/);
+  assert.match(js,/async function saveCustomerDrawer/);
+  assert.match(js,/async function saveLocationDrawer/);
+});
+
+test('new customer drawer includes first required location and repeatable registration emails',()=>{
+  const js=fs.readFileSync(new URL('../assets/js/app.js',import.meta.url),'utf8');
+  assert.match(js,/registrationEmails/);
+  assert.match(js,/customer-location-name/);
+  assert.match(js,/customer-location-street/);
+  assert.match(js,/customer-location-house-number/);
+  assert.match(js,/customer-location-postal-code/);
+  assert.match(js,/customer-location-city/);
+  assert.match(js,/customer-location-country/);
+  assert.match(js,/add-registration-email/);
+});
+
+test('customer masterdata styles define desktop master-detail and responsive drawer',()=>{
+  const css=fs.readFileSync(new URL('../assets/css/app.css',import.meta.url),'utf8');
+  assert.match(css,/\.customer-master-detail/);
+  assert.match(css,/\.customer-master-column/);
+  assert.match(css,/\.location-accordion/);
+  assert.match(css,/\.masterdata-drawer/);
+  assert.match(css,/\.masterdata-drawer\.wide/);
+  assert.match(css,/@media\(max-width:900px\)/);
+});
