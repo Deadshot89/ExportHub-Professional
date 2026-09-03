@@ -13,13 +13,16 @@ async function loginCandidate(tenantId,login){
   return db.withTenantControlClient(tenantId,async client=>{
     const r=await client.query(`
       select u.id as user_id,u.username,u.display_name,u.email,u.active,u.password_reset_required,
-             m.role,m.active as membership_active,a.password_hash,a.failed_attempts,a.locked_until
+             m.role,m.active as membership_active,a.login_name as login_name,a.password_hash,a.failed_attempts,a.locked_until
       from app_users u
       join tenant_memberships m on m.tenant_id=u.tenant_id and m.user_id=u.id
       join app_user_auth a on a.tenant_id=u.tenant_id and a.user_id=u.id
       where u.tenant_id=$1 and (a.login_name=$2 or lower(u.email)=$2)
-      limit 1`,[tenantId,key]);
-    return r.rows[0]||null;
+      order by (a.login_name=$2) desc
+      limit 2`,[tenantId,key]);
+    if(r.rows[0]?.login_name===key) return r.rows[0];
+    if(r.rows.length===1) return r.rows[0];
+    return null;
   });
 }
 
