@@ -81,6 +81,7 @@ jobs:
           node --check assets/js/ui-kit.js
           node --check assets/js/overview.js
           node --check assets/js/workspace-settings.js
+          node --check assets/js/carriers.js
           node --check assets/js/shipment-autosave.js
           node --check assets/js/shipment-editor.js
           node --check assets/js/shipments.js
@@ -111,7 +112,7 @@ jobs:
           files=(
             api/health/index.js api/professional-meta/index.js
             api/shared/database.js api/shared/auth-security.js api/shared/auth-store.js api/shared/authorization.js api/shared/user-admin-store.js api/shared/http.js
-            api/shared/masterdata-validation.js api/shared/masterdata-store.js api/shared/masterdata-schema.js api/shared/packaging-store.js
+            api/shared/masterdata-validation.js api/shared/masterdata-store.js api/shared/masterdata-schema.js api/shared/packaging-store.js api/shared/carrier-store.js
             api/shared/shipment-schema.js api/shared/shipment-domain.js api/shared/shipment-calculations.js api/shared/shipment-read-model.js api/shared/shipment-store.js
             api/shared/workspace-settings-store.js
             api/auth-login/index.js api/auth-session/index.js api/auth-logout/index.js api/onboarding-status/index.js api/onboarding-create/index.js
@@ -120,11 +121,12 @@ jobs:
             api/masterdata-customers/index.js api/masterdata-customer/index.js api/masterdata-customer-status/index.js api/masterdata-customer-locations/index.js
             api/masterdata-location/index.js api/masterdata-location-status/index.js api/masterdata-locations/index.js
             api/packaging-types/index.js api/packaging-type/index.js api/packaging-type-status/index.js
+            api/carriers/index.js api/carrier/index.js api/carrier-status/index.js
             api/shipments/index.js api/shipment/index.js api/shipment-dashboard/index.js api/shipment-lock/index.js api/shipment-action/index.js api/workspace-shipping-settings/index.js
           )
           for f in "${files[@]}"; do node --check "$f"; done
           cd api
-          node -e "require('./shared/database.js'); require('./shared/auth-security.js'); require('./shared/auth-store.js'); require('./shared/authorization.js'); require('./shared/user-admin-store.js'); require('./shared/masterdata-validation.js'); require('./shared/masterdata-store.js'); require('./shared/masterdata-schema.js'); require('./shared/packaging-store.js'); require('./shared/shipment-schema.js'); require('./shared/shipment-domain.js'); require('./shared/shipment-calculations.js'); require('./shared/shipment-read-model.js'); require('./shared/shipment-store.js'); require('./shared/workspace-settings-store.js'); require('pg'); console.log('OK: Professional 0.7 API runtime loads');"
+          node -e "require('./shared/database.js'); require('./shared/auth-security.js'); require('./shared/auth-store.js'); require('./shared/authorization.js'); require('./shared/user-admin-store.js'); require('./shared/masterdata-validation.js'); require('./shared/masterdata-store.js'); require('./shared/masterdata-schema.js'); require('./shared/packaging-store.js'); require('./shared/carrier-store.js'); require('./shared/shipment-schema.js'); require('./shared/shipment-domain.js'); require('./shared/shipment-calculations.js'); require('./shared/shipment-read-model.js'); require('./shared/shipment-store.js'); require('./shared/workspace-settings-store.js'); require('pg'); console.log('OK: Professional 0.7 API runtime loads');"
       - name: Verify no legacy source backup is committed
         shell: bash
         run: |
