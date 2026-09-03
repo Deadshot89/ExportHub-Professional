@@ -59,6 +59,10 @@ function mapDatabaseError(err){
   if(err?.code==='23505'&&String(err.constraint||'').includes('packaging_types'))return packagingError('PACKAGING_TYPE_EXISTS','Diese Verpackungsart existiert bereits.');
   return err;
 }
+async function withPackagingClient(tenantId,fn,{write=false}={}){
+  await db.ensureShipmentSchema();
+  return db.withTenantMasterdataClient(tenantId,fn,{write});
+}
 async function audit(client,tenantId,userId,eventType,entityId,metadata={}){
   await client.query('insert into audit_events(tenant_id,user_id,event_type,entity_type,entity_id,metadata) values($1,$2,$3,\'PACKAGING_TYPE\',$4,$5::jsonb)',[tenantId,userId||null,eventType,entityId,JSON.stringify(metadata)]);
 }
@@ -69,7 +73,7 @@ async function getPackagingTypeInClient(client,tenantId,packagingTypeId){
 }
 async function listPackagingTypes(tenantId,{status='active'}={}){
   const active=filterStatus(status);
-  return db.withTenantMasterdataClient(tenantId,async client=>{
+  return withPackagingClient(tenantId,async client=>{
     const params=[tenantId],where=['tenant_id=$1'];
     if(active!==null){params.push(active);where.push(`active=$${params.length}`);}
     const result=await client.query(`select id,name,active,length_cm,width_cm,height_cm,ldm_mode,fixed_ldm_per_unit,allow_length,allow_width,allow_height,created_at,updated_at
@@ -78,7 +82,7 @@ async function listPackagingTypes(tenantId,{status='active'}={}){
   });
 }
 async function getPackagingType(tenantId,packagingTypeId){
-  return db.withTenantMasterdataClient(tenantId,async client=>{
+  return withPackagingClient(tenantId,async client=>{
     const value=await getPackagingTypeInClient(client,tenantId,packagingTypeId);
     if(!value)throw packagingError('PACKAGING_TYPE_NOT_FOUND','Verpackungsart wurde nicht gefunden.');
     return value;
@@ -87,7 +91,7 @@ async function getPackagingType(tenantId,packagingTypeId){
 async function createPackagingType(tenantId,userId,input={}){
   const value=normalizePackagingType(input);
   try{
-    return await db.withTenantMasterdataClient(tenantId,async client=>{
+    return await withPackagingClient(tenantId,async client=>{
       const result=await client.query(`insert into packaging_types(tenant_id,name,active,length_cm,width_cm,height_cm,ldm_mode,fixed_ldm_per_unit,allow_length,allow_width,allow_height,updated_at)
         values($1,$2,true,$3,$4,$5,$6,$7,$8,$9,$10,now())
         returning id,name,active,length_cm,width_cm,height_cm,ldm_mode,fixed_ldm_per_unit,allow_length,allow_width,allow_height,created_at,updated_at`,[
@@ -102,7 +106,7 @@ async function createPackagingType(tenantId,userId,input={}){
 async function updatePackagingType(tenantId,userId,packagingTypeId,input={}){
   const value=normalizePackagingType(input);
   try{
-    return await db.withTenantMasterdataClient(tenantId,async client=>{
+    return await withPackagingClient(tenantId,async client=>{
       const result=await client.query(`update packaging_types set name=$3,length_cm=$4,width_cm=$5,height_cm=$6,ldm_mode=$7,fixed_ldm_per_unit=$8,allow_length=$9,allow_width=$10,allow_height=$11,updated_at=now()
         where tenant_id=$1 and id=$2
         returning id,name,active,length_cm,width_cm,height_cm,ldm_mode,fixed_ldm_per_unit,allow_length,allow_width,allow_height,created_at,updated_at`,[
@@ -117,7 +121,7 @@ async function updatePackagingType(tenantId,userId,packagingTypeId,input={}){
 }
 async function setPackagingTypeActive(tenantId,userId,packagingTypeId,active){
   const next=active===true;
-  return db.withTenantMasterdataClient(tenantId,async client=>{
+  return withPackagingClient(tenantId,async client=>{
     const result=await client.query(`update packaging_types set active=$3,updated_at=now() where tenant_id=$1 and id=$2
       returning id,name,active,length_cm,width_cm,height_cm,ldm_mode,fixed_ldm_per_unit,allow_length,allow_width,allow_height,created_at,updated_at`,[tenantId,packagingTypeId,next]);
     if(!result.rows?.[0])throw packagingError('PACKAGING_TYPE_NOT_FOUND','Verpackungsart wurde nicht gefunden.');
