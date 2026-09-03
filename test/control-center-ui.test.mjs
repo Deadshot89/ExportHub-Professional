@@ -48,3 +48,10 @@ test('overview uses real professional meta and masterdata endpoints',()=>{
   assert.match(js,/function buildRecentActivity/);
   assert.match(js,/professional:session-ready/);
 });
+
+test('customer workspace uses compact control-center surfaces',()=>{
+  const css=read('assets/css/app.css');
+  for(const cls of ['customer-summary-strip','customer-summary-stat','location-operational-card','location-detail-section']){
+    assert.match(css,new RegExp(`\\.${cls}\\b`));
+  }
+});
