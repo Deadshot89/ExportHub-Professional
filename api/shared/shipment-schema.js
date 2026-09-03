@@ -1,6 +1,8 @@
 'use strict';
 
 const SHIPMENT_SCHEMA_SQL=`
+create unique index if not exists app_users_tenant_id_id_uq on app_users(tenant_id,id);
+
 alter table shipments add column if not exists source_kind text not null default 'MIGRATED';
 alter table shipments add column if not exists revision bigint not null default 0;
 alter table shipments add column if not exists recipient_snapshot jsonb not null default '{}'::jsonb;
@@ -56,7 +58,7 @@ create unique index if not exists packaging_types_tenant_id_id_uq on packaging_t
 create table if not exists shipment_edit_locks (
   tenant_id uuid not null references tenants(id),
   shipment_id uuid not null,
-  user_id uuid not null references app_users(id),
+  user_id uuid not null,
   lock_token text not null,
   acquired_at timestamptz not null default now(),
   last_activity_at timestamptz not null default now(),
@@ -64,7 +66,10 @@ create table if not exists shipment_edit_locks (
   constraint shipment_edit_locks_shipment_fk
     foreign key (tenant_id,shipment_id)
     references shipments(tenant_id,id)
-    on delete cascade
+    on delete cascade,
+  constraint shipment_edit_locks_user_fk
+    foreign key (tenant_id,user_id)
+    references app_users(tenant_id,id)
 );
 create index if not exists shipment_edit_locks_tenant_activity_idx on shipment_edit_locks(tenant_id,last_activity_at);
 
