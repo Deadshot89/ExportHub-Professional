@@ -70,3 +70,15 @@ test('masterdata UI has safe escaping and no customer/location delete actions',(
   assert.match(locations,/&quot;/);
   assert.doesNotMatch(app+locations,/deleteCustomer|deleteLocation|Kunde löschen|Standort löschen/i);
 });
+
+test('customer detail exposes operational summary without changing canonical editor',()=>{
+  const js=fs.readFileSync(new URL('../assets/js/app.js',import.meta.url),'utf8');
+  assert.match(js,/function customerSummary/);
+  assert.match(js,/registrationEmailCount/);
+  assert.match(js,/carrierCount/);
+  assert.match(js,/location-email-count/);
+  assert.match(js,/location-city-country/);
+  assert.match(js,/data-customer-action="new-location"/);
+  assert.match(js,/wireCustomerDetailActions\(\)/);
+  assert.doesNotMatch(js,/deleteCustomer|deleteLocation/i);
+});
