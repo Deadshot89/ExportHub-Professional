@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="./demo.css">
   <link rel="stylesheet" href="./demo-shipments.css">
   <link rel="stylesheet" href="./demo-operations.css">
+  <link rel="stylesheet" href="./demo-presentation.css">
 </head>
 <body>
   <div class="demo-ribbon" role="status"><strong>DEMO / MUSTER</strong><span>Ausschließlich fiktive Beispieldaten · keine Verbindung zu Produktivdaten</span></div>
@@ -79,7 +80,7 @@
           <h2 id="viewTitle">Übersicht</h2>
         </div>
         <div class="topbar-actions">
-          <div class="role-pill"><span class="role-dot"></span><div><small>Präsentationsrolle</small><strong>Exportkoordination</strong></div></div>
+          <div class="role-pill"><span class="role-dot"></span><div><small>Präsentationsrolle</small><strong id="activeRoleName">Exportkoordination</strong></div></div>
           <button type="button" class="ghost-btn" id="restartTourBtn">Tour starten</button>
         </div>
       </header>
@@ -160,23 +161,53 @@
         <div id="documentWorkspace" class="document-workspace"></div>
       </section>
 
-      <section class="view" data-demo-view="customers"><div class="placeholder-view"><span>◫</span><h3>Kunden</h3><p>Acht vollständig fiktive Kunden sind bereits im Demo-Datensatz vorbereitet.</p></div></section>
-      <section class="view" data-demo-view="locations"><div class="placeholder-view"><span>⌖</span><h3>Standorte</h3><p>Zwölf fiktive Lieferstandorte werden in der nächsten Ausbaustufe als Qualitätsarbeitsbereich dargestellt.</p></div></section>
+      <section class="view" data-demo-view="customers">
+        <div class="ops-page-head"><div><span class="eyebrow">KUNDENSTAMM</span><h3>Kunden mit operativem Kontext</h3><p>Die Demo zeigt Kunden, Standorte und Sendungsbezug kompakt, ohne produktive Stammdaten zu verwenden.</p></div><div class="ops-summary"><strong>8</strong><span>8 Demo-Kunden</span></div></div>
+        <div class="masterdata-demo-workspace" id="customerWorkspace">
+          <section class="panel masterdata-demo-list"><header class="ops-panel-head"><div><span class="eyebrow">KUNDEN</span><h3>Fiktiver Kundenbestand</h3></div><span class="status-chip neutral">nur Demo</span></header><div id="customerList"></div></section>
+          <aside class="panel masterdata-demo-detail" id="customerDetail"></aside>
+        </div>
+      </section>
+
+      <section class="view" data-demo-view="locations">
+        <div class="ops-page-head"><div><span class="eyebrow">LIEFERSTANDORTE</span><h3>Ziele nach Kunde und Land prüfen</h3><p>Jeder Standort ist einem fiktiven Kunden zugeordnet und wird mit seiner Nutzung im Demo-Sendungsbestand gezeigt.</p></div><div class="ops-summary"><strong>12</strong><span>12 Demo-Standorte</span></div></div>
+        <div id="locationQualitySummary" class="location-quality-summary"></div>
+        <div id="locationWorkspace" class="location-demo-grid"></div>
+      </section>
 
       <section class="view" data-demo-view="avis">
         <div class="ops-page-head"><div><span class="eyebrow">KUNDEN-AVIS</span><h3>Externe Abholinformation sicher präsentieren</h3><p>Der Ablauf wird vollständig lokal simuliert. Es entsteht weder ein öffentlicher Token noch ein echter Mailversand.</p></div><span class="status-chip good">Nur Demo-Vorschau</span></div>
         <div id="avisWorkspace" class="avis-workspace"></div>
       </section>
 
-      <section class="view" data-demo-view="team"><div class="placeholder-view"><span>◎</span><h3>Team & Rollen</h3><p>Die Demo enthält zwölf fiktive Mitarbeitende für rollenbasierte Präsentationsansichten.</p></div></section>
+      <section class="view" data-demo-view="team">
+        <div class="ops-page-head"><div><span class="eyebrow">TEAM & ROLLEN</span><h3>Unterschiedliche Arbeitskontexte präsentieren</h3><p>Der Rollenwechsel ist eine rein lokale Präsentationsfunktion. Er verändert nur, welche Demo-Aktionen sichtbar sind.</p></div><div id="teamRoleSummary" class="ops-summary"></div></div>
+        <div id="teamWorkspace" class="team-workspace">
+          <section class="panel role-selector-panel">
+            <header class="ops-panel-head"><div><span class="eyebrow">ROLLE WÄHLEN</span><h3>Präsentationsansicht</h3></div><span class="status-chip neutral">lokal</span></header>
+            <div class="role-selector-grid">
+              <button type="button" data-demo-role="Firmenadmin" data-demo-employee="emp-01"><span>FA</span><strong>Firmenadmin</strong><small>Gesamtüberblick & Stammdaten</small></button>
+              <button type="button" data-demo-role="Exportkoordination" data-demo-employee="emp-02"><span>EX</span><strong>Exportkoordination</strong><small>Sendungen, Aufgaben & Avis</small></button>
+              <button type="button" data-demo-role="Teamleitung" data-demo-employee="emp-03"><span>TL</span><strong>Teamleitung</strong><small>Teamarbeit & Priorisierung</small></button>
+              <button type="button" data-demo-role="Lager" data-demo-employee="emp-06"><span>LA</span><strong>Lager</strong><small>Abholung & POD</small></button>
+              <button type="button" data-demo-role="Sachbearbeitung" data-demo-employee="emp-04"><span>SB</span><strong>Sachbearbeitung</strong><small>Operative Sendungsarbeit</small></button>
+              <button type="button" data-demo-role="Auditor" data-demo-employee="emp-10"><span>AU</span><strong>Auditor</strong><small>Nur lesen & nachvollziehen</small></button>
+            </div>
+          </section>
+          <section class="panel role-context-panel"><header class="ops-panel-head"><div><span class="eyebrow">AKTIVER KONTEXT</span><h3 id="teamActiveRole">Exportkoordination</h3></div></header><div id="teamRoleDetail"></div></section>
+        </div>
+      </section>
     </main>
   </div>
 
-  <div class="tour-toast" id="tourToast" hidden>
-    <strong>Geführte ExportHUB-Tour</strong>
-    <span>Start: Überblick und heutiger Handlungsbedarf.</span>
-    <button type="button" id="tourToastClose">×</button>
-  </div>
+  <aside class="tour-dock" id="tourDock" hidden aria-live="polite">
+    <div class="tour-progress"><span>GEFÜHRTE EXPORT-HUB-TOUR</span><strong id="tourStepCount">1 / 10</strong></div>
+    <h3 id="tourStepTitle">Unternehmensüberblick</h3>
+    <p id="tourStepText">Die Demo führt durch die wichtigsten ExportHUB-Abläufe.</p>
+    <div class="tour-controls"><button type="button" id="tourPrevBtn">Zurück</button><button type="button" class="tour-next" id="tourNextBtn">Weiter</button><button type="button" class="tour-close" id="tourCloseBtn" aria-label="Tour schließen">×</button></div>
+  </aside>
+
+  <div class="demo-notice" id="demoNotice" hidden><strong>Demo zurückgesetzt</strong><span>Der lokale Ausgangsstand wurde wiederhergestellt.</span><button type="button" id="demoNoticeClose">×</button></div>
 
   <script type="module" src="./demo-ui.js"></script>
 </body>
