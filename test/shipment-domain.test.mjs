@@ -29,6 +29,18 @@ test('migrated and picked-up shipments reject ordinary mutation',()=>{
   assert.equal(domain.assertMutable({source_kind:'LIVE',status:'Bereit zur Abholung'}),true);
 });
 
+test('all lifecycle actions keep MIGRATED shipments permanently read-only',()=>{
+  const cases=[
+    [{source_kind:'MIGRATED',status:'Abgeholt',rework:{}},'pod-valid',{}],
+    [{source_kind:'MIGRATED',status:'POD vorhanden',rework:{}},'auto-complete',{noBlockers:true}],
+    [{source_kind:'MIGRATED',status:'Abgeschlossen',rework:{}},'archive',{manual:false}],
+    [{source_kind:'MIGRATED',status:'Archiviert',rework:{}},'restore',{role:'TENANT_ADMIN',reason:'Korrektur'}]
+  ];
+  for(const [shipment,action,context] of cases){
+    assert.throws(()=>domain.applyLifecycleAction(shipment,action,context),e=>e.code==='SHIPMENT_READ_ONLY',action);
+  }
+});
+
 test('creation evaluation requires recipient pickup date and registration email when flagged',()=>{
   const incomplete=domain.evaluateCreation(live(),{recipientValid:false,registrationEmailRequired:false,registrationEmailCount:0});
   assert.equal(incomplete.complete,false);
@@ -80,6 +92,29 @@ test('lifecycle actions enforce creation readiness and preserve base status duri
   assert.equal(rework.rework.active,true);
   assert.equal(rework.rework.reason,'COLLI_MISMATCH');
   assert.throws(()=>domain.applyLifecycleAction(rework,'confirm-pickup',{}),e=>e.code==='SHIPMENT_TRANSITION_INVALID');
+});
+
+test('active rework blocks lifecycle progression from draft',()=>{
+  const draft=live({status:'Entwurf',planned_pickup_date:'2026-09-04',rework:{active:true,reason:'DATA_ERROR'}});
+  assert.throws(()=>domain.applyLifecycleAction(draft,'mark-created',{creation:{complete:true,missing:[]}}),e=>e.code==='SHIPMENT_TRANSITION_INVALID');
+});
+
+test('manual rework and manual clear are restricted to tenant and export admins',()=>{
+  const shipment=live({status:'Erstellt'});
+  assert.throws(()=>domain.applyLifecycleAction(shipment,'set-rework',{manual:true,role:'OPERATOR',reason:'Prüfung'}),e=>e.code==='FORBIDDEN');
+  const flagged=domain.applyLifecycleAction(shipment,'set-rework',{manual:true,role:'EXPORT_ADMIN',reason:'Prüfung'});
+  assert.equal(flagged.rework.active,true);
+  assert.equal(flagged.rework.manual,true);
+  assert.throws(()=>domain.applyLifecycleAction(flagged,'clear-rework',{role:'OPERATOR',reason:'erledigt'}),e=>e.code==='FORBIDDEN');
+  assert.throws(()=>domain.applyLifecycleAction(flagged,'clear-rework',{role:'TENANT_ADMIN'}),e=>e.code==='INPUT_INVALID');
+  const cleared=domain.applyLifecycleAction(flagged,'clear-rework',{role:'TENANT_ADMIN',reason:'geprüft'});
+  assert.equal(cleared.rework.active,false);
+});
+
+test('system rework clears only after successful validation',()=>{
+  const flagged=domain.applyLifecycleAction(live({status:'Erstellt'}),'set-rework',{manual:false,reason:'VALIDATION_FAILED'});
+  assert.throws(()=>domain.applyLifecycleAction(flagged,'clear-rework',{}),e=>e.code==='SHIPMENT_TRANSITION_INVALID');
+  assert.equal(domain.applyLifecycleAction(flagged,'clear-rework',{validationPassed:true}).rework.active,false);
 });
 
 test('CMR is required exactly when destination differs from workspace shipping country',()=>{
