@@ -61,6 +61,8 @@ jobs:
           test -f .deploy/index.html
           test -f .deploy/staticwebapp.config.json
           test -f .deploy/assets/js/app.js
+          test -f .deploy/assets/js/ui-kit.js
+          test -f .deploy/assets/js/overview.js
           test -f .deploy/assets/css/app.css
           test -f .deploy/shared/migration-core.js
           node - <<'NODE'
