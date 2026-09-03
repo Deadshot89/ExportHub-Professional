@@ -51,3 +51,13 @@ test('overdue and rework facts become shipment action items without fake rows',(
   assert.ok(dashboard.actionItems.some(item=>item.code==='PICKUP_OVERDUE'&&item.shipmentId==='7'));
   assert.ok(dashboard.actionItems.some(item=>item.code==='REWORK_ACTIVE'&&item.shipmentId==='8'));
 });
+
+test('legacy normalized rework and waiting-for-ABD statuses remain visible as action items',()=>{
+  const rows=[
+    {id:'9',reference:'AAA009',source_kind:'MIGRATED',status:'Nachbearbeitung erforderlich',customer_name:'Legacy Rework GmbH'},
+    {id:'10',reference:'AAA010',source_kind:'MIGRATED',status:'Wartet auf ABD',customer_name:'Legacy ABD GmbH'}
+  ];
+  const dashboard=readModel.buildShipmentDashboard(rows,{localDate:today,timeZone:'Europe/Berlin'});
+  assert.ok(dashboard.actionItems.some(item=>item.code==='REWORK_ACTIVE'&&item.shipmentId==='9'));
+  assert.ok(dashboard.actionItems.some(item=>item.code==='ABD_PENDING'&&item.shipmentId==='10'));
+});
