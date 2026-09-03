@@ -124,9 +124,20 @@
       </section>
       <section class="view" data-view="locations">
         <div id="liveGlobalLocations" class="hidden">
-          <div class="section-head"><div><div class="kicker">STAMMDATEN</div><h2>Standorte</h2><p id="globalLocationCount" class="muted">Standorte werden geladen …</p></div><span class="pill good">Kundeneditor verknüpft</span></div>
-          <div class="card document-filter"><div><label for="globalLocationSearch">Suche</label><input id="globalLocationSearch" type="search" placeholder="Kunde, Standort, Ort, Land oder Spedition"></div><div><label for="globalLocationStatusFilter">Status</label><select id="globalLocationStatusFilter"><option value="active">Aktiv</option><option value="all">Alle</option><option value="inactive">Inaktiv</option></select></div></div>
-          <div class="table-wrap"><table><thead><tr><th>Kunde</th><th>Standort / Ort</th><th>Land</th><th>Status</th><th>Spedition</th><th>Aktion</th></tr></thead><tbody id="globalLocationRows"><tr><td colspan="6" class="muted">Noch nicht geladen.</td></tr></tbody></table></div>
+          <div class="cc-page-head"><div><div class="kicker">STAMMDATENQUALITÄT</div><h2>Standorte</h2><p id="globalLocationCount" class="muted">Standorte werden geladen …</p></div><span class="cc-status good">Kundeneditor verknüpft</span></div>
+          <div class="location-kpi-strip">
+            <div class="location-kpi"><strong id="globalLocationKpiActive">–</strong><span>Aktive Standorte</span></div>
+            <div class="location-kpi"><strong id="globalLocationKpiNoCarrier">–</strong><span>Ohne Spedition</span></div>
+            <div class="location-kpi"><strong id="globalLocationKpiMultiEmail">–</strong><span>Mehrere Anmelde-E-Mails</span></div>
+            <div class="location-kpi"><strong id="globalLocationKpiIncomplete">–</strong><span>Unvollständig</span></div>
+          </div>
+          <div class="cc-panel location-filter-bar">
+            <div><label for="globalLocationSearch">Suche</label><input id="globalLocationSearch" type="search" placeholder="Standort suchen: Kunde, Ort, Land oder Spedition"></div>
+            <div><label for="globalLocationStatusFilter">Status</label><select id="globalLocationStatusFilter"><option value="active">Aktiv</option><option value="all">Alle</option><option value="inactive">Inaktiv</option></select></div>
+            <div><label for="globalLocationCountryFilter">Land</label><select id="globalLocationCountryFilter"><option value="">Alle Länder</option></select></div>
+            <div><label for="globalLocationCarrierFilter">Spedition</label><select id="globalLocationCarrierFilter"><option value="">Alle Speditionen</option></select></div>
+          </div>
+          <div class="table-wrap location-table-wrap"><table class="live-location-table"><thead><tr><th>Standort</th><th>Kunde</th><th>Spedition</th><th>Anmelde-E-Mails</th><th>Qualität</th><th>Status</th><th>Aktion</th></tr></thead><tbody id="globalLocationRows"><tr><td colspan="7" class="muted">Noch nicht geladen.</td></tr></tbody></table></div>
         </div>
         <div id="legacyLocationMigrationPreview"><div class="card needs-migration empty"><h2>Standorte</h2><p>Backup zuerst unter Migration prüfen.</p></div><div class="has-migration hidden"><div class="section-head"><div><h2>Kundenstandorte</h2><p id="locationsCount" class="muted"></p></div><span class="pill good">Mandant + Kunde gebunden</span></div><div class="table-wrap"><table><thead><tr><th>Kunde</th><th>Standort</th><th>Adresse</th><th>Land</th><th>Quelle</th></tr></thead><tbody id="locationRows"></tbody></table></div></div></div>
       </section>
