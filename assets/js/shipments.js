@@ -14,6 +14,11 @@ let colliAutosave=null;
 let packagingTypes=[];
 let packagingLoaded=false;
 let packagingPromise=null;
+let carriers=[];
+let carriersLoaded=false;
+let carriersPromise=null;
+let oneOffPreview=null;
+let oneOffSelectedCustomerId='';
 let colliDirty=false;
 let colliEditVersion=0;
 let mutationTail=Promise.resolve();
@@ -77,6 +82,18 @@ async function loadPackagingTypes(){
     return packagingTypes;
   })();
   try{return await packagingPromise;}finally{packagingPromise=null;}
+}
+async function loadCarriers(){
+  if(localMode||!session)return [];
+  if(carriersLoaded)return carriers;
+  if(carriersPromise)return carriersPromise;
+  carriersPromise=(async()=>{
+    const data=await apiJson('/api/professional-masterdata/carriers?status=active',{method:'GET',headers:{}});
+    carriers=Array.isArray(data.carriers)?data.carriers:[];
+    carriersLoaded=true;
+    return carriers;
+  })();
+  try{return await carriersPromise;}finally{carriersPromise=null;}
 }
 function renderList(){
   const list=$('#shipmentMasterList'),count=$('#shipmentMasterCount');if(!list)return;
@@ -153,16 +170,108 @@ function wireColliEditor(root){
     else target.closest('[data-colli-row]')?.querySelector('[data-colli-ldm]')?.replaceChildren('–');
   }));
 }
+async function setCarrier(carrierId,carrierRequiresAbd){
+  if(!current?.id||!lock?.lockToken||!canWrite()||!carrierId)return;
+  setSaveState('saving');
+  try{
+    const shipment=await runShipmentMutation(async()=>{
+      const body={operation:'set-carrier',lockToken:lock.lockToken,revision:current.revision,carrierId};
+      if(typeof carrierRequiresAbd==='boolean')body.carrierRequiresAbd=carrierRequiresAbd;
+      const data=await apiJson(`/api/professional-shipments/${encodeURIComponent(current.id)}`,{method:'POST',headers:csrfHeaders(),body:JSON.stringify(body)});
+      current={...current,...(data.shipment||{})};
+      return current;
+    });
+    setSaveState('saved');renderCurrent();return shipment;
+  }catch(error){setSaveState('error',error);renderCurrent();return null;}
+}
+function resetOneOffModal(){
+  oneOffPreview=null;oneOffSelectedCustomerId='';
+  if($('#oneOffCustomerAccount'))$('#oneOffCustomerAccount').value='';
+  if($('#oneOffCandidateResult'))$('#oneOffCandidateResult').innerHTML='<div class="muted">Kundennummer eingeben und zuerst prüfen.</div>';
+  if($('#convertOneOffNewCustomerBtn'))$('#convertOneOffNewCustomerBtn').disabled=true;
+  if($('#convertOneOffExistingCustomerBtn'))$('#convertOneOffExistingCustomerBtn').disabled=true;
+}
+function openOneOffModal(){
+  if(!current?.id||!lock?.lockToken||!canWrite())return;
+  resetOneOffModal();$('#oneOffRecipientModal')?.classList.remove('hidden');$('#oneOffCustomerAccount')?.focus();
+}
+function closeOneOffModal(){resetOneOffModal();$('#oneOffRecipientModal')?.classList.add('hidden');}
+function renderOneOffPreview(preview,account){
+  const result=$('#oneOffCandidateResult');if(!result)return;
+  const exactAccount=preview?.exactAccount||null;
+  const similar=Array.isArray(preview?.similar)?preview.similar:[];
+  const exactHtml=exactAccount?`<div class="one-off-duplicate"><strong>Kundennummer ${esc(account)} existiert bereits.</strong><span>${esc(exactAccount.name||'Bestehender Kunde')} · ${esc(exactAccount.account||account)}</span><button type="button" class="ghost compact" data-one-off-customer-id="${esc(exactAccount.id)}">Diesen Kunden verwenden</button></div>`:'<div class="one-off-ok"><strong>Kundennummer ist verfügbar.</strong><span>Ein neuer Kunde kann angelegt werden.</span></div>';
+  const similarHtml=similar.length?`<div class="one-off-similar"><strong>Ähnliche Kunden</strong>${similar.map(candidate=>`<button type="button" class="one-off-candidate" data-one-off-customer-id="${esc(candidate.id)}"><span>${esc(candidate.name||'Kunde')}</span><small>${esc(candidate.account||'–')}</small></button>`).join('')}</div>`:'<div class="muted">Keine weiteren ähnlich benannten Kunden gefunden.</div>';
+  result.innerHTML=`${exactHtml}${similarHtml}`;
+  if($('#convertOneOffNewCustomerBtn'))$('#convertOneOffNewCustomerBtn').disabled=!!exactAccount||!String(account||'').trim();
+  oneOffSelectedCustomerId=exactAccount?.id||'';
+  if($('#convertOneOffExistingCustomerBtn'))$('#convertOneOffExistingCustomerBtn').disabled=!oneOffSelectedCustomerId;
+  result.querySelectorAll('[data-one-off-customer-id]').forEach(button=>button.addEventListener('click',()=>{
+    oneOffSelectedCustomerId=String(button.dataset.oneOffCustomerId||'');
+    result.querySelectorAll('[data-one-off-customer-id]').forEach(item=>item.classList.toggle('selected',item===button));
+    if($('#convertOneOffExistingCustomerBtn'))$('#convertOneOffExistingCustomerBtn').disabled=!oneOffSelectedCustomerId;
+  }));
+}
+async function previewOneOffRecipient(){
+  if(!current?.id||!canWrite())return;
+  const account=String($('#oneOffCustomerAccount')?.value||'').trim();
+  if(!account){if($('#oneOffCandidateResult'))$('#oneOffCandidateResult').innerHTML='<div class="drawer-error">Kundennummer ist erforderlich.</div>';return;}
+  const button=$('#previewOneOffRecipientBtn');if(button)button.disabled=true;
+  try{
+    const data=await apiJson(`/api/professional-shipments/${encodeURIComponent(current.id)}`,{method:'POST',headers:csrfHeaders(),body:JSON.stringify({operation:'preview-one-off-recipient',customerAccount:account})});
+    oneOffPreview=data.preview||{};renderOneOffPreview(oneOffPreview,account);
+  }catch(error){oneOffPreview=null;oneOffSelectedCustomerId='';if($('#oneOffCandidateResult'))$('#oneOffCandidateResult').innerHTML=`<div class="drawer-error">${esc(error.message||'Prüfung fehlgeschlagen.')}</div>`;}
+  finally{if(button)button.disabled=false;}
+}
+async function flushCurrentEdits(){
+  if(autosave&&!(await autosave.flush())){setMessage('Offene Änderungen konnten nicht gespeichert werden.','bad');return false;}
+  if(colliAutosave&&!(await colliAutosave.flush())){setMessage('Colli konnten nicht gespeichert werden.','bad');return false;}
+  if(colliDirty){setMessage('Colli sind noch unvollständig. Bitte zuerst vervollständigen.','bad');return false;}
+  return true;
+}
+async function convertOneOffRecipient(mode){
+  if(!current?.id||!lock?.lockToken||!canWrite()||!oneOffPreview)return;
+  const customerAccount=String($('#oneOffCustomerAccount')?.value||'').trim();
+  const customerId=mode==='existing-customer'?oneOffSelectedCustomerId:'';
+  if(mode==='existing-customer'&&!customerId){if($('#oneOffCandidateResult'))$('#oneOffCandidateResult').insertAdjacentHTML('beforeend','<div class="drawer-error">Bitte zuerst einen bestehenden Kunden auswählen.</div>');return;}
+  if(!(await flushCurrentEdits()))return;
+  const newButton=$('#convertOneOffNewCustomerBtn'),existingButton=$('#convertOneOffExistingCustomerBtn');if(newButton)newButton.disabled=true;if(existingButton)existingButton.disabled=true;
+  setSaveState('saving');
+  try{
+    await runShipmentMutation(async()=>{
+      const body={operation:'convert-one-off-recipient',lockToken:lock.lockToken,revision:current.revision,customerAccount,mode};
+      if(mode==='existing-customer')body.customerId=customerId;
+      const data=await apiJson(`/api/professional-shipments/${encodeURIComponent(current.id)}`,{method:'POST',headers:csrfHeaders(),body:JSON.stringify(body)});
+      current={...current,...(data.shipment||{})};
+      const refreshed=await apiJson(`/api/professional-shipments/${encodeURIComponent(current.id)}`,{method:'GET',headers:{}});
+      current=refreshed.shipment||current;
+    });
+    closeOneOffModal();setSaveState('saved');await loadShipments();renderCurrent();setMessage('Einmal-Empfänger wurde in die Stammdaten übernommen.');
+  }catch(error){setSaveState('error',error);if($('#oneOffCandidateResult'))$('#oneOffCandidateResult').insertAdjacentHTML('beforeend',`<div class="drawer-error">${esc(error.message||'Übernahme fehlgeschlagen.')}</div>`);}
+  finally{if(newButton)newButton.disabled=false;if(existingButton)existingButton.disabled=!oneOffSelectedCustomerId;}
+}
+function wireShipmentOperations(root){
+  const carrierSelect=root.querySelector('#shipmentCarrierSelect');
+  if(carrierSelect&&!carrierSelect.disabled)carrierSelect.addEventListener('change',event=>{
+    const carrierId=String(event.currentTarget.value||'');if(!carrierId){renderCurrent();return;}
+    void setCarrier(carrierId);
+  });
+  const carrierAbd=root.querySelector('#shipmentCarrierRequiresAbd');
+  if(carrierAbd&&!carrierAbd.disabled)carrierAbd.addEventListener('change',event=>{
+    const carrierId=String(current?.carrierSnapshot?.carrierId||'');if(carrierId)void setCarrier(carrierId,event.currentTarget.checked===true);
+  });
+  root.querySelector('[data-shipment-action="convert-one-off"]')?.addEventListener('click',openOneOffModal);
+}
 function renderCurrent(){
   const root=$('#shipmentEditorRoot');if(!root)return;
-  renderShipmentEditor(root,{shipment:current,lock,saveState,packagingTypes},{canWrite:canWrite(),lock,saveState});
+  renderShipmentEditor(root,{shipment:current,lock,saveState,packagingTypes,carriers},{canWrite:canWrite(),lock,saveState});
   root.querySelector('[data-shipment-action="close"]')?.addEventListener('click',()=>closeShipment());
   const pickup=root.querySelector('#shipmentPlannedPickupDate');
   if(pickup&&!pickup.disabled)pickup.addEventListener('change',event=>autosave?.queue({plannedPickupDate:event.currentTarget.value||null}));
-  wireColliEditor(root);
+  wireColliEditor(root);wireShipmentOperations(root);
 }
 function clearCurrent(){
-  autosave?.dispose();colliAutosave?.dispose();autosave=null;colliAutosave=null;current=null;lock=null;selectedId='';saveState='idle';colliDirty=false;colliEditVersion=0;mutationTail=Promise.resolve();renderList();renderCurrent();
+  autosave?.dispose();colliAutosave?.dispose();autosave=null;colliAutosave=null;current=null;lock=null;selectedId='';saveState='idle';colliDirty=false;colliEditVersion=0;mutationTail=Promise.resolve();closeOneOffModal();renderList();renderCurrent();
 }
 async function releaseCurrentLock({silent=false}={}){
   if(!current?.id||!lock?.lockToken||!canWrite())return true;
@@ -251,6 +360,7 @@ export async function openShipment(id){
     const data=await apiJson(`/api/professional-shipments/${encodeURIComponent(shipmentId)}`,{method:'GET',headers:{}});
     current=data.shipment||null;lock=null;
     try{await loadPackagingTypes();}catch(error){setMessage(error.message||'Verpackungsarten konnten nicht geladen werden. Colli bleiben vorerst schreibgeschützt.','warn');}
+    try{await loadCarriers();}catch(error){setMessage(error.message||'Speditionen konnten nicht geladen werden. Speditionsauswahl bleibt vorerst schreibgeschützt.','warn');}
     if(current&&!current.readOnly&&String(current.sourceKind||'').toUpperCase()==='LIVE'&&canWrite()){
       try{
         const lockData=await apiJson(`/api/professional-shipments/${encodeURIComponent(shipmentId)}/lock`,{method:'POST',headers:csrfHeaders(),body:JSON.stringify({action:'acquire'})});
@@ -270,6 +380,7 @@ export async function createShipment(){
   try{
     if(current&&!(await prepareToLeaveCurrent()))return null;
     try{await loadPackagingTypes();}catch(error){setMessage(error.message||'Verpackungsarten konnten nicht geladen werden.','warn');}
+    try{await loadCarriers();}catch(error){setMessage(error.message||'Speditionen konnten nicht geladen werden.','warn');}
     const data=await apiJson('/api/professional-shipments',{method:'POST',headers:csrfHeaders(),body:'{}'});
     current={...(data.shipment||{}),colliRows:[],colliTotals:{totalColli:0,totalWeightKg:0,totalLdm:0}};lock=data.lock||null;selectedId=current?.id||'';saveState='saved';colliDirty=false;colliEditVersion=0;mutationTail=Promise.resolve();
     setupAutosave();await loadShipments();renderCurrent();setMessage('Neue LIVE-Sendung angelegt.');return current;
@@ -287,6 +398,11 @@ function wireFilters(){
   $('#shipmentStatusFilter')?.addEventListener('change',()=>loadShipments());
   $('#shipmentSourceFilter')?.addEventListener('change',()=>loadShipments());
   $('#newShipmentBtn')?.addEventListener('click',()=>createShipment());
+  $('#previewOneOffRecipientBtn')?.addEventListener('click',()=>previewOneOffRecipient());
+  $('#convertOneOffNewCustomerBtn')?.addEventListener('click',()=>convertOneOffRecipient('new-customer'));
+  $('#convertOneOffExistingCustomerBtn')?.addEventListener('click',()=>convertOneOffRecipient('existing-customer'));
+  $('#closeOneOffRecipientModal')?.addEventListener('click',closeOneOffModal);
+  $('#oneOffRecipientModal')?.addEventListener('click',event=>{if(event.target===event.currentTarget)closeOneOffModal();});
   document.querySelector('[data-nav="shipments"]')?.addEventListener('click',()=>{if(syncMode())loadShipments();});
   document.querySelectorAll('.nav button[data-nav]').forEach(button=>button.addEventListener('click',event=>{
     if(navigationBypass||button.dataset.nav==='shipments'||!current)return;
@@ -300,7 +416,11 @@ function wireFilters(){
 }
 
 window.addEventListener('professional:session-ready',event=>{
-  localMode=!!event.detail?.local;session=event.detail?.session||null;rows=[];packagingTypes=[];packagingLoaded=false;packagingPromise=null;clearCurrent();syncMode();
+  localMode=!!event.detail?.local;session=event.detail?.session||null;rows=[];packagingTypes=[];packagingLoaded=false;packagingPromise=null;carriers=[];carriersLoaded=false;carriersPromise=null;clearCurrent();syncMode();
+});
+window.addEventListener('professional:carriers-changed',()=>{
+  carriers=[];carriersLoaded=false;carriersPromise=null;
+  if(!localMode&&session)void loadCarriers().then(()=>renderCurrent()).catch(error=>setMessage(error.message||'Speditionen konnten nicht neu geladen werden.','warn'));
 });
 window.addEventListener('pagehide',()=>{
   if(!current?.id||!lock?.lockToken||!session?.csrfToken)return;
