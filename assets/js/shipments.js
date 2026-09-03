@@ -22,7 +22,7 @@ let searchTimer=null;
 let saveState='idle';
 let navigationBypass=false;
 
-function esc(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[char]));}
+function esc(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));}
 function canWrite(){return !localMode&&!!session&&WRITE_ROLES.has(String(session?.user?.role||''));}
 function csrfHeaders(){return session?.csrfToken?{'x-professional-csrf':session.csrfToken}:{};}
 async function apiJson(url,options={}){
