@@ -65,8 +65,8 @@ test('one-off modal enforces preview-first duplicate and similar-name workflow w
   assert.match(src,/exactAccount/);
   assert.match(src,/similar/);
   assert.match(src,/Kundennummer[^\n]{0,160}existiert/i);
-  assert.match(src,/mode:\s*['"]new-customer['"]/);
-  assert.match(src,/mode:\s*['"]existing-customer['"]/);
+  assert.match(src,/(?:mode:\s*['"]new-customer['"]|convertOneOffRecipient\(['"]new-customer['"]\))/);
+  assert.match(src,/(?:mode:\s*['"]existing-customer['"]|convertOneOffRecipient\(['"]existing-customer['"]\))/);
   assert.match(src,/previewOneOffRecipientBtn/);
   assert.match(src,/convertOneOffNewCustomerBtn/);
   assert.match(src,/convertOneOffExistingCustomerBtn/);
