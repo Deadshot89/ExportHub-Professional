@@ -60,15 +60,23 @@
     <header class="top"><strong id="pageTitle">Übersicht</strong><div class="top-right"><div class="status"><span class="pill good">Internal unangetastet</span><span class="pill warn">Kein Cutover</span></div><div id="identityBadge" class="identity-badge hidden"></div><button id="logoutBtn" class="ghost compact hidden" type="button">Abmelden</button></div></header>
     <div class="content">
       <section class="view active" data-view="overview">
-        <div class="hero"><div class="kicker" style="color:#b7d9ef">EXPORT & LOGISTICS MANAGEMENT</div><h1>ExportHUB Professional</h1><p>Professional 0.7 ergänzt Benutzerverwaltung, sichere Einladungen, Passwort-Reset und Rollenänderungen mit Audit. Der Bestandsimport bleibt weiterhin read-only; ExportHUB Internal wird nicht beschrieben.</p></div>
-        <div class="grid">
-          <div class="card metric"><strong>0.7</strong><span>User Administration & Audit</span></div>
-          <div class="card metric"><strong>READ ONLY</strong><span>Altbestand ohne Schreibzugriff</span></div>
-          <div class="card metric"><strong>SHA-256</strong><span>Backup- und Dokumentprüfung</span></div>
-          <div class="card metric"><strong>RESET</strong><span>keine Legacy-Passwörter migrieren</span></div>
+        <div id="overviewToday" class="cc-today-bar cc-panel">
+          <div class="cc-today-primary"><span class="kicker">HEUTE IM EXPORT</span><strong id="overviewDate">–</strong></div>
+          <div class="cc-today-meta"><span id="overviewWorkspace">Workspace –</span><span id="overviewUser">Benutzer –</span></div>
+          <div class="cc-system-state"><span id="overviewDatabaseState" class="cc-status">Datenbank –</span><span id="overviewDataModeState" class="cc-status">Modus –</span><span id="overviewMasterdataState" class="cc-status">Stammdaten –</span></div>
         </div>
-        <section class="section card"><div class="section-head"><div><div class="kicker">IDENTITY SECURITY</div><h2>Workspace, Benutzer, Rolle und Mandant werden serverseitig aufgelöst</h2></div><span class="pill good">HttpOnly Session</span></div><div class="steps"><div class="step"><b>1</b><div><strong>Server Login</strong><div class="muted">Anmeldung über Workspace + Benutzer. Der Browser darf keine Rolle oder Tenant-ID selbst festlegen.</div></div></div><div class="step"><b>2</b><div><strong>Scrypt + Session Cookie</strong><div class="muted">Neue Passwörter werden gehasht; Sitzungen liegen nur in HttpOnly/Secure/SameSite-Strict Cookies.</div></div></div><div class="step"><b>3</b><div><strong>Tenant Scope + PostgreSQL RLS</strong><div class="muted">Jeder Datenzugriff erhält serverseitig seinen Tenant Scope und zusätzlich die Datenbank-RLS.</div></div></div><div class="step"><b>4</b><div><strong>Getrennte Write Gates</strong><div class="muted">Identity-Onboarding kann separat aktiviert werden, während operative Bestandsdaten weiterhin read-only bleiben.</div></div></div></div></section>
-        <section class="section card"><div class="section-head"><div><div class="kicker">P0 MIGRATIONSSCHUTZ</div><h2>Bestand sichtbar machen, bevor irgendetwas umgeschaltet wird</h2></div></div><div class="steps"><div class="step"><b>1</b><div><strong>Legacy-Backup akzeptieren</strong><div class="muted">Auch ältere Exporte mit nur <span class="mono">state</span> und <span class="mono">users</span> werden erkannt und eindeutig als Legacy-Quelle markiert.</div></div></div><div class="step"><b>2</b><div><strong>Dubletten nicht doppelt migrieren</strong><div class="muted">Sendungen aus <span class="mono">shipments</span> und <span class="mono">savedShipments</span> werden auf eine Professional-Sendung abgebildet.</div></div></div><div class="step"><b>3</b><div><strong>POD-Schutz erhalten</strong><div class="muted">POD-Datei, POD-Status, Signatur und bestätigte Abholung werden als Evidenz berücksichtigt. Gesperrte Sendungen bleiben gesperrt.</div></div></div><div class="step"><b>4</b><div><strong>Benutzer sicher neu aufsetzen</strong><div class="muted">Benutzernamen und Rollen werden übernommen; bestehende Klartextpasswörter werden nicht in Professional übernommen.</div></div></div></div></section>
+        <div class="cc-kpi-grid cc-overview-kpis">
+          <article class="cc-kpi"><span class="cc-kpi-icon" data-cc-icon="shipment"></span><div><span class="cc-kpi-label">Offene Sendungen</span><strong id="overviewOpenShipments" class="cc-kpi-value">–</strong><small>Datenquelle noch nicht live</small></div></article>
+          <article class="cc-kpi"><span class="cc-kpi-icon" data-cc-icon="shipment"></span><div><span class="cc-kpi-label">Abholungen heute</span><strong id="overviewPickupsToday" class="cc-kpi-value">–</strong><small>Datenquelle noch nicht live</small></div></article>
+          <article class="cc-kpi"><span class="cc-kpi-icon" data-cc-icon="document"></span><div><span class="cc-kpi-label">Fehlende Dokumente</span><strong id="overviewMissingDocuments" class="cc-kpi-value">–</strong><small>Datenquelle noch nicht live</small></div></article>
+          <article class="cc-kpi"><span class="cc-kpi-icon" data-cc-icon="warning"></span><div><span class="cc-kpi-label">Handlungsbedarf</span><strong id="overviewActionRequired" class="cc-kpi-value">–</strong><small>aus echten Stammdaten</small></div></article>
+        </div>
+        <div class="cc-overview-workgrid">
+          <section id="overviewShippingWork" class="cc-panel cc-work-panel"><header><div><span class="kicker">HEUTE IM VERSAND</span><h2>Operative Vorgänge</h2></div><span class="cc-status neutral">Livequelle folgt</span></header><div class="cc-empty">Sendungsdaten sind noch nicht als Live-Arbeitsquelle verfügbar. Es werden keine Platzhalter-Sendungen erzeugt.</div></section>
+          <section class="cc-panel cc-action-panel"><header><div><span class="kicker">PRÜFEN</span><h2>Handlungsbedarf</h2></div></header><div id="overviewActionList"><div class="cc-empty">Stammdaten werden geprüft …</div></div></section>
+        </div>
+        <section id="overviewQuickActions" class="cc-panel cc-quick-actions"><div class="cc-empty">Schnellaktionen werden vorbereitet …</div></section>
+        <section class="cc-panel cc-activity-panel"><header><div><span class="kicker">ZULETZT GEÄNDERT</span><h2>Letzte Aktivitäten</h2></div></header><div id="overviewRecentActivity"><div class="cc-empty">Aktivitäten werden geladen …</div></div></section>
       </section>
 
       <section class="view" data-view="migration">
@@ -133,4 +141,4 @@
     <div id="masterdataDrawerBody" class="drawer-body"></div>
   </aside>
 </div>
-<script type="module" src="/assets/js/app.js"></script><script type="module" src="/assets/js/locations.js"></script></body></html>
+<script type="module" src="/assets/js/app.js"></script><script type="module" src="/assets/js/locations.js"></script><script type="module" src="/assets/js/overview.js"></script></body></html>
