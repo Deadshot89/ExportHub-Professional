@@ -46,6 +46,13 @@ function packagingOptions(packagingTypes,row){
   return `<option value="">Bitte wählen</option>${active}`;
 }
 
+function carrierOptions(carriers,snapshot={}){
+  const currentId=text(snapshot.carrierId??snapshot.carrier_id);
+  const active=carriers.map(item=>`<option value="${esc(item.id)}" ${text(item.id)===currentId?'selected':''}>${esc(item.name)}</option>`).join('');
+  if(currentId&&!carriers.some(item=>text(item.id)===currentId))return `<option value="${esc(currentId)}" selected>${esc(snapshot.name||snapshot.carrierName||'Historische Spedition')}</option>${active}`;
+  return `<option value="">Keine Spedition gewählt</option>${active}`;
+}
+
 function dimensionInput({label,field,row,packaging,canEdit,index,allowKey,presetKey}){
   const allowed=packaging?.[allowKey]===true;
   const preset=packaging?.[presetKey];
@@ -95,12 +102,16 @@ export function renderShipmentEditor(root,model={},permissions={}){
   const carrier=shipment.carrierSnapshot&&typeof shipment.carrierSnapshot==='object'?shipment.carrierSnapshot:{};
   const fx=shipment.fxSnapshot&&typeof shipment.fxSnapshot==='object'?shipment.fxSnapshot:{};
   const packagingTypes=Array.isArray(model.packagingTypes)?model.packagingTypes:[];
+  const carriers=Array.isArray(model.carriers)?model.carriers:[];
   const colliCanEdit=canEdit&&packagingTypes.length>0;
+  const oneOffEligible=canEdit&&!text(shipment.customerId)&&!text(shipment.locationId)&&!!text(recipient.companyName??recipient.name);
+  const carrierRequiresAbd=carrier.carrierRequiresAbd===true;
 
-  const customerBody=`<div class="shipment-field-grid"><div><span class="shipment-field-label">Kunde</span><strong>${esc(shipment.customerName||shipment.customerAccount||'Noch nicht gewählt')}</strong><small>${esc(shipment.customerAccount||'')}</small></div><div><span class="shipment-field-label">Standort</span><strong>${esc(shipment.locationName||'Noch nicht gewählt')}</strong><small>${esc([shipment.locationCity,shipment.locationCountry].filter(Boolean).join(' · '))}</small></div><div class="full"><span class="shipment-field-label">Empfänger-Snapshot</span><p>${esc(snapshotAddress(recipient))}</p></div></div>`;
+  const oneOffAction=oneOffEligible?`<div class="shipment-one-off-action full"><div><span class="shipment-field-label">Einmal-Empfänger</span><strong>Nicht mit Stammdaten verknüpft</strong><small>Der gespeicherte Empfänger-Snapshot bleibt bei einer Übernahme unverändert.</small></div><button type="button" class="ghost compact" data-shipment-action="convert-one-off">In Stammdaten übernehmen</button></div>`:'';
+  const customerBody=`<div class="shipment-field-grid"><div><span class="shipment-field-label">Kunde</span><strong>${esc(shipment.customerName||shipment.customerAccount||'Noch nicht gewählt')}</strong><small>${esc(shipment.customerAccount||'')}</small></div><div><span class="shipment-field-label">Standort</span><strong>${esc(shipment.locationName||'Noch nicht gewählt')}</strong><small>${esc([shipment.locationCity,shipment.locationCountry].filter(Boolean).join(' · '))}</small></div><div class="full"><span class="shipment-field-label">Empfänger-Snapshot</span><p>${esc(snapshotAddress(recipient))}</p></div>${oneOffAction}</div>`;
   const shipmentBody=`<div class="shipment-field-grid"><label><span class="shipment-field-label">Geplantes Abholdatum</span><input id="shipmentPlannedPickupDate" type="date" value="${esc(shipment.plannedPickupDate||'')}" ${canEdit?'':'disabled'}></label><div><span class="shipment-field-label">Revision</span><strong>${esc(shipment.revision??0)}</strong><small>Optimistische Versionsprüfung</small></div><div class="full"><span class="shipment-field-label">Absender-Snapshot</span><p>${esc(snapshotAddress(shipment.senderSnapshot||{}))}</p></div></div>`;
   const colliBody=colliEditorHtml(shipment,packagingTypes,colliCanEdit);
-  const carrierBody=`<div class="shipment-field-grid"><div><span class="shipment-field-label">Spedition</span><strong>${esc(carrier.name||carrier.carrierName||'Noch nicht festgelegt')}</strong></div><div><span class="shipment-field-label">Status</span><strong>${esc(carrier.status||'Serverseitig')}</strong></div></div>`;
+  const carrierBody=`<div class="shipment-carrier-editor"><label><span class="shipment-field-label">Spedition</span><select id="shipmentCarrierSelect" ${canEdit&&carriers.length?'':'disabled'}>${carrierOptions(carriers,carrier)}</select><small>${carriers.length?'Aus aktiven Speditionen. Snapshot wird serverseitig gespeichert.':'Speditionsstammdaten nicht verfügbar – Auswahl bleibt schreibgeschützt.'}</small></label><label class="shipment-carrier-abd"><span class="shipment-field-label">ABD-Vorgabe für diese Sendung</span><span class="check-row"><input id="shipmentCarrierRequiresAbd" type="checkbox" ${carrierRequiresAbd?'checked':''} ${canEdit&&text(carrier.carrierId)&&carriers.length?'':'disabled'}> Spedition verlangt ABD</span><small>Diese Einzelfall-Vorgabe wird serverseitig im Speditions-Snapshot gespeichert.</small></label><div class="shipment-server-owned"><strong>${esc(carrier.name||carrier.carrierName||'Noch keine Spedition gewählt')}</strong><span>${esc([carrier.contactName,carrier.email,carrier.phone].filter(Boolean).join(' · ')||'Kontakt wird aus dem serverseitigen Snapshot angezeigt.')}</span>${carrier.portalUrl?`<a href="${esc(carrier.portalUrl)}" target="_blank" rel="noopener noreferrer">Speditionsportal öffnen</a>`:''}</div></div>`;
   const customsBody=`<div class="shipment-field-grid"><div><span class="shipment-field-label">Währungs-/FX-Stand</span><strong>${esc(fx.currency||'Serverseitig')}</strong></div><div><span class="shipment-field-label">Zollentscheidung</span><strong>Serverseitig</strong><small>Keine ABD-/CMR-Regel im Browser.</small></div></div>`;
   const documentsBody=`<div id="shipmentChecklist" class="shipment-checklist">${checklistHtml(readiness)}</div>`;
   const pickupBody=`<div class="shipment-field-grid"><div><span class="shipment-field-label">Tatsächliche Abholung</span><strong>${esc(shipment.actualPickupDate||'Noch nicht abgeholt')}</strong></div><div><span class="shipment-field-label">Abgeholt um</span><strong>${esc(shipment.pickedUpAt||'–')}</strong></div></div>`;
@@ -115,7 +126,7 @@ export function renderShipmentEditor(root,model={},permissions={}){
       ${section('Kunde & Standort',customerBody,{open:true})}
       ${section('Sendungsdaten',shipmentBody,{open:true})}
       ${section('Colli/LDM',colliBody,{open:true})}
-      ${section('Spedition',carrierBody)}
+      ${section('Spedition',carrierBody,{open:true})}
       ${section('Warenwert & Zoll',customsBody)}
       ${section('Dokumente',documentsBody,{open:true})}
       ${section('Abholung',pickupBody)}
