@@ -21,6 +21,75 @@ const STATUS_FLOW = Object.freeze([
 const LOCKED_STATUSES = new Set(['Abgeholt', 'POD vorhanden', 'Abgeschlossen', 'Archiviert']);
 const DOCUMENT_TYPES = new Set(['delivery', 'l1', 'l2', 'cmr', 'abd', 'pod']);
 
+export const DEMO_ROLE_CAPABILITIES = Object.freeze({
+  Firmenadmin: Object.freeze({
+    viewShipments: true,
+    editShipments: true,
+    completeTasks: true,
+    viewDocuments: true,
+    manageCustomers: true,
+    confirmPickup: true,
+    addPod: true,
+    createAvis: true,
+    viewAudit: true
+  }),
+  Exportkoordination: Object.freeze({
+    viewShipments: true,
+    editShipments: true,
+    completeTasks: true,
+    viewDocuments: true,
+    manageCustomers: false,
+    confirmPickup: true,
+    addPod: true,
+    createAvis: true,
+    viewAudit: true
+  }),
+  Teamleitung: Object.freeze({
+    viewShipments: true,
+    editShipments: true,
+    completeTasks: true,
+    viewDocuments: true,
+    manageCustomers: false,
+    confirmPickup: true,
+    addPod: false,
+    createAvis: true,
+    viewAudit: true
+  }),
+  Lager: Object.freeze({
+    viewShipments: true,
+    editShipments: false,
+    completeTasks: true,
+    viewDocuments: true,
+    manageCustomers: false,
+    confirmPickup: true,
+    addPod: true,
+    createAvis: false,
+    viewAudit: false
+  }),
+  Sachbearbeitung: Object.freeze({
+    viewShipments: true,
+    editShipments: true,
+    completeTasks: true,
+    viewDocuments: true,
+    manageCustomers: false,
+    confirmPickup: false,
+    addPod: false,
+    createAvis: true,
+    viewAudit: false
+  }),
+  Auditor: Object.freeze({
+    viewShipments: true,
+    editShipments: false,
+    completeTasks: false,
+    viewDocuments: true,
+    manageCustomers: false,
+    confirmPickup: false,
+    addPod: false,
+    createAvis: false,
+    viewAudit: true
+  })
+});
+
 let memoryState = null;
 
 function clone(value) {
@@ -88,6 +157,10 @@ function requireShipment(id) {
 
 function assertUnlocked(shipment) {
   if (LOCKED_STATUSES.has(shipment.status)) throw new Error('SENDUNG_GESPERRT');
+}
+
+export function canRole(role, capability) {
+  return DEMO_ROLE_CAPABILITIES[role]?.[capability] === true;
 }
 
 export function getState() {
@@ -176,6 +249,7 @@ export function saveAvis(record) {
 }
 
 export function setRole(role, employeeId) {
+  if (!DEMO_ROLE_CAPABILITIES[role]) throw new Error('UNBEKANNTE_DEMO_ROLLE');
   const employee = loadState().employees.find(item => item.id === employeeId && item.demo === true);
   if (!employee) throw new Error('DEMO_MITARBEITER_NICHT_GEFUNDEN');
   loadState().role = { role, employeeId };
