@@ -57,7 +57,15 @@ create policy tenant_isolation on customer_location_registration_emails
 
 async function applyMasterdataSchema(client){
   if(!client||typeof client.query!=='function') throw new TypeError('PostgreSQL client required.');
-  await client.query(MASTERDATA_SCHEMA_SQL);
+  await client.query('BEGIN');
+  try{
+    await client.query("select pg_advisory_xact_lock(hashtext('exporthub_professional_masterdata_schema_v1'))");
+    await client.query(MASTERDATA_SCHEMA_SQL);
+    await client.query('COMMIT');
+  }catch(err){
+    try{await client.query('ROLLBACK');}catch{}
+    throw err;
+  }
 }
 
 module.exports={applyMasterdataSchema,MASTERDATA_SCHEMA_SQL};
