@@ -22,3 +22,29 @@ test('new frontend modules are validated and deployed',()=>{
     assert.match(deploy,new RegExp(file.replaceAll('/','\\/')));
   }
 });
+
+test('overview is an operational control center without marketing hero or fake shipment values',()=>{
+  const html=read('index.html');
+  const overview=html.match(/<section class="view active" data-view="overview">([\s\S]*?)<section class="view" data-view="migration">/)?.[1]||'';
+  assert.doesNotMatch(overview,/class="hero"/);
+  for(const id of [
+    'overviewToday','overviewDate','overviewWorkspace','overviewUser',
+    'overviewDatabaseState','overviewDataModeState','overviewMasterdataState',
+    'overviewOpenShipments','overviewPickupsToday','overviewMissingDocuments','overviewActionRequired',
+    'overviewShippingWork','overviewActionList','overviewQuickActions','overviewRecentActivity'
+  ]) assert.match(overview,new RegExp(`id="${id}"`));
+  assert.match(overview,/Datenquelle noch nicht live/);
+  assert.doesNotMatch(overview,/id="overviewOpenShipments"[^>]*>\s*0\s*</);
+  assert.doesNotMatch(overview,/id="overviewPickupsToday"[^>]*>\s*0\s*</);
+  assert.doesNotMatch(overview,/id="overviewMissingDocuments"[^>]*>\s*0\s*</);
+});
+
+test('overview uses real professional meta and masterdata endpoints',()=>{
+  const js=read('assets/js/overview.js');
+  assert.match(js,/professional-meta/);
+  assert.match(js,/professional-masterdata\/customers\?status=all/);
+  assert.match(js,/professional-masterdata\/locations\?status=all/);
+  assert.match(js,/function buildMasterdataActions/);
+  assert.match(js,/function buildRecentActivity/);
+  assert.match(js,/professional:session-ready/);
+});
