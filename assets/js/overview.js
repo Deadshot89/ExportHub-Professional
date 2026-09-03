@@ -118,7 +118,7 @@ async function resolveSessionAndLoad(){
   const shell=$('#appShell');if(!shell||shell.classList.contains('hidden'))return;
   if($('#identityBadge')?.textContent?.includes('Lokales Migrationslabor')){sessionState={local:true,session:null};return;}
   try{
-    const session=await apiJson('/api/auth-session');
+    const session=await apiJson('/api/professional-auth/session');
     sessionState={local:false,session};await loadOverview();
   }catch{}
 }
