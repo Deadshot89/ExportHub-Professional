@@ -366,7 +366,9 @@ async function getShipment(tenantId,shipmentId){
     const result=await client.query(`${BASE_SELECT} where s.tenant_id=$1 and s.id=$2 and s.discarded_at is null limit 1`,[String(tenantId),id]);
     const row=result.rows?.[0];
     if(!row)throw shipmentError('SHIPMENT_NOT_FOUND','Sendung wurde nicht gefunden.');
-    return readModel.normalizeShipmentRow(row);
+    const colliResult=await client.query(`select id,packaging_type_id,packaging_name_snapshot,quantity,weight_kg,length_cm,width_cm,height_cm,ldm,position
+      from shipment_colli where tenant_id=$1 and shipment_id=$2 order by position,id`,[String(tenantId),id]);
+    return readModel.withColliDetails(readModel.normalizeShipmentRow(row),colliResult.rows||[]);
   });
 }
 
