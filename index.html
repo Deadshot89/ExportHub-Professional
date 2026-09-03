@@ -50,6 +50,7 @@
       <button data-nav="users">Benutzer & Rollen</button>
       <button data-nav="customers">Kunden</button>
       <button data-nav="locations">Standorte</button>
+      <button data-nav="carriers">Speditionen</button>
       <button data-nav="workspace-settings">Versand-Einstellungen</button>
       <button data-nav="shipments">Sendungen</button>
       <button data-nav="documents">Dokumente</button>
@@ -142,6 +143,13 @@
         </div>
         <div id="legacyLocationMigrationPreview"><div class="card needs-migration empty"><h2>Standorte</h2><p>Backup zuerst unter Migration prüfen.</p></div><div class="has-migration hidden"><div class="section-head"><div><h2>Kundenstandorte</h2><p id="locationsCount" class="muted"></p></div><span class="pill good">Mandant + Kunde gebunden</span></div><div class="table-wrap"><table><thead><tr><th>Kunde</th><th>Standort</th><th>Adresse</th><th>Land</th><th>Quelle</th></tr></thead><tbody id="locationRows"></tbody></table></div></div></div>
       </section>
+      <section class="view" data-view="carriers">
+        <div id="carrierLiveWorkspace" class="hidden">
+          <div class="cc-page-head"><div><div class="kicker">STAMMDATEN</div><h2>Speditionen</h2><p id="carrierCount" class="muted">Speditionen werden geladen …</p></div><button id="newCarrierBtn" class="btn hidden" type="button">+ Neue Spedition</button></div>
+          <div class="cc-panel carrier-toolbar"><div><label for="carrierStatusFilter">Status</label><select id="carrierStatusFilter"><option value="active">Aktiv</option><option value="all">Alle</option><option value="inactive">Inaktiv</option></select></div><div id="carrierMessage" class="carrier-message" aria-live="polite"></div></div>
+          <div class="table-wrap carrier-table-wrap"><table class="carrier-table"><thead><tr><th>Spedition</th><th>ABD-Standard</th><th>Kontakt</th><th>Status</th><th>Aktionen</th></tr></thead><tbody id="carrierRows"><tr><td colspan="5" class="muted">Noch nicht geladen.</td></tr></tbody></table></div>
+        </div>
+      </section>
       <section class="view" data-view="workspace-settings">
         <div class="cc-page-head"><div><div class="kicker">WORKSPACE</div><h2>Versand-Einstellungen</h2><p class="muted">Absender- und Versandlanddaten für zukünftige LIVE-Sendungen.</p></div><span id="workspaceShippingMode" class="cc-status neutral">Serverseitig geschützt</span></div>
         <div id="workspaceShippingCompleteness" class="notice warn">Versand-Einstellungen werden geladen …</div>
@@ -184,5 +192,13 @@
     <header class="drawer-head"><div><div id="masterdataDrawerKicker" class="kicker">STAMMDATEN</div><h2 id="masterdataDrawerTitle">Bearbeiten</h2></div><button id="closeMasterdataDrawer" class="ghost compact" type="button">Schließen</button></header>
     <div id="masterdataDrawerBody" class="drawer-body"></div>
   </aside>
+  <div id="carrierDrawerBackdrop" class="drawer-backdrop hidden" aria-hidden="true"></div>
+  <aside id="carrierDrawer" class="masterdata-drawer hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="carrierDrawerTitle">
+    <header class="drawer-head"><div><div class="kicker">SPEDITION</div><h2 id="carrierDrawerTitle">Spedition bearbeiten</h2></div><button id="closeCarrierDrawer" class="ghost compact" type="button">Schließen</button></header>
+    <form id="carrierForm" class="drawer-body masterdata-form"><div class="masterdata-form-grid"><div class="masterdata-form-field full"><label for="carrierName">Name *</label><input id="carrierName" required></div><div class="masterdata-form-field full"><label class="check-row"><input id="carrierAbdDefault" type="checkbox"> ABD standardmäßig erforderlich</label></div><div class="masterdata-form-field full"><label for="carrierContactName">Ansprechpartner</label><input id="carrierContactName"></div><div class="masterdata-form-field"><label for="carrierEmail">E-Mail</label><input id="carrierEmail" type="email"></div><div class="masterdata-form-field"><label for="carrierPhone">Telefon</label><input id="carrierPhone"></div><div class="masterdata-form-field full"><label for="carrierPortalUrl">Portal-/Website-Link</label><input id="carrierPortalUrl" type="url" placeholder="https://"></div></div><div class="drawer-actions"><button id="saveCarrierBtn" class="btn" type="submit">Speichern</button><button id="cancelCarrierBtn" class="ghost" type="button" onclick="document.getElementById('closeCarrierDrawer').click()">Abbrechen</button></div></form>
+  </aside>
+  <div id="oneOffRecipientModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="oneOffRecipientTitle">
+    <section class="cc-panel one-off-modal"><header class="one-off-modal-head"><div><div class="kicker">EINMAL-EMPFÄNGER</div><h2 id="oneOffRecipientTitle">In Stammdaten übernehmen</h2><p class="muted">Der gespeicherte Empfänger-Snapshot bleibt unverändert.</p></div><button id="closeOneOffRecipientModal" class="ghost compact" type="button">Schließen</button></header><div class="one-off-modal-body"><label for="oneOffCustomerAccount">Kundennummer *</label><div class="one-off-preview-row"><input id="oneOffCustomerAccount" autocomplete="off"><button id="previewOneOffRecipientBtn" class="btn" type="button">Prüfen</button></div><div id="oneOffCandidateResult" class="one-off-candidates"><div class="muted">Kundennummer eingeben und zuerst prüfen.</div></div><div class="one-off-outcomes"><button id="convertOneOffNewCustomerBtn" class="btn" type="button" disabled>Neuer Kunde + Standort</button><button id="convertOneOffExistingCustomerBtn" class="ghost" type="button" disabled>Neuer Standort bei bestehendem Kunden</button></div></div></section>
+  </div>
 </div>
-<script type="module" src="/assets/js/app.js"></script><script type="module" src="/assets/js/locations.js"></script><script type="module" src="/assets/js/overview.js"></script><script type="module" src="/assets/js/workspace-settings.js"></script><script type="module" src="/assets/js/shipments.js"></script></body></html>
+<script type="module" src="/assets/js/app.js"></script><script type="module" src="/assets/js/locations.js"></script><script type="module" src="/assets/js/overview.js"></script><script type="module" src="/assets/js/workspace-settings.js"></script><script type="module" src="/assets/js/carriers.js"></script><script type="module" src="/assets/js/shipments.js"></script></body></html>
