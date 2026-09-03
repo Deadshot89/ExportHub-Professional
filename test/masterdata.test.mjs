@@ -110,3 +110,38 @@ test('masterdata store owns tenant-scoped persistence, audit and soft status cha
   assert.doesNotMatch(src,/delete from customer_locations\b/i);
   assert.match(src,/where tenant_id=\$1/i);
 });
+
+test('masterdata Azure Functions expose the exact approved routes and methods',()=>{
+  const expected={
+    'masterdata-customers':{route:'professional-masterdata/customers',methods:['get','post']},
+    'masterdata-customer':{route:'professional-masterdata/customers/{customerId}',methods:['get','post']},
+    'masterdata-customer-status':{route:'professional-masterdata/customers/{customerId}/status',methods:['post']},
+    'masterdata-customer-locations':{route:'professional-masterdata/customers/{customerId}/locations',methods:['post']},
+    'masterdata-location':{route:'professional-masterdata/locations/{locationId}',methods:['post']},
+    'masterdata-location-status':{route:'professional-masterdata/locations/{locationId}/status',methods:['post']},
+    'masterdata-locations':{route:'professional-masterdata/locations',methods:['get']}
+  };
+  for(const [folder,want] of Object.entries(expected)){
+    const fn=JSON.parse(fs.readFileSync(new URL(`../api/${folder}/function.json`,import.meta.url),'utf8'));
+    const trigger=fn.bindings.find(b=>b.type==='httpTrigger');
+    assert.equal(trigger.route,want.route,folder);
+    assert.deepEqual(trigger.methods,want.methods,folder);
+    assert.equal(trigger.authLevel,'anonymous',folder);
+  }
+});
+
+test('masterdata read and mutation routes enforce permission and CSRF server-side',()=>{
+  const mixed=['masterdata-customers','masterdata-customer'];
+  for(const folder of mixed){
+    const src=fs.readFileSync(new URL(`../api/${folder}/index.js`,import.meta.url),'utf8');
+    assert.match(src,/permission:'customers\.read'/,`${folder} read permission`);
+    assert.match(src,/permission:'customers\.write',csrf:true/,`${folder} write permission and csrf`);
+  }
+  for(const folder of ['masterdata-customer-status','masterdata-customer-locations','masterdata-location','masterdata-location-status']){
+    const src=fs.readFileSync(new URL(`../api/${folder}/index.js`,import.meta.url),'utf8');
+    assert.match(src,/permission:'customers\.write',csrf:true/,folder);
+  }
+  const list=fs.readFileSync(new URL('../api/masterdata-locations/index.js',import.meta.url),'utf8');
+  assert.match(list,/permission:'customers\.read'/);
+  assert.doesNotMatch(list,/customers\.write/);
+});
