@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b1f33">
+  <title>ExportHUB Professional · Firmen-Demo</title>
+  <link rel="stylesheet" href="./demo.css">
+</head>
+<body>
+  <div class="demo-ribbon" role="status"><strong>DEMO / MUSTER</strong><span>Ausschließlich fiktive Beispieldaten · keine Verbindung zu Produktivdaten</span></div>
+
+  <section class="showcase-intro" id="showcaseIntro">
+    <div class="showcase-copy">
+      <div class="eyebrow">EXPORT & LOGISTICS CONTROL CENTER</div>
+      <h1>Exportprozesse steuern, bevor aus offenen Punkten Verzögerungen werden.</h1>
+      <p>ExportHUB Professional verbindet Sendungen, Aufgaben, Dokumente, Abholung und Nachweise in einem gemeinsamen Arbeitsbereich. Diese Präsentation zeigt den Ablauf mit vollständig fiktiven Daten.</p>
+      <div class="intro-actions">
+        <button type="button" class="primary-btn" id="startTourBtn">Geführte Tour starten</button>
+        <button type="button" class="secondary-btn" id="exploreBtn">Demo frei erkunden</button>
+      </div>
+      <div class="trust-row" aria-label="Demo-Eigenschaften">
+        <span>✓ Rollenbasierte Arbeitsbereiche</span>
+        <span>✓ Dokumenten- & ABD-Status</span>
+        <span>✓ Abholung bis POD nachvollziehbar</span>
+      </div>
+    </div>
+    <div class="showcase-preview" aria-hidden="true">
+      <div class="preview-window">
+        <div class="preview-head"><span></span><span></span><span></span><b>ExportHUB Professional</b></div>
+        <div class="preview-kpis">
+          <div><small>Offene Sendungen</small><strong id="introMetricOpen">–</strong></div>
+          <div><small>Abholungen heute</small><strong id="introMetricPickup">–</strong></div>
+          <div class="preview-alert"><small>Handlungsbedarf</small><strong id="introMetricAction">–</strong></div>
+        </div>
+        <div class="preview-list">
+          <span><i class="dot critical"></i> ABD fehlt · RWD301</span>
+          <span><i class="dot warning"></i> Lieferschein fehlt · RWD303</span>
+          <span><i class="dot good"></i> Bereit zur Abholung · RWD302</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="demo-app" id="demoApp">
+    <aside class="sidebar" id="demoSidebar">
+      <div class="brand-block">
+        <div class="brand-mark">EH</div>
+        <div><strong>ExportHUB</strong><small>Professional</small></div>
+      </div>
+      <div class="company-card">
+        <small>DEMO-FIRMA</small>
+        <strong>Rheinwerk Industrial<br>Solutions GmbH</strong>
+        <span>rheinwerk-demo</span>
+      </div>
+      <nav class="demo-nav" aria-label="Demo-Navigation">
+        <button type="button" class="active" data-view="overview"><span>⌂</span>Übersicht</button>
+        <button type="button" data-view="shipments"><span>▣</span>Sendungen</button>
+        <button type="button" data-view="tasks"><span>✓</span>Aufgaben & Planung</button>
+        <button type="button" data-view="documents"><span>▤</span>Dokumente</button>
+        <button type="button" data-view="customers"><span>◫</span>Kunden</button>
+        <button type="button" data-view="locations"><span>⌖</span>Standorte</button>
+        <button type="button" data-view="avis"><span>↗</span>Kunden-Avis</button>
+        <button type="button" data-view="team"><span>◎</span>Team & Rollen</button>
+      </nav>
+      <div class="sidebar-foot">
+        <button type="button" class="reset-btn" id="demoResetBtn">↻ Demo zurücksetzen</button>
+        <small>Lokale Präsentationsdaten</small>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <header class="workspace-topbar">
+        <button type="button" class="mobile-menu" id="mobileMenuBtn" aria-label="Navigation öffnen">☰</button>
+        <div>
+          <div class="eyebrow">LOGISTICS CONTROL CENTER</div>
+          <h2 id="viewTitle">Übersicht</h2>
+        </div>
+        <div class="topbar-actions">
+          <div class="role-pill"><span class="role-dot"></span><div><small>Präsentationsrolle</small><strong>Exportkoordination</strong></div></div>
+          <button type="button" class="ghost-btn" id="restartTourBtn">Tour starten</button>
+        </div>
+      </header>
+
+      <section class="view active" data-demo-view="overview">
+        <div class="today-panel">
+          <div><span class="eyebrow">HEUTE IM EXPORT</span><strong>Donnerstag, 03. September 2026</strong><small>Rheinwerk Industrial Solutions GmbH · DEMO / MUSTER</small></div>
+          <div class="today-status"><span class="status-chip good">Demo-Daten aktiv</span><span class="status-chip neutral">Kein Backend</span></div>
+        </div>
+
+        <div class="kpi-grid" id="overviewKpis">
+          <article class="kpi-card"><div class="kpi-icon">▣</div><div><span>Offene Sendungen</span><strong id="metricOpen">–</strong><small>noch nicht abgeschlossen</small></div></article>
+          <article class="kpi-card"><div class="kpi-icon">⇄</div><div><span>Abholungen heute</span><strong id="metricPickups">–</strong><small>geplante Abholungen</small></div></article>
+          <article class="kpi-card"><div class="kpi-icon">▤</div><div><span>Fehlende Dokumente</span><strong id="metricDocuments">–</strong><small>über alle Pflichtdokumente</small></div></article>
+          <article class="kpi-card attention"><div class="kpi-icon">!</div><div><span>Handlungsbedarf</span><strong id="metricAction">–</strong><small>Vorgänge mit offenem Punkt</small></div></article>
+        </div>
+
+        <div class="overview-grid">
+          <section class="panel focus-panel">
+            <header class="panel-head"><div><span class="eyebrow">PRIORISIERT</span><h3>Heute im Versand</h3></div><button type="button" class="text-btn" data-open-view="shipments">Alle Sendungen →</button></header>
+            <div class="shipment-focus-list" id="priorityShipmentList"></div>
+          </section>
+
+          <section class="panel action-panel">
+            <header class="panel-head"><div><span class="eyebrow">PRÜFEN</span><h3>Handlungsbedarf</h3></div><span class="count-badge" id="actionCountBadge">0 offen</span></header>
+            <div class="action-list" id="actionList"></div>
+          </section>
+        </div>
+
+        <div class="overview-grid lower-grid">
+          <section class="panel quick-panel">
+            <header class="panel-head"><div><span class="eyebrow">SCHNELLSTART</span><h3>Nächster Arbeitsschritt</h3></div></header>
+            <div class="quick-actions">
+              <button type="button" data-open-view="shipments"><span>＋</span><strong>Sendung bearbeiten</strong><small>Priorisierte Vorgänge öffnen</small></button>
+              <button type="button" data-open-view="documents"><span>▤</span><strong>Dokumente prüfen</strong><small>Fehlende Nachweise erkennen</small></button>
+              <button type="button" data-open-view="tasks"><span>✓</span><strong>Aufgaben planen</strong><small>Zuständigkeit und Fälligkeit</small></button>
+              <button type="button" data-open-view="avis"><span>↗</span><strong>Kunden-Avis</strong><small>Externe Ansicht vorbereiten</small></button>
+            </div>
+          </section>
+
+          <section class="panel activity-panel">
+            <header class="panel-head"><div><span class="eyebrow">NACHVOLLZIEHBAR</span><h3>Letzte Aktivitäten</h3></div></header>
+            <div class="activity-list" id="activityList"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" data-demo-view="shipments"><div class="placeholder-view" id="shipmentsView"><span>▣</span><h3>Sendungen</h3><p>Die vollständige Sendungsarbeitsfläche folgt im nächsten Ausbau. Die priorisierten Beispieldaten sind bereits im Dashboard aktiv.</p></div></section>
+      <section class="view" data-demo-view="tasks"><div class="placeholder-view"><span>✓</span><h3>Aufgaben & Planung</h3><p>Aufgaben werden im nächsten Block direkt mit den Beispielsendungen verknüpft.</p></div></section>
+      <section class="view" data-demo-view="documents"><div class="placeholder-view"><span>▤</span><h3>Dokumente</h3><p>Hier entsteht die Dokumentenprüfung für Lieferschein, L1, L2, CMR, ABD und POD.</p></div></section>
+      <section class="view" data-demo-view="customers"><div class="placeholder-view"><span>◫</span><h3>Kunden</h3><p>Acht vollständig fiktive Kunden sind bereits im Demo-Datensatz vorbereitet.</p></div></section>
+      <section class="view" data-demo-view="locations"><div class="placeholder-view"><span>⌖</span><h3>Standorte</h3><p>Zwölf fiktive Lieferstandorte werden in der nächsten Ausbaustufe als Qualitätsarbeitsbereich dargestellt.</p></div></section>
+      <section class="view" data-demo-view="avis"><div class="placeholder-view"><span>↗</span><h3>Kunden-Avis</h3><p>Die externe Vorschau wird ausschließlich lokal simuliert und erzeugt keinen echten Link.</p></div></section>
+      <section class="view" data-demo-view="team"><div class="placeholder-view"><span>◎</span><h3>Team & Rollen</h3><p>Die Demo enthält zwölf fiktive Mitarbeitende für rollenbasierte Präsentationsansichten.</p></div></section>
+    </main>
+  </div>
+
+  <div class="tour-toast" id="tourToast" hidden>
+    <strong>Geführte ExportHUB-Tour</strong>
+    <span>Start: Überblick und heutiger Handlungsbedarf.</span>
+    <button type="button" id="tourToastClose">×</button>
+  </div>
+
+  <script type="module" src="./demo-ui.js"></script>
+</body>
+</html>
