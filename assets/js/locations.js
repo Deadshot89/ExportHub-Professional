@@ -2,6 +2,8 @@ const $=s=>document.querySelector(s);
 let globalLocationSearchTimer=null;
 let globalLocationRows=[];
 let globalLocationLoadSequence=0;
+const locationSearchInput=$('#globalLocationSearch');
+if(locationSearchInput)locationSearchInput.placeholder='Standort suchen: Kunde, Standort, Ort oder Land';
 
 function esc(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 function statusPill(active){return active===false?'<span class="status-pill lock">Inaktiv</span>':'<span class="status-pill good">Aktiv</span>';}
