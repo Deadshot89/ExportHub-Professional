@@ -78,7 +78,7 @@ test('customer validation trims required account and company name',()=>{
 test('location validation normalizes address, optional fields and registration emails',()=>{
   const validation=require('../api/shared/masterdata-validation.js');
   const value=validation.cleanLocation({
-    name:' Werk Nettetal ',street:' An der Straße ',houseNumber:' 12a ',postalCode:' 41334 ',city:' Nettetal ',country:' Deutschland ',countryIso:' de ',
+    name:' Werk Nettetal ',street:' An der Straße ',houseNumber:' 12a ',postalCode:' 41334',city:' Nettetal ',country:' Deutschland ',countryIso:' de ',
     contactName:' Max Mustermann ',contactEmail:' Kontakt@Example.DE ',phone:' 02153 123 ',carrierName:' Dachser ',shippingInstructions:' Anmeldung vor Abholung ',
     registrationEmails:[' AVIS@EXAMPLE.DE ','avis@example.de',' lager@example.de ']
   });
@@ -144,4 +144,25 @@ test('masterdata read and mutation routes enforce permission and CSRF server-sid
   const list=fs.readFileSync(new URL('../api/masterdata-locations/index.js',import.meta.url),'utf8');
   assert.match(list,/permission:'customers\.read'/);
   assert.doesNotMatch(list,/customers\.write/);
+});
+
+test('masterdata handlers never accept tenant scope from browser input',()=>{
+  for(const folder of ['masterdata-customers','masterdata-customer','masterdata-customer-status','masterdata-customer-locations','masterdata-location','masterdata-location-status','masterdata-locations']){
+    const src=fs.readFileSync(new URL(`../api/${folder}/index.js`,import.meta.url),'utf8');
+    assert.match(src,/session\.tenant_id/,`${folder} must use session tenant`);
+    assert.doesNotMatch(src,/req\.(?:body|query)[\s\S]{0,120}tenant/i,`${folder} must not accept tenant from browser`);
+    assert.doesNotMatch(src,/bodyOf\(req\)\.tenant/i,`${folder} must not accept tenant from request body`);
+  }
+});
+
+test('Professional CI validates every customer masterdata runtime and both frontend modules',()=>{
+  const ci=fs.readFileSync(new URL('../.github/workflows/professional-ci.yml',import.meta.url),'utf8');
+  for(const path of [
+    'api/shared/masterdata-validation.js','api/shared/masterdata-store.js','api/masterdata-customers/index.js','api/masterdata-customer/index.js','api/masterdata-customer-status/index.js','api/masterdata-customer-locations/index.js','api/masterdata-location/index.js','api/masterdata-location-status/index.js','api/masterdata-locations/index.js'
+  ]) assert.match(ci,new RegExp(path.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  assert.match(ci,/node --check assets\/js\/app\.js/);
+  assert.match(ci,/node --check assets\/js\/locations\.js/);
+  assert.match(ci,/require\('\.\/shared\/masterdata-validation\.js'\)/);
+  assert.match(ci,/require\('\.\/shared\/masterdata-store\.js'\)/);
+  assert.doesNotMatch(ci,/branches:\s*\[[^\]]*feature\/customers-locations/);
 });
