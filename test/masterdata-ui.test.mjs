@@ -63,3 +63,10 @@ test('global locations view opens the canonical customer editor',()=>{
   assert.match(js,/data-nav="customers"/);
   assert.doesNotMatch(js,/professional-masterdata\/locations\/[^'"`]*\{locationId\}[^'"`]*method:'POST'/);
 });
+
+test('masterdata UI has safe escaping and no customer/location delete actions',()=>{
+  const app=fs.readFileSync(new URL('../assets/js/app.js',import.meta.url),'utf8');
+  const locations=fs.readFileSync(new URL('../assets/js/locations.js',import.meta.url),'utf8');
+  assert.match(locations,/&quot;/);
+  assert.doesNotMatch(app+locations,/deleteCustomer|deleteLocation|Kunde löschen|Standort löschen/i);
+});
