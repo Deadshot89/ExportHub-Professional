@@ -2,7 +2,7 @@ name: ExportHUB Professional CI
 on:
   workflow_dispatch:
   push:
-    branches: [main, feature/customers-locations]
+    branches: [main]
     paths:
       - 'index.html'
       - 'assets/**'
@@ -73,7 +73,11 @@ jobs:
       - name: Run Professional tests
         run: npm test
       - name: Validate frontend JavaScript syntax
-        run: node --check assets/js/app.js
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check assets/js/app.js
+          node --check assets/js/locations.js
       - name: Install Professional API dependencies
         run: npm install --prefix api --ignore-scripts --no-audit --no-fund
       - name: Validate Professional API runtime
