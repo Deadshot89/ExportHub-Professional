@@ -69,12 +69,6 @@ function sanitizeShipmentPatch(input={}){
   if(key)patch.location_id=nullableId(input[key],'Standort');
   key=has('recipient_snapshot','recipientSnapshot');
   if(key)patch.recipient_snapshot=objectInput(input[key],'Empfänger-Snapshot');
-  key=has('carrier_snapshot','carrierSnapshot');
-  if(key)patch.carrier_snapshot=objectInput(input[key],'Speditions-Snapshot');
-  key=has('fx_snapshot','fxSnapshot');
-  if(key)patch.fx_snapshot=objectInput(input[key],'Währungssnapshot');
-  key=has('readiness');
-  if(key)patch.readiness=objectInput(input[key],'Bereitschaft');
   key=has('planned_pickup_date','plannedPickupDate');
   if(key)patch.planned_pickup_date=nullableDate(input[key],'Geplantes Abholdatum');
   return patch;
@@ -129,6 +123,7 @@ async function requireEditLockInClient(client,tenantId,shipmentId,userId,lockTok
      where tenant_id=$1 and shipment_id=$2 and user_id=$3 and lock_token=$4
        and last_activity_at >= now()-interval '15 minutes'
      limit 1
+     for update
   `,[q(tenantId),q(shipmentId),q(userId),token]);
   if(!result.rows?.[0])throw shipmentError('SHIPMENT_LOCK_INVALID','Bearbeitungssperre ist ungültig oder abgelaufen.');
   return true;
@@ -209,10 +204,10 @@ async function updateShipmentInClient(client,tenantId,shipmentId,userId,{lockTok
   const assignments=[];
   for(const field of fields){
     let value=safe[field];
-    if(['recipient_snapshot','carrier_snapshot','fx_snapshot','readiness'].includes(field))value=JSON.stringify(value);
+    if(field==='recipient_snapshot')value=JSON.stringify(value);
     values.push(value);
     const position=`$${values.length}`;
-    assignments.push(`${field}=${['recipient_snapshot','carrier_snapshot','fx_snapshot','readiness'].includes(field)?`${position}::jsonb`:position}`);
+    assignments.push(`${field}=${field==='recipient_snapshot'?`${position}::jsonb`:position}`);
   }
   const updated=await client.query(`
     update shipments
