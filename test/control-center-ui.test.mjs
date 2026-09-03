@@ -75,6 +75,13 @@ test('locations workspace defines quality, KPI and filter surfaces',()=>{
   for(const state of ['complete','warning','blocking','inactive']) assert.match(css,new RegExp(`\\.location-quality\\.${state}\\b`));
 });
 
+test('location free-text search copy matches server-side searchable fields',()=>{
+  const locations=read('assets/js/locations.js');
+  const store=read('api/shared/masterdata-store.js');
+  assert.match(locations,/Standort suchen: Kunde, Standort, Ort oder Land/);
+  assert.doesNotMatch(store,/l\.carrier_name ilike/);
+});
+
 test('control center defines desktop tablet and phone layouts without forced live-masterdata table width',()=>{
   const css=controlCss();
   assert.match(css,/@media\(max-width:1100px\)/);
