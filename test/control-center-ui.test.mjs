@@ -58,3 +58,11 @@ test('customer workspace uses compact control-center surfaces',()=>{
     assert.match(css,new RegExp(`\\.${cls}\\b`));
   }
 });
+
+test('locations workspace defines quality, KPI and filter surfaces',()=>{
+  const css=read('assets/css/control-center.css');
+  for(const cls of ['location-quality','location-kpi-strip','location-filter-bar','live-location-table']){
+    assert.match(css,new RegExp(`\\.${cls}\\b`));
+  }
+  for(const state of ['complete','warning','blocking','inactive']) assert.match(css,new RegExp(`\\.location-quality\\.${state}\\b`));
+});
