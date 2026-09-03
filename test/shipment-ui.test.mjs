@@ -28,6 +28,37 @@ test('shipment editor exposes permanent operational header and seven approved se
   assert.match(src,/readOnly/);
 });
 
+test('colli editor renders server packaging choices and readonly LDM output only',async()=>{
+  const src=read('assets/js/shipment-editor.js');
+  assert.match(src,/data-colli-action="add"/);
+  assert.match(src,/data-colli-field="packagingTypeId"/);
+  assert.match(src,/data-colli-field="quantity"/);
+  assert.match(src,/data-colli-field="weightKg"/);
+  assert.match(src,/data-colli-ldm/);
+  assert.doesNotMatch(src,/<input[^>]+(?:id|name|data-colli-field)=["'][^"']*ldm/i);
+
+  const {renderShipmentEditor}=await import('../assets/js/shipment-editor.js');
+  const root={innerHTML:''};
+  renderShipmentEditor(root,{
+    shipment:{id:'s1',reference:'COL001',sourceKind:'LIVE',status:'Entwurf',revision:2,colliRows:[{packagingTypeId:'p1',packagingName:'Euro Palette',quantity:3,weightKg:120,lengthCm:120,widthCm:80,heightCm:150,ldm:0.6,position:0}],colliTotals:{totalColli:3,totalWeightKg:120,totalLdm:0.6}},
+    packagingTypes:[{id:'p1',name:'Euro Palette',ldmMode:'FIXED_PER_UNIT',fixedLdmPerUnit:0.2,allowLength:false,allowWidth:false,allowHeight:true,lengthCm:120,widthCm:80,heightCm:null}]
+  },{canWrite:true,lock:{lockToken:'lock-1'},saveState:'saved'});
+  assert.match(root.innerHTML,/Euro Palette/);
+  assert.match(root.innerHTML,/data-colli-ldm[^>]*>\s*0[,.]6/);
+  assert.match(root.innerHTML,/3\s*Colli/);
+  assert.doesNotMatch(root.innerHTML,/<input[^>]+(?:id|name|data-colli-field)=["'][^"']*ldm/i);
+});
+
+test('shipment controller loads packaging masterdata and persists colli rows through shipment API',()=>{
+  const src=read('assets/js/shipments.js');
+  assert.match(src,/professional-masterdata\/packaging-types/);
+  assert.match(src,/packagingTypes/);
+  assert.match(src,/colliRows/);
+  assert.match(src,/data-colli-action/);
+  assert.match(src,/data-colli-field/);
+  assert.doesNotMatch(src,/fixedLdmPerUnit\s*\*|calculate(?:Row)?Ldm|calculateLdm/i);
+});
+
 test('autosave queue merges patches and retries with approved backoff',async()=>{
   assert.equal(exists('assets/js/shipment-autosave.js'),true,'shipment-autosave.js fehlt');
   const {createAutosaveQueue}=await import('../assets/js/shipment-autosave.js');
