@@ -109,6 +109,17 @@ test('packaging store validates rules and persists only through masterdata gate 
   assert.doesNotMatch(src,/delete from packaging_types/i);
 });
 
+test('packaging store guarantees shipment schema before packaging table access',()=>{
+  const src=read('api/shared/packaging-store.js');
+  assert.match(src,/async function withPackagingClient/);
+  assert.match(src,/await db\.ensureShipmentSchema\(\)/);
+  assert.match(src,/db\.withTenantMasterdataClient/);
+  for(const fn of ['listPackagingTypes','getPackagingType','createPackagingType','updatePackagingType','setPackagingTypeActive']){
+    const start=src.indexOf(`function ${fn}`)>=0?src.indexOf(`function ${fn}`):src.indexOf(`async function ${fn}`);
+    assert.ok(start>=0,`${fn} fehlt`);
+  }
+});
+
 test('packaging APIs expose tenant-scoped read/write/status routes with CSRF mutations',()=>{
   const expected={
     'packaging-types':{route:'professional-masterdata/packaging-types',methods:['get','post']},
