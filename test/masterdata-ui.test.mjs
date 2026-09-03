@@ -70,3 +70,29 @@ test('masterdata UI has safe escaping and no customer/location delete actions',(
   assert.match(locations,/&quot;/);
   assert.doesNotMatch(app+locations,/deleteCustomer|deleteLocation|Kunde löschen|Standort löschen/i);
 });
+
+test('customer detail exposes operational summary without changing canonical editor',()=>{
+  const js=fs.readFileSync(new URL('../assets/js/app.js',import.meta.url),'utf8');
+  assert.match(js,/function customerSummary/);
+  assert.match(js,/registrationEmailCount/);
+  assert.match(js,/carrierCount/);
+  assert.match(js,/location-email-count/);
+  assert.match(js,/location-city-country/);
+  assert.match(js,/data-customer-action="new-location"/);
+  assert.match(js,/wireCustomerDetailActions\(\)/);
+  assert.doesNotMatch(js,/deleteCustomer|deleteLocation/i);
+});
+
+test('global locations adds country carrier quality and email-count presentation',()=>{
+  const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+  for(const id of ['globalLocationCountryFilter','globalLocationCarrierFilter','globalLocationKpiActive','globalLocationKpiNoCarrier','globalLocationKpiMultiEmail','globalLocationKpiIncomplete']){
+    assert.match(html,new RegExp(`id="${id}"`));
+  }
+  const js=fs.readFileSync(new URL('../assets/js/locations.js',import.meta.url),'utf8');
+  assert.match(js,/function locationQuality/);
+  assert.match(js,/async function enrichLocationRows/);
+  assert.match(js,/registration_emails/);
+  assert.match(js,/professional-masterdata\/customers\/\$\{encodeURIComponent\(customerId\)\}/);
+  assert.match(js,/professional:open-location/);
+  assert.match(js,/openCustomerForLocation/);
+});

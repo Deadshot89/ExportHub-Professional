@@ -78,6 +78,26 @@ jobs:
           set -euo pipefail
           node --check assets/js/app.js
           node --check assets/js/locations.js
+          node --check assets/js/ui-kit.js
+          node --check assets/js/overview.js
+      - name: Verify Logistics Control Center invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('fs');
+          const html=fs.readFileSync('index.html','utf8');
+          const app=fs.readFileSync('assets/js/app.js','utf8');
+          const loc=fs.readFileSync('assets/js/locations.js','utf8');
+          const overview=html.match(/<section class="view active" data-view="overview">([\s\S]*?)<section class="view" data-view="migration">/)?.[1]||'';
+          if(/class="hero"/.test(overview)) throw new Error('legacy overview hero still present');
+          for(const id of ['overviewOpenShipments','overviewPickupsToday','overviewMissingDocuments']){
+            if(new RegExp(`id="${id}"[^>]*>\\s*0\\s*<`).test(overview)) throw new Error(`fake zero metric: ${id}`);
+          }
+          if(/deleteCustomer|deleteLocation|Kunde löschen|Standort löschen/i.test(app+loc)) throw new Error('hard-delete UI introduced');
+          if(/method:\s*['"]POST['"]/.test(loc)) throw new Error('duplicate location editor mutation introduced');
+          console.log('OK: no fake metrics, hard deletes or duplicate location mutation UI');
+          NODE
       - name: Install Professional API dependencies
         run: npm install --prefix api --ignore-scripts --no-audit --no-fund
       - name: Validate Professional API runtime

@@ -59,7 +59,7 @@ async function loadCustomers({selectId=selectedCustomerId,focusLocationId=null}=
 }
 function renderCustomerList(){
   const list=$('#customerMasterList');if(!list)return;
-  list.innerHTML=liveCustomers.map(c=>`<button class="customer-master-item ${String(c.id)===String(selectedCustomerId)?'active':''}" type="button" data-customer-id="${esc(c.id)}"><span class="customer-master-item-head"><b>${esc(c.account||'–')}</b>${activePill(c.active!==false)}</span><small>${esc(c.name||'Unbenannter Kunde')}</small><small>${fmt(c.location_count||0)} Standort${Number(c.location_count||0)===1?'':'e'}</small></button>`).join('')||'<div class="empty compact-empty">Keine Kunden für diesen Filter.</div>';
+  list.innerHTML=liveCustomers.map(c=>`<button class="customer-master-item ${String(c.id)===String(selectedCustomerId)?'active':''}" type="button" data-customer-id="${esc(c.id)}"><span class="customer-master-item-head"><span class="customer-account">${esc(c.account||'–')}</span>${activePill(c.active!==false)}</span><strong class="customer-company-name">${esc(c.name||'Unbenannter Kunde')}</strong><span class="customer-row-meta">${fmt(c.location_count||0)} Standort${Number(c.location_count||0)===1?'':'e'}</span></button>`).join('')||'<div class="empty compact-empty">Keine Kunden für diesen Filter.</div>';
   list.querySelectorAll('[data-customer-id]').forEach(btn=>btn.addEventListener('click',()=>selectCustomer(btn.dataset.customerId)));
 }
 async function selectCustomer(id,{focusLocationId=null}={}){
@@ -79,34 +79,45 @@ async function selectCustomer(id,{focusLocationId=null}={}){
     if(pane)pane.innerHTML=`<div class="customer-detail-empty"><div class="drawer-error">${esc(err.message||'Kundendetail konnte nicht geladen werden.')}</div></div>`;
   }
 }
+function customerSummary(customer){
+  const locations=Array.isArray(customer?.locations)?customer.locations:[];
+  const registrationEmailCount=locations.reduce((sum,location)=>sum+registrationEmailsOf(location).length,0);
+  const carriers=new Set(locations.map(location=>String(location.carrier_name||'').trim()).filter(Boolean));
+  return {locationCount:locations.length,registrationEmailCount,carrierCount:carriers.size};
+}
+function locationSummary(location){
+  const emails=registrationEmailsOf(location);
+  return {emailCount:emails.length,cityCountry:[location?.city,location?.country].filter(Boolean).join(' · ')||'Ort nicht hinterlegt',carrier:String(location?.carrier_name||'').trim()||'Keine Spedition'};
+}
 function renderCustomerDetail(){
   const pane=$('#customerDetailPane');if(!pane)return;
   const c=selectedCustomer;
   if(!c){pane.innerHTML='<div class="customer-detail-empty"><div class="kicker">KUNDENDETAIL</div><h3>Kunde auswählen</h3><p class="muted">Links einen Kunden auswählen, um seine Standorte und Versanddaten zu sehen.</p></div>';return;}
-  const locations=Array.isArray(c.locations)?c.locations:[],write=canWriteCustomers();
-  const customerActions=write?`<button class="ghost compact" type="button" data-customer-action="edit">Bearbeiten</button><button class="ghost compact" type="button" data-customer-action="status" data-next-active="${c.active===false?'true':'false'}">${c.active===false?'Aktivieren':'Deaktivieren'}</button>`:'';
+  const locations=Array.isArray(c.locations)?c.locations:[],write=canWriteCustomers(),summary=customerSummary(c);
+  const customerActions=write?`<button class="btn compact" type="button" data-customer-action="new-location">+ Standort</button><button class="ghost compact" type="button" data-customer-action="edit">Bearbeiten</button><button class="ghost compact" type="button" data-customer-action="status" data-next-active="${c.active===false?'true':'false'}">${c.active===false?'Aktivieren':'Deaktivieren'}</button>`:'';
   const locationHtml=locations.map(l=>{
-    const id=String(l.id),open=openLocationIds.has(id),emails=registrationEmailsOf(l);
-    return `<article class="location-accordion ${open?'open':''}" data-location-id="${esc(id)}">
+    const id=String(l.id),open=openLocationIds.has(id),emails=registrationEmailsOf(l),s=locationSummary(l);
+    return `<article class="location-accordion location-operational-card ${open?'open':''}" data-location-id="${esc(id)}">
       <button class="location-accordion-toggle" type="button" data-location-toggle="${esc(id)}" aria-expanded="${open?'true':'false'}">
-        <span class="location-summary-main"><b>${esc(l.name||'Standort')}</b><small>${esc(l.city||'Ort nicht hinterlegt')} · ${activePill(l.active!==false)}</small></span>
-        <span class="location-summary-meta location-country-summary">${esc(l.country||'–')}</span>
-        <span class="location-summary-meta location-carrier-summary">${esc(l.carrier_name||'Keine Spedition')}</span>
+        <span class="location-summary-main"><b>${esc(l.name||'Standort')}</b><span class="location-city-country">${esc(s.cityCountry)}</span></span>
+        <span class="location-summary-meta location-carrier-summary"><b>Spedition</b><small>${esc(s.carrier)}</small></span>
+        <span class="location-summary-meta location-email-count"><b>${fmt(s.emailCount)}</b><small>Anmelde-E-Mail${s.emailCount===1?'':'s'}</small></span>
+        <span class="location-summary-status">${activePill(l.active!==false)}</span>
         <span class="location-caret">${open?'▴':'▾'}</span>
       </button>
       <div class="location-accordion-content ${open?'':'hidden'}">
         <div class="location-detail-grid">
-          <div class="location-detail-box"><h4>Adresse</h4><p>${esc(customerLocationAddress(l))}</p></div>
-          <div class="location-detail-box"><h4>Kontakt</h4><p>${esc(l.contact_name||'Kein Ansprechpartner')}${l.contact_email?`\n${esc(l.contact_email)}`:''}${l.phone?`\n${esc(l.phone)}`:''}</p></div>
-          <div class="location-detail-box full"><h4>Anmelde-E-Mail</h4><div class="registration-email-chips">${emails.map(e=>`<span class="registration-email-chip">${esc(e)}</span>`).join('')||'<span class="muted">Keine Anmelde-E-Mail hinterlegt.</span>'}</div></div>
-          <div class="location-detail-box"><h4>Spedition</h4><p>${esc(l.carrier_name||'Keine Spedition hinterlegt')}</p></div>
-          <div class="location-detail-box"><h4>Versandvorgaben</h4><p>${esc(l.shipping_instructions||'Keine besonderen Vorgaben')}</p></div>
+          <section class="location-detail-section"><h4>Adresse</h4><p>${esc(customerLocationAddress(l))}</p></section>
+          <section class="location-detail-section"><h4>Anmelde-E-Mails</h4><div class="registration-email-chips">${emails.map(e=>`<span class="registration-email-chip">${esc(e)}</span>`).join('')||'<span class="muted">Keine Anmelde-E-Mail hinterlegt.</span>'}</div></section>
+          <section class="location-detail-section"><h4>Kontakt</h4><p>${esc(l.contact_name||'Kein Ansprechpartner')}${l.contact_email?`\n${esc(l.contact_email)}`:''}${l.phone?`\n${esc(l.phone)}`:''}</p></section>
+          <section class="location-detail-section"><h4>Spedition</h4><p>${esc(l.carrier_name||'Keine Spedition hinterlegt')}</p></section>
+          <section class="location-detail-section full"><h4>Versandvorgaben</h4><p>${esc(l.shipping_instructions||'Keine besonderen Vorgaben')}</p></section>
         </div>
         ${write?`<div class="location-actions"><button class="ghost compact" type="button" data-location-action="edit" data-location-id="${esc(id)}">Bearbeiten</button><button class="ghost compact" type="button" data-location-action="status" data-location-id="${esc(id)}" data-next-active="${l.active===false?'true':'false'}">${l.active===false?'Aktivieren':'Deaktivieren'}</button></div>`:''}
       </div>
     </article>`;
   }).join('')||'<div class="empty compact-empty">Keine Standorte vorhanden.</div>';
-  pane.innerHTML=`<header class="customer-detail-head"><div><div class="kicker">KUNDE</div><h2>${esc(c.account||'–')} · ${esc(c.name||'Unbenannter Kunde')}</h2><div>${activePill(c.active!==false)}</div></div><div class="customer-detail-actions">${customerActions}</div></header><div class="customer-location-area"><div class="customer-location-area-head"><div><div class="kicker">STANDORTE</div><h3>${fmt(locations.length)} Standort${locations.length===1?'':'e'}</h3></div>${write?'<button class="btn" type="button" data-customer-action="new-location">+ Standort</button>':''}</div><div class="location-stack">${locationHtml}</div></div>`;
+  pane.innerHTML=`<header class="customer-detail-head"><div class="customer-detail-identity"><div class="kicker">KUNDE · ${esc(c.account||'–')}</div><div class="customer-detail-title-row"><h2>${esc(c.name||'Unbenannter Kunde')}</h2>${activePill(c.active!==false)}</div></div><div class="customer-detail-actions">${customerActions}</div></header><div class="customer-summary-strip"><div class="customer-summary-stat"><strong>${fmt(summary.locationCount)}</strong><span>Standorte</span></div><div class="customer-summary-stat"><strong>${fmt(summary.registrationEmailCount)}</strong><span>Anmelde-E-Mails</span></div><div class="customer-summary-stat"><strong>${fmt(summary.carrierCount)}</strong><span>Speditionen</span></div></div><div class="customer-location-area"><div class="customer-location-area-head"><div><div class="kicker">STANDORTE</div><h3>Versand- und Anmeldedaten</h3></div><span class="muted">${fmt(locations.length)} Standort${locations.length===1?'':'e'}</span></div><div class="location-stack">${locationHtml}</div></div>`;
   wireCustomerDetailActions();
 }
 function toggleLocationAccordion(id){
@@ -257,6 +268,7 @@ function showApplication({local=false,session=null}={}){
   const badge=$('#identityBadge');badge.classList.remove('hidden');$('#logoutBtn').classList.remove('hidden');
   if(local){badge.innerHTML='<b>Lokales Migrationslabor</b><span>keine Serverdaten</span>';$('#logoutBtn').textContent='Zur Anmeldung';$('#liveUserAdmin')?.classList.add('hidden');setView('migration');}
   else {badge.innerHTML=`<b>${esc(session?.user?.displayName||session?.user?.username||'Benutzer')}</b><span>${esc(session?.tenant?.name||'Mandant')} · ${esc(roleLabel(session?.user?.role))}</span>`;$('#logoutBtn').textContent='Abmelden';setView('overview');}
+  window.dispatchEvent(new CustomEvent('professional:session-ready',{detail:{local:!!local,session:session||null}}));
 }
 function showAuthGate(message='',kind=''){
   identitySession=null;localMigrationLab=false;closeMasterdataDrawer();$('#appShell').classList.add('hidden');$('#authGate').classList.remove('hidden');
