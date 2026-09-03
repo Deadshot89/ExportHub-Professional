@@ -154,6 +154,27 @@ export function completeTask(id) {
   return clone(task);
 }
 
+export function saveAvis(record) {
+  const shipment = requireShipment(record?.shipmentId);
+  const safeRecord = {
+    id: String(record.id || `avis-${shipment.id}`),
+    reference: String(record.reference || `DEMO-AVIS-${shipment.reference}`),
+    shipmentId: shipment.id,
+    previewTarget: String(record.previewTarget || `#demo-avis/${shipment.reference}`),
+    createdAt: String(record.createdAt || `${DEMO_TODAY}T10:00:00`),
+    status: String(record.status || 'Demo-Vorschau erstellt'),
+    demo: true
+  };
+  if (!safeRecord.previewTarget.startsWith('#demo-avis/')) throw new Error('AVIS_NUR_LOKAL');
+  const state = loadState();
+  const existingIndex = state.avis.findIndex(item => item.shipmentId === shipment.id);
+  if (existingIndex >= 0) state.avis[existingIndex] = safeRecord;
+  else state.avis.push(safeRecord);
+  shipment.avis = 'Vorschau erstellt (Demo)';
+  persist();
+  return clone(safeRecord);
+}
+
 export function setRole(role, employeeId) {
   const employee = loadState().employees.find(item => item.id === employeeId && item.demo === true);
   if (!employee) throw new Error('DEMO_MITARBEITER_NICHT_GEFUNDEN');
