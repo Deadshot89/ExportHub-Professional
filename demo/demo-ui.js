@@ -1,15 +1,16 @@
 import {
-  DEMO_SHIPMENTS,
-  DEMO_TASKS,
   DEMO_ACTIVITIES,
+  DEMO_TODAY,
   CUSTOMER_BY_ID,
   EMPLOYEE_BY_ID,
-  getDemoMetrics,
   getMissingDocuments
 } from './demo-data.js';
+import { getState, reset as resetDemoStore } from './demo-store.js';
+import { initShipmentWorkspace } from './demo-shipments.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
+const PRIORITIES = ['P0','P1','P2','P3','P4'];
 
 const viewTitles = {
   overview: 'Übersicht',
@@ -22,6 +23,8 @@ const viewTitles = {
   team: 'Team & Rollen'
 };
 
+let shipmentWorkspace = null;
+
 function customerName(shipment) {
   return CUSTOMER_BY_ID[shipment.customerId]?.name || 'Demo-Kunde';
 }
@@ -30,8 +33,16 @@ function ownerName(shipment) {
   return EMPLOYEE_BY_ID[shipment.ownerId]?.name || 'Nicht zugewiesen';
 }
 
+function currentMetrics(state = getState()) {
+  const openShipments = state.shipments.filter(item => !['Abgeschlossen', 'Archiviert'].includes(item.status)).length;
+  const pickupsToday = state.shipments.filter(item => item.plannedPickup === DEMO_TODAY && !['Abgeschlossen', 'Archiviert'].includes(item.status)).length;
+  const missingDocuments = state.shipments.reduce((sum, item) => sum + getMissingDocuments(item).length, 0);
+  const actionRequired = state.shipments.filter(item => item.attention || getMissingDocuments(item).length > 0).length;
+  return { openShipments, pickupsToday, missingDocuments, actionRequired };
+}
+
 function renderMetrics() {
-  const metrics = getDemoMetrics();
+  const metrics = currentMetrics();
   const values = {
     metricOpen: metrics.openShipments,
     metricPickups: metrics.pickupsToday,
@@ -66,33 +77,40 @@ function shipmentMessage(shipment) {
 function renderPriorityShipments() {
   const container = $('#priorityShipmentList');
   if (!container) return;
-  const prioritized = DEMO_SHIPMENTS
+  const state = getState();
+  const prioritized = state.shipments
     .filter(item => !['Abgeschlossen', 'Archiviert'].includes(item.status))
-    .sort((a, b) => ['P0','P1','P2','P3','P4'].indexOf(a.priority) - ['P0','P1','P2','P3','P4'].indexOf(b.priority))
+    .sort((a, b) => PRIORITIES.indexOf(a.priority) - PRIORITIES.indexOf(b.priority))
     .slice(0, 6);
 
   container.innerHTML = prioritized.map(shipment => {
     const message = shipmentMessage(shipment);
-    return `<article class="shipment-row ${shipmentTone(shipment)}" data-demo-shipment="${shipment.id}">
+    return `<button type="button" class="shipment-row ${shipmentTone(shipment)}" data-dashboard-shipment="${shipment.id}">
       <span class="priority-bar" aria-hidden="true"></span>
       <div class="shipment-ref"><strong>${shipment.reference}</strong><small>${shipment.priority} · ${shipment.status}</small></div>
       <div class="shipment-customer"><strong>${customerName(shipment)}</strong><small>${shipment.destination}</small></div>
-      <div class="shipment-meta">${shipment.plannedPickup === '2026-09-03' ? 'Heute' : shipment.plannedPickup}<br><small>${ownerName(shipment)}</small></div>
+      <div class="shipment-meta">${shipment.plannedPickup === DEMO_TODAY ? 'Heute' : shipment.plannedPickup}<br><small>${ownerName(shipment)}</small></div>
       <span class="shipment-attention${message.ready ? ' ready' : ''}">${message.text}</span>
-    </article>`;
+    </button>`;
   }).join('');
+
+  container.querySelectorAll('[data-dashboard-shipment]').forEach(button => button.addEventListener('click', () => {
+    openView('shipments');
+    shipmentWorkspace?.select(button.dataset.dashboardShipment);
+  }));
 }
 
 function renderActions() {
   const container = $('#actionList');
   if (!container) return;
-  const tasks = DEMO_TASKS
+  const state = getState();
+  const tasks = state.tasks
     .filter(task => task.status === 'Offen')
-    .sort((a, b) => ['P0','P1','P2','P3','P4'].indexOf(a.priority) - ['P0','P1','P2','P3','P4'].indexOf(b.priority))
+    .sort((a, b) => PRIORITIES.indexOf(a.priority) - PRIORITIES.indexOf(b.priority))
     .slice(0, 5);
 
   container.innerHTML = tasks.map(task => {
-    const shipment = DEMO_SHIPMENTS.find(item => item.id === task.shipmentId);
+    const shipment = state.shipments.find(item => item.id === task.shipmentId);
     const employee = EMPLOYEE_BY_ID[task.ownerId];
     const critical = task.priority === 'P0' || task.priority === 'P1';
     return `<article class="action-item${critical ? ' critical' : ''}">
@@ -112,6 +130,12 @@ function renderActivities() {
   </article>`).join('');
 }
 
+function refreshOperationalViews() {
+  renderMetrics();
+  renderPriorityShipments();
+  renderActions();
+}
+
 function openView(view) {
   if (!viewTitles[view]) return;
   $$('.view').forEach(section => section.classList.toggle('active', section.dataset.demoView === view));
@@ -120,6 +144,7 @@ function openView(view) {
   if (title) title.textContent = viewTitles[view];
   $('#demoSidebar')?.classList.remove('open');
   document.getElementById('demoApp')?.scrollIntoView({ block: 'start' });
+  if (view === 'shipments') shipmentWorkspace?.refresh();
 }
 
 function enterDemo(withTour) {
@@ -128,6 +153,14 @@ function enterDemo(withTour) {
     const toast = $('#tourToast');
     if (toast) toast.hidden = false;
   }
+}
+
+function showResetMessage() {
+  const toast = $('#tourToast');
+  if (!toast) return;
+  toast.hidden = false;
+  const text = toast.querySelector('span');
+  if (text) text.textContent = 'Demo-Ausgangsansicht wiederhergestellt. Es wurden keine Produktivdaten verändert.';
 }
 
 function bindNavigation() {
@@ -146,22 +179,19 @@ function bindNavigation() {
   });
   $('#mobileMenuBtn')?.addEventListener('click', () => $('#demoSidebar')?.classList.toggle('open'));
   $('#demoResetBtn')?.addEventListener('click', () => {
+    resetDemoStore();
+    refreshOperationalViews();
+    shipmentWorkspace?.refresh();
     openView('overview');
-    const toast = $('#tourToast');
-    if (toast) {
-      toast.hidden = false;
-      const text = toast.querySelector('span');
-      if (text) text.textContent = 'Demo-Ausgangsansicht wiederhergestellt. Es wurden keine Produktivdaten verändert.';
-    }
+    showResetMessage();
   });
 }
 
 function init() {
-  renderMetrics();
-  renderPriorityShipments();
-  renderActions();
+  refreshOperationalViews();
   renderActivities();
   bindNavigation();
+  shipmentWorkspace = initShipmentWorkspace({ onChange: refreshOperationalViews });
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
