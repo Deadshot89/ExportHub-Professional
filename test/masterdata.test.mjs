@@ -67,3 +67,46 @@ test('schema stores registration emails relationally with tenant isolation',()=>
   assert.match(sql,/customers_tenant_id_id_uq/i);
   assert.match(sql,/customer_locations_tenant_id_id_uq/i);
 });
+
+test('customer validation trims required account and company name',()=>{
+  const validation=require('../api/shared/masterdata-validation.js');
+  assert.deepEqual(validation.cleanCustomer({account:' 100471 ',name:' Beispiel GmbH '}),{account:'100471',name:'Beispiel GmbH'});
+  assert.throws(()=>validation.cleanCustomer({account:'',name:'Beispiel GmbH'}),e=>e.code==='INPUT_INVALID');
+  assert.throws(()=>validation.cleanCustomer({account:'100471',name:' '}),e=>e.code==='INPUT_INVALID');
+});
+
+test('location validation normalizes address, optional fields and registration emails',()=>{
+  const validation=require('../api/shared/masterdata-validation.js');
+  const value=validation.cleanLocation({
+    name:' Werk Nettetal ',street:' An der Straße ',houseNumber:' 12a ',postalCode:' 41334 ',city:' Nettetal ',country:' Deutschland ',countryIso:' de ',
+    contactName:' Max Mustermann ',contactEmail:' Kontakt@Example.DE ',phone:' 02153 123 ',carrierName:' Dachser ',shippingInstructions:' Anmeldung vor Abholung ',
+    registrationEmails:[' AVIS@EXAMPLE.DE ','avis@example.de',' lager@example.de ']
+  });
+  assert.deepEqual(value,{
+    name:'Werk Nettetal',street:'An der Straße',houseNumber:'12a',postalCode:'41334',city:'Nettetal',country:'Deutschland',countryIso:'DE',
+    contactName:'Max Mustermann',contactEmail:'kontakt@example.de',phone:'02153 123',carrierName:'Dachser',shippingInstructions:'Anmeldung vor Abholung',
+    registrationEmails:['avis@example.de','lager@example.de']
+  });
+});
+
+test('location validation requires full address and at least one valid registration email',()=>{
+  const validation=require('../api/shared/masterdata-validation.js');
+  const complete={name:'Werk',street:'Straße',houseNumber:'1',postalCode:'41334',city:'Nettetal',country:'Deutschland'};
+  assert.throws(()=>validation.cleanLocation({...complete,registrationEmails:[]}),e=>e.code==='REGISTRATION_EMAIL_REQUIRED');
+  assert.throws(()=>validation.cleanLocation({...complete,registrationEmails:['keine-mail']}),e=>e.code==='EMAIL_INVALID');
+  assert.throws(()=>validation.cleanLocation({...complete,street:'',registrationEmails:['avis@example.de']}),e=>e.code==='INPUT_INVALID');
+});
+
+test('masterdata store owns tenant-scoped persistence, audit and soft status changes',()=>{
+  const src=fs.readFileSync(new URL('../api/shared/masterdata-store.js',import.meta.url),'utf8');
+  for(const fn of ['listCustomers','getCustomer','createCustomer','updateCustomer','setCustomerActive','createLocation','updateLocation','setLocationActive','listLocations']) assert.match(src,new RegExp(`function ${fn}|async function ${fn}`));
+  assert.match(src,/withTenantMasterdataClient/);
+  assert.match(src,/\{write:true\}/);
+  assert.match(src,/insert into customers/i);
+  assert.match(src,/insert into customer_locations/i);
+  assert.match(src,/insert into customer_location_registration_emails/i);
+  for(const event of ['CUSTOMER_CREATED','CUSTOMER_UPDATED','CUSTOMER_ACTIVATED','CUSTOMER_DEACTIVATED','LOCATION_CREATED','LOCATION_UPDATED','LOCATION_ACTIVATED','LOCATION_DEACTIVATED','LOCATION_REGISTRATION_EMAILS_CHANGED']) assert.match(src,new RegExp(event));
+  assert.doesNotMatch(src,/delete from customers/i);
+  assert.doesNotMatch(src,/delete from customer_locations\b/i);
+  assert.match(src,/where tenant_id=\$1/i);
+});
