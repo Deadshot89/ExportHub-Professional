@@ -31,6 +31,7 @@ create table if not exists app_users (
   unique(tenant_id, username)
 );
 create index if not exists app_users_tenant_idx on app_users(tenant_id);
+create unique index if not exists app_users_tenant_id_id_uq on app_users(tenant_id,id);
 
 create table if not exists tenant_memberships (
   tenant_id uuid not null references tenants(id),
@@ -265,7 +266,7 @@ create unique index if not exists packaging_types_tenant_id_id_uq on packaging_t
 create table if not exists shipment_edit_locks (
   tenant_id uuid not null references tenants(id),
   shipment_id uuid not null,
-  user_id uuid not null references app_users(id),
+  user_id uuid not null,
   lock_token text not null,
   acquired_at timestamptz not null default now(),
   last_activity_at timestamptz not null default now(),
@@ -273,7 +274,10 @@ create table if not exists shipment_edit_locks (
   constraint shipment_edit_locks_shipment_fk
     foreign key (tenant_id,shipment_id)
     references shipments(tenant_id,id)
-    on delete cascade
+    on delete cascade,
+  constraint shipment_edit_locks_user_fk
+    foreign key (tenant_id,user_id)
+    references app_users(tenant_id,id)
 );
 create index if not exists shipment_edit_locks_tenant_activity_idx on shipment_edit_locks(tenant_id,last_activity_at);
 
