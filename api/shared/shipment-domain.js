@@ -27,8 +27,13 @@ function generateReference(randomBytes=crypto.randomBytes){
   return result;
 }
 
-function assertMutable(shipment){
+function assertLive(shipment){
   if(sourceKindOf(shipment)!=='LIVE')throw domainError('SHIPMENT_READ_ONLY','Migrierte oder unbekannte Sendungen sind schreibgeschützt.');
+  return true;
+}
+
+function assertMutable(shipment){
+  assertLive(shipment);
   const status=statusOf(shipment);
   if(IMMUTABLE_STATUSES.has(status)||shipment?.discarded_at||shipment?.discardedAt)throw domainError('SHIPMENT_READ_ONLY','Diese Sendung ist für normale Änderungen gesperrt.');
   return true;
@@ -107,13 +112,18 @@ function requireReason(value){
   return reason;
 }
 function roleIs(role,...allowed){return allowed.includes(String(role||'').trim().toUpperCase());}
+function assertNoRework(shipment){
+  if(shipment?.rework?.active===true)throw domainError('SHIPMENT_TRANSITION_INVALID','Nachbearbeitung blockiert den Statuswechsel.');
+  return true;
+}
 
 function applyLifecycleAction(shipment,action,context={}){
   const next=cloneShipment(shipment);
   const name=String(action||'').trim().toLowerCase();
+  assertLive(next);
 
   if(name==='mark-created'){
-    assertMutable(next);requireStatus(next,'Entwurf');
+    assertMutable(next);requireStatus(next,'Entwurf');assertNoRework(next);
     const creation=context.creation||evaluateCreation(next,context);
     if(!creation.complete)throw domainError('SHIPMENT_TRANSITION_INVALID','Pflichtangaben für Erstellt fehlen.');
     next.status='Erstellt';return next;
@@ -127,6 +137,7 @@ function applyLifecycleAction(shipment,action,context={}){
   }
   if(name==='set-rework'){
     assertMutable(next);
+    if(context.manual===true&&!roleIs(context.role,'TENANT_ADMIN','EXPORT_ADMIN'))throw domainError('FORBIDDEN','Nur Firmen-Admins und Export-Admins dürfen Nachbearbeitung manuell setzen.');
     const reason=requireReason(context.reason);
     next.rework={active:true,reason,manual:context.manual===true};
     return next;
@@ -134,21 +145,24 @@ function applyLifecycleAction(shipment,action,context={}){
   if(name==='clear-rework'){
     assertMutable(next);
     if(next.rework?.active!==true)return next;
-    if(next.rework.manual===true)requireReason(context.reason);
-    if(next.rework.manual!==true&&context.validationPassed!==true)throw domainError('SHIPMENT_TRANSITION_INVALID','System-Nachbearbeitung kann erst nach erfolgreicher Prüfung geschlossen werden.');
+    if(next.rework.manual===true){
+      if(!roleIs(context.role,'TENANT_ADMIN','EXPORT_ADMIN'))throw domainError('FORBIDDEN','Nur Firmen-Admins und Export-Admins dürfen manuelle Nachbearbeitung beenden.');
+      requireReason(context.reason);
+    }else if(context.validationPassed!==true){
+      throw domainError('SHIPMENT_TRANSITION_INVALID','System-Nachbearbeitung kann erst nach erfolgreicher Prüfung geschlossen werden.');
+    }
     next.rework={active:false};return next;
   }
   if(name==='confirm-pickup'){
-    assertMutable(next);requireStatus(next,'Bereit zur Abholung');
-    if(next.rework?.active===true)throw domainError('SHIPMENT_TRANSITION_INVALID','Nachbearbeitung blockiert die Abholung.');
+    assertMutable(next);requireStatus(next,'Bereit zur Abholung');assertNoRework(next);
     if(context.pickupValidated!==true)throw domainError('SHIPMENT_TRANSITION_INVALID','Abholprüfung ist nicht bestätigt.');
     next.status='Abgeholt';return next;
   }
   if(name==='pod-valid'){
-    requireStatus(next,'Abgeholt');next.status='POD vorhanden';return next;
+    requireStatus(next,'Abgeholt');assertNoRework(next);next.status='POD vorhanden';return next;
   }
   if(name==='auto-complete'){
-    requireStatus(next,'POD vorhanden');
+    requireStatus(next,'POD vorhanden');assertNoRework(next);
     if(context.noBlockers!==true)throw domainError('SHIPMENT_TRANSITION_INVALID','Pflichtpunkte sind noch offen.');
     next.status='Abgeschlossen';return next;
   }
@@ -160,7 +174,7 @@ function applyLifecycleAction(shipment,action,context={}){
     next.status='Storniert';return next;
   }
   if(name==='archive'){
-    requireStatus(next,'Abgeschlossen');
+    requireStatus(next,'Abgeschlossen');assertNoRework(next);
     if(context.manual===true&&!roleIs(context.role,'TENANT_ADMIN','EXPORT_ADMIN'))throw domainError('FORBIDDEN','Keine Berechtigung zum Archivieren.');
     next.status='Archiviert';return next;
   }
