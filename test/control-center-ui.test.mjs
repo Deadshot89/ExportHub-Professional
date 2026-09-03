@@ -50,6 +50,8 @@ test('overview uses real professional meta and masterdata endpoints',()=>{
 });
 
 test('customer workspace uses compact control-center surfaces',()=>{
+  const html=read('index.html');
+  assert.match(html,/href="\/assets\/css\/control-center\.css"/);
   assert.equal(fs.existsSync(new URL('../assets/css/control-center.css',import.meta.url)),true,'focused Control Center stylesheet must exist');
   const css=read('assets/css/app.css')+'\n'+read('assets/css/control-center.css');
   for(const cls of ['customer-summary-strip','customer-summary-stat','location-operational-card','location-detail-section']){
