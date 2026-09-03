@@ -91,18 +91,18 @@ Bestehende kundenbezogene Länderfelder dürfen für Migration/Kompatibilität b
 
 Bestehende Tabelle wird erweitert.
 
-Geplante Kernfelder:
+Geplante Kernfelder für live gepflegte Standorte:
 
 - `id uuid primary key`
 - `tenant_id uuid not null`
 - `customer_id uuid not null`
 - `legacy_location_id text null`
 - `name text not null`
-- `street text not null`
-- `house_number text not null`
-- `postal_code text not null`
-- `city text not null`
-- `country text not null`
+- `street text`
+- `house_number text`
+- `postal_code text`
+- `city text`
+- `country text`
 - `country_iso text null`
 - `contact_name text null`
 - `contact_email text null`
@@ -113,6 +113,8 @@ Geplante Kernfelder:
 - `active boolean not null default true`
 - `created_at timestamptz not null`
 - `updated_at timestamptz not null`
+
+Für **neu live angelegte oder live bearbeitete Standorte** erzwingt die API Straße, Hausnummer, PLZ, Ort und Land als Pflichtfelder. Bei der Schema-Erweiterung dürfen die neuen strukturierten Adressspalten zunächst nullable bleiben, damit eventuell vorhandene Legacy-/Migrationszeilen mit dem bisherigen Feld `address` nicht beschädigt werden. Eine spätere Datenmigration kann die strukturierten Felder auffüllen.
 
 Das vorhandene Feld `derived_main` darf für Import-/Legacy-Metadaten bestehen bleiben, wird im Live-Modul aber **nicht** zur automatischen Standortauswahl verwendet.
 
@@ -132,7 +134,7 @@ Regeln:
 
 - Foreign Key auf `customer_locations`
 - tenant-sichere Zuordnung
-- `unique(tenant_id, location_id, lower(email))` bzw. technisch gleichwertige case-insensitive Eindeutigkeit
+- case-insensitive Eindeutigkeit pro Standort über einen eindeutigen Index auf Tenant, Standort und normalisierte E-Mail
 
 ## 4. Architektur und API
 
@@ -180,7 +182,12 @@ Neue bzw. angepasste Rechte für `customers.read` und `customers.write`:
 - `WAREHOUSE` / Lager: nur lesen
 - `AUDITOR`: nur lesen
 
-Damit müssen `TEAM_LEAD` und `OPERATOR` im bestehenden Rollenmodell zusätzlich `customers.write` erhalten.
+Im bestehenden Rollenmodell sind dafür folgende Anpassungen notwendig:
+
+- `TEAM_LEAD` erhält zusätzlich `customers.write`.
+- `OPERATOR` erhält zusätzlich `customers.write`.
+- `WAREHOUSE` erhält zusätzlich `customers.read`, aber **kein** `customers.write`.
+- `AUDITOR` behält ausschließlich `customers.read`.
 
 Lager und Auditor dürfen Kunden/Standorte ansehen. Lager darf diese Daten später bei Sendungen verwenden, aber nicht ändern.
 
