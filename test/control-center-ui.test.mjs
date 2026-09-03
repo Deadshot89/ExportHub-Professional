@@ -50,6 +50,12 @@ test('overview uses real professional meta and masterdata endpoints',()=>{
   assert.match(js,/professional:session-ready/);
 });
 
+test('overview session fallback uses the canonical Professional auth endpoint',()=>{
+  const js=read('assets/js/overview.js');
+  assert.match(js,/apiJson\('\/api\/professional-auth\/session'\)/);
+  assert.doesNotMatch(js,/apiJson\('\/api\/auth-session'\)/);
+});
+
 test('customer workspace uses compact control-center surfaces',()=>{
   const html=read('index.html');
   assert.match(html,/href="\/assets\/css\/control-center\.css"/);
