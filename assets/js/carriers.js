@@ -29,11 +29,11 @@ function renderRows(){
   const body=$('#carrierRows'),count=$('#carrierCount');if(!body)return;
   if(count)count.textContent=`${rows.length} Spedition${rows.length===1?'':'en'}`;
   body.innerHTML=rows.map(carrier=>`<tr>
-    <td><strong>${esc(carrier.name||'–')}</strong>${carrier.portalUrl?`<div class="muted"><a href="${esc(carrier.portalUrl)}" target="_blank" rel="noopener noreferrer">Portal öffnen</a></div>`:''}</td>
-    <td>${carrier.abdRequiredDefault?'<span class="cc-status warn">ABD standardmäßig</span>':'<span class="cc-status neutral">Kein ABD-Standard</span>'}</td>
-    <td><strong>${esc(carrier.contactName||'–')}</strong><div class="muted">${esc(carrier.email||'')}${carrier.phone?` · ${esc(carrier.phone)}`:''}</div></td>
-    <td>${carrier.active!==false?'<span class="cc-status good">Aktiv</span>':'<span class="cc-status neutral">Inaktiv</span>'}</td>
-    <td class="carrier-row-actions">${canWrite()?`<button type="button" class="ghost compact" data-carrier-action="edit" data-carrier-id="${esc(carrier.id)}">Bearbeiten</button><button type="button" class="ghost compact" data-carrier-action="status" data-carrier-id="${esc(carrier.id)}" data-next-active="${carrier.active===false?'true':'false'}">${carrier.active===false?'Aktivieren':'Deaktivieren'}</button>`:''}</td>
+    <td data-label="Spedition"><strong>${esc(carrier.name||'–')}</strong>${carrier.portalUrl?`<div class="muted"><a href="${esc(carrier.portalUrl)}" target="_blank" rel="noopener noreferrer">Portal öffnen</a></div>`:''}</td>
+    <td data-label="ABD-Standard">${carrier.abdRequiredDefault?'<span class="cc-status warn">ABD standardmäßig</span>':'<span class="cc-status neutral">Kein ABD-Standard</span>'}</td>
+    <td data-label="Kontakt"><strong>${esc(carrier.contactName||'–')}</strong><div class="muted">${esc(carrier.email||'')}${carrier.phone?` · ${esc(carrier.phone)}`:''}</div></td>
+    <td data-label="Status">${carrier.active!==false?'<span class="cc-status good">Aktiv</span>':'<span class="cc-status neutral">Inaktiv</span>'}</td>
+    <td data-label="Aktionen" class="carrier-row-actions">${canWrite()?`<button type="button" class="ghost compact" data-carrier-action="edit" data-carrier-id="${esc(carrier.id)}">Bearbeiten</button><button type="button" class="ghost compact" data-carrier-action="status" data-carrier-id="${esc(carrier.id)}" data-next-active="${carrier.active===false?'true':'false'}">${carrier.active===false?'Aktivieren':'Deaktivieren'}</button>`:''}</td>
   </tr>`).join('')||'<tr><td colspan="5" class="muted">Keine Speditionen für diesen Filter.</td></tr>';
   body.querySelectorAll('[data-carrier-action="edit"]').forEach(button=>button.addEventListener('click',()=>openCarrierDrawer(rows.find(row=>String(row.id)===String(button.dataset.carrierId))||null)));
   body.querySelectorAll('[data-carrier-action="status"]').forEach(button=>button.addEventListener('click',()=>setCarrierStatus(button)));
@@ -91,6 +91,7 @@ $('#newCarrierBtn')?.addEventListener('click',()=>openCarrierDrawer());
 $('#carrierStatusFilter')?.addEventListener('change',()=>loadCarriers());
 $('#carrierForm')?.addEventListener('submit',saveCarrier);
 $('#closeCarrierDrawer')?.addEventListener('click',closeCarrierDrawer);
+$('#cancelCarrierBtn')?.addEventListener('click',closeCarrierDrawer);
 $('#carrierDrawerBackdrop')?.addEventListener('click',closeCarrierDrawer);
-document.querySelector('[data-nav="carriers"]')?.addEventListener('click',()=>{if(syncMode())loadCarriers();});
+document.querySelector('[data-nav="carriers"]')?.addEventListener('click',()=>{const title=$('#pageTitle');if(title)title.textContent='Speditionen';if(syncMode())loadCarriers();});
 window.addEventListener('professional:session-ready',event=>{localMode=!!event.detail?.local;session=event.detail?.session||null;rows=[];editingId='';closeCarrierDrawer();syncMode();});
