@@ -84,7 +84,7 @@ test('login API resolves tenant and membership server-side instead of accepting 
   assert.match(login,/loginCandidate\(tenant\.id,b\.login\)/);
   assert.doesNotMatch(login,/b\.role|b\.tenantId|b\.tenant_id/);
   assert.match(store,/join tenant_memberships/i);
-  assert.match(store,/where u\.tenant_id=\$1 and a\.login_name=\$2/i);
+  assert.match(store,/where u\.tenant_id=\$1 and \(a\.login_name=\$2 or lower\(u\.email\)=\$2\)/i);
 });
 
 test('five failed password attempts trigger a 30 minute account lock in auth store',()=>{
