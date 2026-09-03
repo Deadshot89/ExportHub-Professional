@@ -26,6 +26,17 @@ test('migrated shipment rows are normalized as permanently read-only',()=>{
   assert.equal(rows[0].customerName,'Alpha GmbH');
 });
 
+test('shipment detail exposes persisted server colli rows and totals without recalculating LDM in browser',()=>{
+  const shipment=readModel.withColliDetails(readModel.normalizeShipmentRow({id:'live-1',reference:'COL001',source_kind:'LIVE',status:'Entwurf',revision:4}),[
+    {id:'r1',packaging_type_id:'p1',packaging_name_snapshot:'Euro Palette',quantity:'3',weight_kg:'120.500',length_cm:'120',width_cm:'80',height_cm:'150',ldm:'0.6000',position:0},
+    {id:'r2',packaging_type_id:'p2',packaging_name_snapshot:'Karton',quantity:'2',weight_kg:'30',length_cm:'60',width_cm:'40',height_cm:'40',ldm:'0.2000',position:1}
+  ]);
+  assert.equal(shipment.colliRows.length,2);
+  assert.deepEqual(shipment.colliRows.map(row=>row.packagingName),['Euro Palette','Karton']);
+  assert.deepEqual(shipment.colliRows.map(row=>row.ldm),[0.6,0.2]);
+  assert.deepEqual(shipment.colliTotals,{totalColli:5,totalWeightKg:150.5,totalLdm:0.8});
+});
+
 test('dashboard excludes completed archived and cancelled shipments from open work',()=>{
   const dashboard=readModel.buildShipmentDashboard(fixture,{localDate:today,timeZone:'Europe/Berlin'});
   assert.equal(dashboard.openShipments,3);
