@@ -70,6 +70,7 @@ jobs:
           test -f .deploy/assets/js/shipments.js
           test -f .deploy/assets/css/app.css
           test -f .deploy/assets/css/control-center.css
+          test -f .deploy/assets/css/carriers.css
           test -f .deploy/shared/migration-core.js
           node - <<'NODE'
           const fs=require('fs');
