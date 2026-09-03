@@ -43,3 +43,27 @@ test('master-data errors have deterministic HTTP mappings',()=>{
   assert.match(src,/REGISTRATION_EMAIL_REQUIRED:400/);
   assert.match(src,/REGISTRATION_EMAIL_DUPLICATE:409/);
 });
+
+test('schema upgrades customers and locations without removing legacy fields',()=>{
+  const sql=fs.readFileSync(new URL('../schema/postgres.sql',import.meta.url),'utf8');
+  assert.match(sql,/alter table customers add column if not exists active boolean not null default true/i);
+  assert.match(sql,/alter table customers add column if not exists updated_at timestamptz not null default now\(\)/i);
+  for(const column of ['street','house_number','postal_code','city','country_iso','contact_email','carrier_name','shipping_instructions']){
+    assert.match(sql,new RegExp(`alter table customer_locations add column if not exists ${column} text`,'i'));
+  }
+  assert.match(sql,/alter table customer_locations add column if not exists active boolean not null default true/i);
+  assert.match(sql,/alter table customer_locations add column if not exists updated_at timestamptz not null default now\(\)/i);
+  assert.match(sql,/\baddress text\b/i);
+  assert.match(sql,/\bemail text\b/i);
+  assert.match(sql,/derived_main boolean/i);
+});
+
+test('schema stores registration emails relationally with tenant isolation',()=>{
+  const sql=fs.readFileSync(new URL('../schema/postgres.sql',import.meta.url),'utf8');
+  assert.match(sql,/create table if not exists customer_location_registration_emails/i);
+  assert.match(sql,/foreign key\s*\(tenant_id\s*,\s*location_id\)[\s\S]*references customer_locations\s*\(tenant_id\s*,\s*id\)/i);
+  assert.match(sql,/customer_location_registration_emails_uq[\s\S]*lower\(email\)/i);
+  assert.match(sql,/array\[[^\]]*'customer_location_registration_emails'/s);
+  assert.match(sql,/customers_tenant_id_id_uq/i);
+  assert.match(sql,/customer_locations_tenant_id_id_uq/i);
+});
