@@ -69,12 +69,15 @@ test('carrier APIs expose tenant-scoped read write and status routes with CSRF m
 });
 
 test('locations can reference a tenant-safe carrier id while legacy carrier_name remains readable',()=>{
-  const liveSchema=read('api/shared/masterdata-schema.js');
+  const masterdataSchema=read('api/shared/masterdata-schema.js');
+  const shipmentSchema=read('api/shared/shipment-schema.js');
   const canonical=read('schema/postgres.sql');
-  for(const src of [liveSchema,canonical]){
-    assert.match(src,/customer_locations add column if not exists carrier_id uuid/i);
+  assert.match(masterdataSchema,/customer_locations add column if not exists carrier_id uuid/i);
+  assert.match(masterdataSchema,/carrier_name text/i);
+  for(const src of [shipmentSchema,canonical]){
     assert.match(src,/customer_locations_tenant_carrier_fk/i);
     assert.match(src,/foreign key\s*\(tenant_id\s*,\s*carrier_id\)[\s\S]*references carriers\s*\(tenant_id\s*,\s*id\)/i);
-    assert.match(src,/carrier_name text/i);
   }
+  assert.match(canonical,/customer_locations add column if not exists carrier_id uuid/i);
+  assert.match(canonical,/carrier_name text/i);
 });
