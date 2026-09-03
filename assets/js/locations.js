@@ -1,7 +1,7 @@
 const $=s=>document.querySelector(s);
 let globalLocationSearchTimer=null;
 
-function esc(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+function esc(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[ch]));}
 function statusPill(active){return active===false?'<span class="status-pill lock">Inaktiv</span>':'<span class="status-pill good">Aktiv</span>';}
 async function apiJson(url){
   const res=await fetch(url,{credentials:'same-origin',headers:{'content-type':'application/json'}});
@@ -18,13 +18,13 @@ function syncLocationViewMode(){
 }
 function renderGlobalLocationRows(rows){
   const host=$('#globalLocationRows');if(!host)return;
-  host.innerHTML=(rows||[]).map(location=>`<button class="global-location-row" type="button" data-customer-id="${esc(location.customer_id)}" data-location-id="${esc(location.id)}"><span><b>${esc(location.customer_account||'–')} · ${esc(location.customer_name||'Kunde')}</b><small>${esc(location.name||'Standort')}</small></span><span>${esc(location.city||'–')}</span><span>${esc(location.country||'–')}</span><span>${statusPill(location.active!==false)}</span><span>${esc(location.carrier_name||'Keine Spedition')}</span><span class="global-location-open">Öffnen ›</span></button>`).join('')||'<div class="empty compact-empty">Keine Standorte für diesen Filter.</div>';
-  host.querySelectorAll('[data-customer-id][data-location-id]').forEach(button=>button.addEventListener('click',()=>openCustomerForLocation(button.dataset.customerId,button.dataset.locationId)));
+  host.innerHTML=(rows||[]).map(location=>`<tr data-customer-id="${esc(location.customer_id)}" data-location-id="${esc(location.id)}"><td><b>${esc(location.customer_account||'–')}</b><div class="muted">${esc(location.customer_name||'Kunde')}</div></td><td><b>${esc(location.name||'Standort')}</b><div class="muted">${esc(location.city||'–')}</div></td><td>${esc(location.country||'–')}</td><td>${statusPill(location.active!==false)}</td><td>${esc(location.carrier_name||'Keine Spedition')}</td><td><button class="ghost compact" type="button">Öffnen</button></td></tr>`).join('')||'<tr><td colspan="6" class="muted">Keine Standorte für diesen Filter.</td></tr>';
+  host.querySelectorAll('tr[data-customer-id][data-location-id]').forEach(row=>row.querySelector('button')?.addEventListener('click',()=>openCustomerForLocation(row.dataset.customerId,row.dataset.locationId)));
 }
 async function loadGlobalLocations(){
   if(!syncLocationViewMode())return;
   const host=$('#globalLocationRows'),count=$('#globalLocationCount');
-  if(host)host.innerHTML='<div class="empty compact-empty">Standorte werden geladen …</div>';
+  if(host)host.innerHTML='<tr><td colspan="6" class="muted">Standorte werden geladen …</td></tr>';
   try{
     const q=($('#globalLocationSearch')?.value||'').trim();
     const status=$('#globalLocationStatusFilter')?.value||'active';
@@ -34,19 +34,18 @@ async function loadGlobalLocations(){
     renderGlobalLocationRows(rows);
   }catch(err){
     if(count)count.textContent='Standorte konnten nicht geladen werden.';
-    if(host)host.innerHTML=`<div class="drawer-error">${esc(err.message||'Standorte konnten nicht geladen werden.')}</div>`;
+    if(host)host.innerHTML=`<tr><td colspan="6"><div class="drawer-error">${esc(err.message||'Standorte konnten nicht geladen werden.')}</div></td></tr>`;
   }
 }
 async function openCustomerForLocation(customerId,locationId){
   const customerNav=document.querySelector('[data-nav="customers"]');
   if(!customerNav||!customerId||!locationId)return;
-  customerNav.click();
   const search=$('#customerSearch'),status=$('#customerStatusFilter');
   if(search)search.value='';if(status)status.value='all';
-  const waitFor=async(selector,predicate=()=>true,limit=80)=>{
+  customerNav.click();
+  const waitFor=async(selector,limit=80)=>{
     for(let i=0;i<limit;i++){
-      const node=document.querySelector(selector);
-      if(node&&predicate(node))return node;
+      const node=document.querySelector(selector);if(node)return node;
       await new Promise(resolve=>setTimeout(resolve,50));
     }
     return null;
@@ -63,6 +62,5 @@ async function openCustomerForLocation(customerId,locationId){
 $('#globalLocationSearch')?.addEventListener('input',()=>{clearTimeout(globalLocationSearchTimer);globalLocationSearchTimer=setTimeout(loadGlobalLocations,180);});
 $('#globalLocationStatusFilter')?.addEventListener('change',loadGlobalLocations);
 document.querySelector('[data-nav="locations"]')?.addEventListener('click',()=>setTimeout(loadGlobalLocations,0));
-window.addEventListener('exporthub:session-ready',()=>{if(document.querySelector('.view.active')?.dataset.view==='locations')loadGlobalLocations();});
 
 export {loadGlobalLocations,openCustomerForLocation};
