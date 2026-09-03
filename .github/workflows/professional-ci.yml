@@ -81,6 +81,9 @@ jobs:
           node --check assets/js/ui-kit.js
           node --check assets/js/overview.js
           node --check assets/js/workspace-settings.js
+          node --check assets/js/shipment-autosave.js
+          node --check assets/js/shipment-editor.js
+          node --check assets/js/shipments.js
       - name: Verify Logistics Control Center invariants
         shell: bash
         run: |
