@@ -5,10 +5,18 @@ import {
   EMPLOYEE_BY_ID,
   getMissingDocuments
 } from './demo-data.js';
-import { getState, reset as resetDemoStore, completeTask } from './demo-store.js';
+import {
+  getState,
+  reset as resetDemoStore,
+  completeTask,
+  setRole,
+  canRole,
+  DEMO_ROLE_CAPABILITIES
+} from './demo-store.js';
 import { initShipmentWorkspace } from './demo-shipments.js';
 import { initDocumentWorkspace } from './demo-documents.js';
 import { initAvisWorkspace } from './demo-avis.js';
+import { initPresentationGuide } from './presentation-guide.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -25,9 +33,30 @@ const viewTitles = {
   team: 'Team & Rollen'
 };
 
+const capabilityLabels = {
+  viewShipments: 'Sendungen ansehen',
+  editShipments: 'Sendungsdaten bearbeiten',
+  completeTasks: 'Aufgaben erledigen',
+  viewDocuments: 'Dokumente prüfen',
+  manageCustomers: 'Kunden verwalten',
+  confirmPickup: 'Abholung bestätigen',
+  addPod: 'POD ergänzen',
+  createAvis: 'Kunden-Avis erstellen',
+  viewAudit: 'Nachvollziehbarkeit ansehen'
+};
+
 let shipmentWorkspace = null;
 let documentWorkspace = null;
 let avisWorkspace = null;
+let presentationGuide = null;
+let selectedCustomerId = 'cus-05';
+
+const escapeHtml = value => String(value ?? '')
+  .replaceAll('&','&amp;')
+  .replaceAll('<','&lt;')
+  .replaceAll('>','&gt;')
+  .replaceAll('"','&quot;')
+  .replaceAll("'",'&#39;');
 
 function customerName(shipment) {
   return CUSTOMER_BY_ID[shipment.customerId]?.name || 'Demo-Kunde';
@@ -132,6 +161,7 @@ function renderTaskWorkspace() {
     return PRIORITIES.indexOf(a.priority) - PRIORITIES.indexOf(b.priority);
   });
   const openCount = sorted.filter(item => item.status === 'Offen').length;
+  const canComplete = canRole(state.role.role, 'completeTasks');
   const summary = $('#taskSummary');
   if (summary) summary.innerHTML = `<strong>${openCount}</strong><span>offene Demo-Aufgaben</span>`;
   if (!sorted.length) {
@@ -142,10 +172,13 @@ function renderTaskWorkspace() {
     const shipment = state.shipments.find(item => item.id === task.shipmentId);
     const employee = EMPLOYEE_BY_ID[task.ownerId];
     const done = task.status === 'Erledigt';
+    let action = '<span>Erledigt</span>';
+    if (!done && canComplete) action = `<button type="button" data-complete-task="${task.id}">Als erledigt markieren</button>`;
+    if (!done && !canComplete) action = '<span>Nur Ansicht</span>';
     return `<article class="task-card ${task.priority.toLowerCase()}${done ? ' task-done' : ''}">
       <span class="task-priority">${done ? '✓' : task.priority}</span>
       <div class="task-copy"><strong>${task.title}</strong><span>${shipment?.reference || 'Demo'} · ${shipment ? customerName(shipment) : 'ExportHUB Demo'}</span><small>${task.due} · ${employee?.name || 'Team'}</small></div>
-      <div class="task-actions">${done ? '<span>Erledigt</span>' : `<button type="button" data-complete-task="${task.id}">Als erledigt markieren</button>`}</div>
+      <div class="task-actions">${action}</div>
     </article>`;
   }).join('');
   workspace.querySelectorAll('[data-complete-task]').forEach(button => button.addEventListener('click', () => {
@@ -164,11 +197,90 @@ function renderActivities() {
   </article>`).join('');
 }
 
+function renderCustomerWorkspace() {
+  const state = getState();
+  const list = $('#customerList');
+  const detail = $('#customerDetail');
+  if (!list || !detail) return;
+  if (!state.customers.some(item => item.id === selectedCustomerId)) selectedCustomerId = state.customers[0]?.id || null;
+
+  list.innerHTML = state.customers.map(customer => {
+    const locations = state.locations.filter(item => item.customerId === customer.id).length;
+    const shipments = state.shipments.filter(item => item.customerId === customer.id).length;
+    return `<button type="button" class="customer-demo-row${customer.id === selectedCustomerId ? ' active' : ''}" data-customer-id="${customer.id}"><div><strong>${escapeHtml(customer.name)}</strong><small>${escapeHtml(customer.number)} · ${escapeHtml(customer.country)} · ${locations} Standort${locations === 1 ? '' : 'e'}</small></div><span>${shipments} Sendung${shipments === 1 ? '' : 'en'}</span></button>`;
+  }).join('');
+
+  const customer = state.customers.find(item => item.id === selectedCustomerId);
+  if (!customer) {
+    detail.innerHTML = '<div class="shipment-detail-empty"><h3>Kein Demo-Kunde</h3></div>';
+    return;
+  }
+  const locations = state.locations.filter(item => item.customerId === customer.id);
+  const shipments = state.shipments.filter(item => item.customerId === customer.id);
+  detail.innerHTML = `<div class="customer-detail-head"><div><span class="eyebrow">DEMO-KUNDE</span><h3>${escapeHtml(customer.name)}</h3><p>${escapeHtml(customer.number)} · ${escapeHtml(customer.country)}</p></div><span class="status-chip good">${escapeHtml(customer.status)}</span></div>
+    <div class="customer-detail-facts"><div><small>Kundennummer</small><strong>${escapeHtml(customer.number)}</strong></div><div><small>Lieferstandorte</small><strong>${locations.length}</strong></div><div><small>Demo-Sendungen</small><strong>${shipments.length}</strong></div></div>
+    <section class="customer-location-list"><h4>Zugeordnete Standorte</h4>${locations.map(location => `<div class="customer-location-entry"><div><strong>${escapeHtml(location.label)}</strong><small>${escapeHtml(location.address)} · ${escapeHtml(location.city)}</small></div><span>${escapeHtml(location.country)}</span></div>`).join('') || '<small>Keine Standorte</small>'}</section>
+    <section class="customer-shipment-list"><h4>Sendungen in dieser Demo</h4>${shipments.map(shipment => `<div class="customer-shipment-mini"><div><strong>${escapeHtml(shipment.reference)} · ${escapeHtml(shipment.status)}</strong><small>${escapeHtml(shipment.destination)} · ${escapeHtml(shipment.packages)}</small></div><button type="button" data-customer-shipment="${shipment.id}">Öffnen →</button></div>`).join('') || '<small>Keine Sendungen</small>'}</section>`;
+
+  list.querySelectorAll('[data-customer-id]').forEach(button => button.addEventListener('click', () => {
+    selectedCustomerId = button.dataset.customerId;
+    renderCustomerWorkspace();
+  }));
+  detail.querySelectorAll('[data-customer-shipment]').forEach(button => button.addEventListener('click', () => openShipment(button.dataset.customerShipment)));
+}
+
+function renderLocationWorkspace() {
+  const state = getState();
+  const summary = $('#locationQualitySummary');
+  const workspace = $('#locationWorkspace');
+  if (!summary || !workspace) return;
+  const countries = new Set(state.locations.map(item => item.country)).size;
+  const usedLocations = new Set(state.shipments.map(item => item.locationId)).size;
+  const nonEuLocations = state.locations.filter(item => ['CH','GB'].includes(item.country)).length;
+  summary.innerHTML = `<div><small>Länder</small><strong>${countries}</strong><span>im fiktiven Standortbestand</span></div><div><small>In Sendungen genutzt</small><strong>${usedLocations} / ${state.locations.length}</strong><span>Standorte mit operativem Bezug</span></div><div><small>Nicht-EU-Ziele</small><strong>${nonEuLocations}</strong><span>mit Exportrelevanz in der Demo</span></div>`;
+  workspace.innerHTML = state.locations.map(location => {
+    const customer = state.customers.find(item => item.id === location.customerId);
+    const usage = state.shipments.filter(item => item.locationId === location.id).length;
+    return `<article class="location-demo-card"><header><div><strong>${escapeHtml(location.label)}</strong><small>${escapeHtml(customer?.name || 'Demo-Kunde')}</small></div><span class="location-country">${escapeHtml(location.country)}</span></header><div class="location-address">${escapeHtml(location.address)}<br>${escapeHtml(location.city)}</div><div class="location-usage"><span>Verwendung im Demo-Bestand</span><strong>${usage}×</strong></div></article>`;
+  }).join('');
+}
+
+function renderTeamWorkspace() {
+  const state = getState();
+  const role = state.role.role;
+  const employee = state.employees.find(item => item.id === state.role.employeeId);
+  const capabilities = DEMO_ROLE_CAPABILITIES[role] || {};
+  const activeRole = $('#activeRoleName');
+  const teamActiveRole = $('#teamActiveRole');
+  const summary = $('#teamRoleSummary');
+  const detail = $('#teamRoleDetail');
+  if (activeRole) activeRole.textContent = role;
+  if (teamActiveRole) teamActiveRole.textContent = role;
+  if (summary) summary.innerHTML = `<strong>${escapeHtml(employee?.name || role)}</strong><span>aktive Präsentationsperson</span>`;
+  $$('[data-demo-role]').forEach(button => {
+    button.classList.toggle('active', button.dataset.demoRole === role);
+    button.onclick = () => setPresentationRole(button.dataset.demoRole, button.dataset.demoEmployee);
+  });
+  if (!detail) return;
+  const peers = state.employees.filter(item => item.role === role);
+  detail.innerHTML = `<div class="role-context-profile"><strong>${escapeHtml(employee?.name || role)}</strong><span>${escapeHtml(role)} · ${escapeHtml(employee?.team || 'Demo-Team')}</span></div><div class="capability-list">${Object.entries(capabilityLabels).map(([key,label]) => `<div class="capability-item ${capabilities[key] ? 'allowed' : 'blocked'}"><i>${capabilities[key] ? '✓' : '–'}</i><span>${escapeHtml(label)}</span></div>`).join('')}</div><div class="role-context-note">Der Wechsel betrifft ausschließlich die Darstellung und lokale Demo-Aktionen. Alle Geschäftsdatensätze bleiben fiktiv.</div><div class="role-team-list"><h4>Beispielpersonen mit dieser Rolle</h4><div class="role-team-people">${peers.map(item => `<span>${escapeHtml(item.name)}</span>`).join('')}</div></div>`;
+}
+
+function setPresentationRole(role, employeeId) {
+  setRole(role, employeeId);
+  refreshOperationalViews();
+  shipmentWorkspace?.refresh();
+  renderTeamWorkspace();
+}
+
 function refreshOperationalViews() {
   renderMetrics();
   renderPriorityShipments();
   renderActions();
   renderTaskWorkspace();
+  renderCustomerWorkspace();
+  renderLocationWorkspace();
+  renderTeamWorkspace();
   documentWorkspace?.refresh();
   avisWorkspace?.refresh();
 }
@@ -189,45 +301,30 @@ function openView(view) {
   if (view === 'shipments') shipmentWorkspace?.refresh();
   if (view === 'tasks') renderTaskWorkspace();
   if (view === 'documents') documentWorkspace?.refresh();
+  if (view === 'customers') renderCustomerWorkspace();
+  if (view === 'locations') renderLocationWorkspace();
   if (view === 'avis') avisWorkspace?.refresh();
-}
-
-function enterDemo(withTour) {
-  document.getElementById('demoApp')?.scrollIntoView({ block: 'start' });
-  if (withTour) {
-    const toast = $('#tourToast');
-    if (toast) toast.hidden = false;
-  }
+  if (view === 'team') renderTeamWorkspace();
 }
 
 function showResetMessage() {
-  const toast = $('#tourToast');
-  if (!toast) return;
-  toast.hidden = false;
-  const text = toast.querySelector('span');
-  if (text) text.textContent = 'Demo-Ausgangsansicht wiederhergestellt. Es wurden keine Produktivdaten verändert.';
+  const notice = $('#demoNotice');
+  if (notice) notice.hidden = false;
 }
 
 function bindNavigation() {
   $$('.demo-nav button[data-view]').forEach(button => button.addEventListener('click', () => openView(button.dataset.view)));
   $$('[data-open-view]').forEach(button => button.addEventListener('click', () => openView(button.dataset.openView)));
-  $('#exploreBtn')?.addEventListener('click', () => enterDemo(false));
-  $('#startTourBtn')?.addEventListener('click', () => enterDemo(true));
-  $('#restartTourBtn')?.addEventListener('click', () => {
-    openView('overview');
-    const toast = $('#tourToast');
-    if (toast) toast.hidden = false;
-  });
-  $('#tourToastClose')?.addEventListener('click', () => {
-    const toast = $('#tourToast');
-    if (toast) toast.hidden = true;
-  });
+  $('#exploreBtn')?.addEventListener('click', () => document.getElementById('demoApp')?.scrollIntoView({ block: 'start' }));
   $('#mobileMenuBtn')?.addEventListener('click', () => $('#demoSidebar')?.classList.toggle('open'));
+  $('#demoNoticeClose')?.addEventListener('click', () => { const notice = $('#demoNotice'); if (notice) notice.hidden = true; });
   $('#demoResetBtn')?.addEventListener('click', () => {
     resetDemoStore();
+    selectedCustomerId = 'cus-05';
     refreshOperationalViews();
     shipmentWorkspace?.refresh();
     openView('overview');
+    presentationGuide?.close();
     showResetMessage();
   });
 }
@@ -238,10 +335,14 @@ function init() {
   renderActions();
   renderTaskWorkspace();
   renderActivities();
+  renderCustomerWorkspace();
+  renderLocationWorkspace();
+  renderTeamWorkspace();
   bindNavigation();
   shipmentWorkspace = initShipmentWorkspace({ onChange: refreshOperationalViews });
   documentWorkspace = initDocumentWorkspace({ onOpenShipment: openShipment });
   avisWorkspace = initAvisWorkspace({ onChange: refreshOperationalViews });
+  presentationGuide = initPresentationGuide({ openView, openShipment, setPresentationRole });
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
