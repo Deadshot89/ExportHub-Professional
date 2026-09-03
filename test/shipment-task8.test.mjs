@@ -167,7 +167,7 @@ test('one-off conversion creates incomplete masterdata atomically, links ids and
     const q=String(sql).toLowerCase();
     if(q.includes('from shipments')&&q.includes('for update'))return {rows:[shipment]};
     if(q.includes('from shipment_edit_locks'))return {rows:[{lock_token:'lock'}]};
-    if(q.includes('from customers')&&q.includes('lower(account)'))return {rows:[]};
+    if(q.includes('from customers')&&(q.includes('lower(account)')||q.includes('lower(coalesce(account')))return {rows:[]};
     if(q.startsWith('insert into customers'))return {rows:[{id:customerId,account:'N1001',name:'One Off BV',active:true}]};
     if(q.startsWith('insert into customer_locations')){
       const json=params.find(value=>typeof value==='string'&&value.includes('masterdataIncomplete'));
