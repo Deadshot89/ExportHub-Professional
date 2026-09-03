@@ -7,6 +7,7 @@
   <title>ExportHUB Professional · Firmen-Demo</title>
   <link rel="stylesheet" href="./demo.css">
   <link rel="stylesheet" href="./demo-shipments.css">
+  <link rel="stylesheet" href="./demo-operations.css">
 </head>
 <body>
   <div class="demo-ribbon" role="status"><strong>DEMO / MUSTER</strong><span>Ausschließlich fiktive Beispieldaten · keine Verbindung zu Produktivdaten</span></div>
@@ -148,11 +149,25 @@
         </div>
       </section>
 
-      <section class="view" data-demo-view="tasks"><div class="placeholder-view"><span>✓</span><h3>Aufgaben & Planung</h3><p>Aufgaben werden im nächsten Block direkt mit den Beispielsendungen verknüpft.</p></div></section>
-      <section class="view" data-demo-view="documents"><div class="placeholder-view"><span>▤</span><h3>Dokumente</h3><p>Hier entsteht die Dokumentenprüfung für Lieferschein, L1, L2, CMR, ABD und POD.</p></div></section>
+      <section class="view" data-demo-view="tasks">
+        <div class="ops-page-head"><div><span class="eyebrow">AUFGABEN & PLANUNG</span><h3>Arbeit nach Priorität und Zuständigkeit</h3><p>Offene Schritte sind direkt mit den fiktiven Sendungen verknüpft und können lokal abgeschlossen werden.</p></div><div id="taskSummary" class="ops-summary"></div></div>
+        <div id="taskWorkspace" class="task-workspace"></div>
+      </section>
+
+      <section class="view" data-demo-view="documents">
+        <div class="ops-page-head"><div><span class="eyebrow">DOKUMENTENKONTROLLE</span><h3>Pflichtunterlagen auf einen Blick</h3><p>Lieferschein, L1 / QR, L2, CMR, ABD und POD werden abhängig vom Sendungsstatus geprüft.</p></div><div id="documentSummary" class="ops-summary"></div></div>
+        <div class="document-legend"><span><i class="legend-dot present"></i>vorhanden</span><span><i class="legend-dot missing"></i>fehlt / erforderlich</span><strong>DEMO / MUSTER</strong></div>
+        <div id="documentWorkspace" class="document-workspace"></div>
+      </section>
+
       <section class="view" data-demo-view="customers"><div class="placeholder-view"><span>◫</span><h3>Kunden</h3><p>Acht vollständig fiktive Kunden sind bereits im Demo-Datensatz vorbereitet.</p></div></section>
       <section class="view" data-demo-view="locations"><div class="placeholder-view"><span>⌖</span><h3>Standorte</h3><p>Zwölf fiktive Lieferstandorte werden in der nächsten Ausbaustufe als Qualitätsarbeitsbereich dargestellt.</p></div></section>
-      <section class="view" data-demo-view="avis"><div class="placeholder-view"><span>↗</span><h3>Kunden-Avis</h3><p>Die externe Vorschau wird ausschließlich lokal simuliert und erzeugt keinen echten Link.</p></div></section>
+
+      <section class="view" data-demo-view="avis">
+        <div class="ops-page-head"><div><span class="eyebrow">KUNDEN-AVIS</span><h3>Externe Abholinformation sicher präsentieren</h3><p>Der Ablauf wird vollständig lokal simuliert. Es entsteht weder ein öffentlicher Token noch ein echter Mailversand.</p></div><span class="status-chip good">Nur Demo-Vorschau</span></div>
+        <div id="avisWorkspace" class="avis-workspace"></div>
+      </section>
+
       <section class="view" data-demo-view="team"><div class="placeholder-view"><span>◎</span><h3>Team & Rollen</h3><p>Die Demo enthält zwölf fiktive Mitarbeitende für rollenbasierte Präsentationsansichten.</p></div></section>
     </main>
   </div>
