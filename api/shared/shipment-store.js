@@ -6,6 +6,8 @@ const readModel=require('./shipment-read-model');
 const domain=require('./shipment-domain');
 const calculations=require('./shipment-calculations');
 const workspaceSettings=require('./workspace-settings-store');
+const masterdata=require('./masterdata-store');
+const masterdataValidation=require('./masterdata-validation');
 
 function q(value){return value==null?'':String(value).trim();}
 function shipmentError(code,message){return Object.assign(new Error(message),{code});}
@@ -13,6 +15,14 @@ function defaultLockToken(){return crypto.randomBytes(24).toString('base64url');
 function objectInput(value,name){
   if(value==null)return {};
   if(value&&typeof value==='object'&&!Array.isArray(value))return value;
+  throw shipmentError('INPUT_INVALID',`${name} ist ungültig.`);
+}
+function jsonObject(value,name){
+  if(value&&typeof value==='object'&&!Array.isArray(value))return value;
+  if(typeof value==='string'&&value.trim()){
+    try{const parsed=JSON.parse(value);if(parsed&&typeof parsed==='object'&&!Array.isArray(parsed))return parsed;}catch{}
+  }
+  if(value==null||value==='')return {};
   throw shipmentError('INPUT_INVALID',`${name} ist ungültig.`);
 }
 function nullableId(value,name){
@@ -49,6 +59,11 @@ function positiveInteger(value,name){
   const number=Number(value);
   if(!Number.isInteger(number)||number<=0)throw shipmentError('INPUT_INVALID',`${name} muss eine positive ganze Zahl sein.`);
   return number;
+}
+function expectedRevision(value){
+  const expected=Number(value);
+  if(!Number.isInteger(expected)||expected<0)throw shipmentError('INPUT_INVALID','Sendungsrevision ist ungültig.');
+  return expected;
 }
 function localDateInZone(timeZone='UTC',now=new Date()){
   try{
@@ -212,8 +227,7 @@ async function createDraftInClient(client,tenantId,userId,{referenceGenerator=do
 async function updateShipmentInClient(client,tenantId,shipmentId,userId,{lockToken,revision,patch}={}){
   const tid=q(tenantId),sid=q(shipmentId),uid=q(userId);
   if(!tid||!sid||!uid)throw shipmentError('INPUT_INVALID','Sendungs- oder Benutzerkontext fehlt.');
-  const expected=Number(revision);
-  if(!Number.isInteger(expected)||expected<0)throw shipmentError('INPUT_INVALID','Sendungsrevision ist ungültig.');
+  const expected=expectedRevision(revision);
   const currentResult=await client.query(`select * from shipments where tenant_id=$1 and id=$2 and discarded_at is null for update`,[tid,sid]);
   const current=currentResult.rows?.[0];
   if(!current)throw shipmentError('SHIPMENT_NOT_FOUND','Sendung wurde nicht gefunden.');
@@ -252,6 +266,105 @@ async function updateShipmentInClient(client,tenantId,shipmentId,userId,{lockTok
   return readModel.normalizeShipmentRow(updated.rows[0]);
 }
 
+async function setShipmentCarrierInClient(client,tenantId,shipmentId,userId,{lockToken,revision,carrierId,carrierRequiresAbd}={}){
+  const tid=q(tenantId),sid=q(shipmentId),uid=q(userId),cid=q(carrierId);
+  if(!tid||!sid||!uid||!cid)throw shipmentError('INPUT_INVALID','Sendungs-, Benutzer- oder Speditionskontext fehlt.');
+  const expected=expectedRevision(revision);
+  const currentResult=await client.query('select * from shipments where tenant_id=$1 and id=$2 and discarded_at is null for update',[tid,sid]);
+  const current=currentResult.rows?.[0];
+  if(!current)throw shipmentError('SHIPMENT_NOT_FOUND','Sendung wurde nicht gefunden.');
+  domain.assertMutable(current);
+  await requireEditLockInClient(client,tid,sid,uid,lockToken);
+  if(Number(current.revision)!==expected)throw shipmentError('SHIPMENT_REVISION_CONFLICT','Sendung wurde zwischenzeitlich geändert. Bitte neu laden.');
+  const carrierResult=await client.query(`select id,name,active,abd_required_default,contact_name,email,phone,portal_url
+    from carriers where tenant_id=$1 and id=$2 and active=true limit 1`,[tid,cid]);
+  const carrier=carrierResult.rows?.[0];
+  if(!carrier)throw shipmentError('CARRIER_NOT_FOUND','Spedition wurde nicht gefunden oder ist inaktiv.');
+  const defaultRequiresAbd=carrier.abd_required_default===true;
+  const shipmentRequiresAbd=typeof carrierRequiresAbd==='boolean'?carrierRequiresAbd:defaultRequiresAbd;
+  const snapshot={
+    carrierId:q(carrier.id),name:q(carrier.name),abdRequiredDefault:defaultRequiresAbd,carrierRequiresAbd:shipmentRequiresAbd,
+    contactName:carrier.contact_name??null,email:carrier.email??null,phone:carrier.phone??null,portalUrl:carrier.portal_url??null
+  };
+  const updated=await client.query(`update shipments set carrier_snapshot=$4::jsonb,revision=revision+1,updated_at=now()
+    where tenant_id=$1 and id=$2 and revision=$3 and discarded_at is null returning *`,[tid,sid,expected,JSON.stringify(snapshot)]);
+  if(!updated.rows?.[0])throw shipmentError('SHIPMENT_REVISION_CONFLICT','Sendung wurde zwischenzeitlich geändert. Bitte neu laden.');
+  await client.query(`update shipment_edit_locks set last_activity_at=now()
+    where tenant_id=$1 and shipment_id=$2 and user_id=$3 and lock_token=$4`,[tid,sid,uid,q(lockToken)]);
+  await client.query(`insert into audit_events(tenant_id,user_id,event_type,entity_type,entity_id,metadata)
+    values($1,$2,'SHIPMENT_CARRIER_CHANGED','shipment',$3,$4::jsonb)`,[tid,uid,sid,JSON.stringify({carrierId:cid,carrierName:snapshot.name,carrierRequiresAbd:shipmentRequiresAbd,revision:Number(updated.rows[0].revision)})]);
+  return readModel.normalizeShipmentRow(updated.rows[0]);
+}
+
+async function previewOneOffRecipientInClient(client,tenantId,shipmentId,{customerAccount}={}){
+  const tid=q(tenantId),sid=q(shipmentId);
+  if(!tid||!sid)throw shipmentError('INPUT_INVALID','Sendungskontext fehlt.');
+  const result=await client.query('select * from shipments where tenant_id=$1 and id=$2 and discarded_at is null limit 1',[tid,sid]);
+  const current=result.rows?.[0];
+  if(!current)throw shipmentError('SHIPMENT_NOT_FOUND','Sendung wurde nicht gefunden.');
+  const recipient=jsonObject(current.recipient_snapshot,'Empfänger-Snapshot');
+  const name=q(recipient.companyName??recipient.name);
+  if(!name)throw shipmentError('INPUT_INVALID','Einmal-Empfänger enthält keinen Firmennamen.');
+  const candidates=await masterdata.findOneOffCustomerCandidatesInClient(client,tid,{account:q(customerAccount),name});
+  return {recipientSnapshot:recipient,...candidates};
+}
+
+async function convertOneOffRecipientInClient(client,tenantId,shipmentId,userId,{lockToken,revision,mode='new-customer',customerAccount,customerId}={}){
+  const tid=q(tenantId),sid=q(shipmentId),uid=q(userId);
+  if(!tid||!sid||!uid)throw shipmentError('INPUT_INVALID','Sendungs- oder Benutzerkontext fehlt.');
+  const expected=expectedRevision(revision);
+  const currentResult=await client.query('select * from shipments where tenant_id=$1 and id=$2 and discarded_at is null for update',[tid,sid]);
+  const current=currentResult.rows?.[0];
+  if(!current)throw shipmentError('SHIPMENT_NOT_FOUND','Sendung wurde nicht gefunden.');
+  domain.assertMutable(current);
+  await requireEditLockInClient(client,tid,sid,uid,lockToken);
+  if(Number(current.revision)!==expected)throw shipmentError('SHIPMENT_REVISION_CONFLICT','Sendung wurde zwischenzeitlich geändert. Bitte neu laden.');
+  const recipient=jsonObject(current.recipient_snapshot,'Empfänger-Snapshot');
+  const recipientName=q(recipient.companyName??recipient.name);
+  if(!recipientName)throw shipmentError('INPUT_INVALID','Einmal-Empfänger enthält keinen Firmennamen.');
+
+  const conversionMode=q(mode).toLowerCase();
+  let targetCustomerId='',targetCustomerAccount='';
+  if(conversionMode==='new-customer'){
+    const cleanCustomer=masterdataValidation.cleanCustomer({account:customerAccount,name:recipientName});
+    const candidates=await masterdata.findOneOffCustomerCandidatesInClient(client,tid,{account:cleanCustomer.account,name:cleanCustomer.name});
+    if(candidates.exactAccount)throw shipmentError('CUSTOMER_EXISTS','Diese Kundennummer existiert bereits. Bitte bestehenden Kunden auswählen.');
+    let created;
+    try{
+      const inserted=await client.query('insert into customers(tenant_id,account,name,active,updated_at) values($1,$2,$3,true,now()) returning id,account,name,active,created_at,updated_at',[tid,cleanCustomer.account,cleanCustomer.name]);
+      created=inserted.rows?.[0];
+    }catch(err){
+      if(err?.code==='23505')throw shipmentError('CUSTOMER_EXISTS','Diese Kundennummer existiert bereits. Bitte bestehenden Kunden auswählen.');
+      throw err;
+    }
+    if(!created)throw shipmentError('CUSTOMER_EXISTS','Kunde konnte nicht angelegt werden.');
+    targetCustomerId=q(created.id);targetCustomerAccount=q(created.account);
+    await client.query(`insert into audit_events(tenant_id,user_id,event_type,entity_type,entity_id,metadata)
+      values($1,$2,'CUSTOMER_CREATED','CUSTOMER',$3,$4::jsonb)`,[tid,uid,targetCustomerId,JSON.stringify({account:targetCustomerAccount,source:'ONE_OFF_RECIPIENT',shipmentId:sid})]);
+  }else if(conversionMode==='existing-customer'){
+    targetCustomerId=q(customerId);
+    if(!targetCustomerId)throw shipmentError('CUSTOMER_NOT_FOUND','Bestehender Kunde fehlt.');
+    const customerResult=await client.query('select id,account,name,active from customers where tenant_id=$1 and id=$2 and active=true limit 1',[tid,targetCustomerId]);
+    const customer=customerResult.rows?.[0];
+    if(!customer)throw shipmentError('CUSTOMER_NOT_FOUND','Kunde wurde nicht gefunden oder ist inaktiv.');
+    targetCustomerAccount=q(customer.account);
+  }else throw shipmentError('INPUT_INVALID','Konvertierungsmodus ist ungültig.');
+
+  const carrierSnapshot=jsonObject(current.carrier_snapshot,'Speditions-Snapshot');
+  const location=await masterdata.createOneOffLocationInClient(client,tid,targetCustomerId,recipient,{carrierId:q(carrierSnapshot.carrierId)||null});
+  await client.query(`insert into audit_events(tenant_id,user_id,event_type,entity_type,entity_id,metadata)
+    values($1,$2,'LOCATION_CREATED','LOCATION',$3,$4::jsonb)`,[tid,uid,location.id,JSON.stringify({customerId:targetCustomerId,source:'ONE_OFF_RECIPIENT',shipmentId:sid,masterdataIncomplete:location.registration_emails.length===0})]);
+
+  const updated=await client.query(`update shipments set customer_id=$4,location_id=$5,revision=revision+1,updated_at=now()
+    where tenant_id=$1 and id=$2 and revision=$3 and discarded_at is null returning *`,[tid,sid,expected,targetCustomerId,location.id]);
+  if(!updated.rows?.[0])throw shipmentError('SHIPMENT_REVISION_CONFLICT','Sendung wurde zwischenzeitlich geändert. Bitte neu laden.');
+  await client.query(`update shipment_edit_locks set last_activity_at=now()
+    where tenant_id=$1 and shipment_id=$2 and user_id=$3 and lock_token=$4`,[tid,sid,uid,q(lockToken)]);
+  await client.query(`insert into audit_events(tenant_id,user_id,event_type,entity_type,entity_id,metadata)
+    values($1,$2,'SHIPMENT_ONE_OFF_RECIPIENT_CONVERTED','shipment',$3,$4::jsonb)`,[tid,uid,sid,JSON.stringify({mode:conversionMode,customerId:targetCustomerId,customerAccount:targetCustomerAccount,locationId:location.id,recipientSnapshotPreserved:true,revision:Number(updated.rows[0].revision)})]);
+  return readModel.normalizeShipmentRow(updated.rows[0]);
+}
+
 function resolveColliDimension(inputValue,packagingValue,allowInput,label){
   const supplied=positiveNumber(inputValue,label);
   const preset=packagingValue==null?null:Number(packagingValue);
@@ -287,8 +400,7 @@ async function replaceColliRowsInClient(client,tenantId,shipmentId,userId,{lockT
   const tid=q(tenantId),sid=q(shipmentId),uid=q(userId);
   if(!tid||!sid||!uid)throw shipmentError('INPUT_INVALID','Sendungs- oder Benutzerkontext fehlt.');
   if(!Array.isArray(rows))throw shipmentError('INPUT_INVALID','Colli-Zeilen müssen als Liste übergeben werden.');
-  const expected=Number(revision);
-  if(!Number.isInteger(expected)||expected<0)throw shipmentError('INPUT_INVALID','Sendungsrevision ist ungültig.');
+  const expected=expectedRevision(revision);
   const currentResult=await client.query(`select * from shipments where tenant_id=$1 and id=$2 and discarded_at is null for update`,[tid,sid]);
   const current=currentResult.rows?.[0];
   if(!current)throw shipmentError('SHIPMENT_NOT_FOUND','Sendung wurde nicht gefunden.');
@@ -424,10 +536,19 @@ async function updateShipment(tenantId,shipmentId,userId,input){
 async function replaceColliRows(tenantId,shipmentId,userId,input){
   return db.withTenantShipmentClient(tenantId,client=>replaceColliRowsInClient(client,tenantId,shipmentId,userId,input),{write:true});
 }
+async function setShipmentCarrier(tenantId,shipmentId,userId,input){
+  return db.withTenantShipmentClient(tenantId,client=>setShipmentCarrierInClient(client,tenantId,shipmentId,userId,input),{write:true});
+}
+async function previewOneOffRecipient(tenantId,shipmentId,input){
+  return db.withTenantShipmentMasterdataClient(tenantId,client=>previewOneOffRecipientInClient(client,tenantId,shipmentId,input),{write:false});
+}
+async function convertOneOffRecipient(tenantId,shipmentId,userId,input){
+  return db.withTenantShipmentMasterdataClient(tenantId,client=>convertOneOffRecipientInClient(client,tenantId,shipmentId,userId,input),{write:true});
+}
 
 module.exports={
   listShipments,getShipment,getShipmentDashboard,localDateInZone,
-  createDraft,updateShipment,replaceColliRows,acquireEditLock,heartbeatEditLock,releaseEditLock,forceReleaseEditLock,
-  createDraftInClient,updateShipmentInClient,replaceColliRowsInClient,acquireEditLockInClient,heartbeatEditLockInClient,releaseEditLockInClient,
+  createDraft,updateShipment,replaceColliRows,setShipmentCarrier,previewOneOffRecipient,convertOneOffRecipient,acquireEditLock,heartbeatEditLock,releaseEditLock,forceReleaseEditLock,
+  createDraftInClient,updateShipmentInClient,replaceColliRowsInClient,setShipmentCarrierInClient,previewOneOffRecipientInClient,convertOneOffRecipientInClient,acquireEditLockInClient,heartbeatEditLockInClient,releaseEditLockInClient,
   sanitizeShipmentPatch,normalizeLock,normalizeCalculatedColliRow
 };
