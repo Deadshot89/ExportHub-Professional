@@ -23,19 +23,26 @@ async function replaceRegistrationEmails(client,tenantId,locationId,emails){
     await client.query('insert into customer_location_registration_emails(tenant_id,location_id,email) values($1,$2,$3)',[tenantId,locationId,email]);
   }
 }
-async function insertLocation(client,tenantId,customerId,v){
+async function assertCarrierRef(client,tenantId,carrierId){
+  if(!carrierId)return null;
+  const result=await client.query('select id,name from carriers where tenant_id=$1 and id=$2 and active=true limit 1',[tenantId,carrierId]);
+  if(!result.rows?.[0])throw Object.assign(new Error('Spedition wurde nicht gefunden oder ist inaktiv.'),{code:'CARRIER_NOT_FOUND'});
+  return result.rows[0];
+}
+async function insertLocation(client,tenantId,customerId,v,{sourceMetadata=null}={}){
+  await assertCarrierRef(client,tenantId,v.carrierId||null);
   const r=await client.query(`insert into customer_locations(
-    tenant_id,customer_id,name,address,country,contact_name,email,phone,street,house_number,postal_code,city,country_iso,contact_email,carrier_name,shipping_instructions,active,updated_at
-  ) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,true,now())
-  returning id,customer_id,name,street,house_number,postal_code,city,country,country_iso,contact_name,contact_email,phone,carrier_name,shipping_instructions,active,created_at,updated_at`,[
-    tenantId,customerId,v.name,locationAddress(v),v.country,v.contactName,v.contactEmail,v.phone,v.street,v.houseNumber,v.postalCode,v.city,v.countryIso,v.contactEmail,v.carrierName,v.shippingInstructions
+    tenant_id,customer_id,name,address,country,contact_name,email,phone,street,house_number,postal_code,city,country_iso,contact_email,carrier_id,carrier_name,shipping_instructions,source_metadata,active,updated_at
+  ) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18::jsonb,true,now())
+  returning id,customer_id,name,street,house_number,postal_code,city,country,country_iso,contact_name,contact_email,phone,carrier_id,carrier_name,shipping_instructions,source_metadata,active,created_at,updated_at`,[
+    tenantId,customerId,v.name,locationAddress(v),v.country,v.contactName,v.contactEmail,v.phone,v.street,v.houseNumber,v.postalCode,v.city,v.countryIso,v.contactEmail,v.carrierId||null,v.carrierName,v.shippingInstructions,JSON.stringify(sourceMetadata||{})
   ]);
   const row=r.rows[0];
-  await replaceRegistrationEmails(client,tenantId,row.id,v.registrationEmails);
+  if(v.registrationEmails.length)await replaceRegistrationEmails(client,tenantId,row.id,v.registrationEmails);
   return {...row,registration_emails:[...v.registrationEmails]};
 }
 async function getLocationWithClient(client,tenantId,locationId){
-  const r=await client.query(`select id,customer_id,name,street,house_number,postal_code,city,country,country_iso,contact_name,contact_email,phone,carrier_name,shipping_instructions,active,created_at,updated_at
+  const r=await client.query(`select id,customer_id,name,street,house_number,postal_code,city,country,country_iso,contact_name,contact_email,phone,carrier_id,carrier_name,shipping_instructions,source_metadata,active,created_at,updated_at
     from customer_locations where tenant_id=$1 and id=$2 limit 1`,[tenantId,locationId]);
   const row=r.rows[0];if(!row) return null;
   const er=await client.query('select email from customer_location_registration_emails where tenant_id=$1 and location_id=$2 order by lower(email)',[tenantId,locationId]);
@@ -44,7 +51,7 @@ async function getLocationWithClient(client,tenantId,locationId){
 async function getCustomerWithClient(client,tenantId,customerId){
   const cr=await client.query('select id,account,name,active,created_at,updated_at from customers where tenant_id=$1 and id=$2 limit 1',[tenantId,customerId]);
   const customer=cr.rows[0];if(!customer) return null;
-  const lr=await client.query(`select id,customer_id,name,street,house_number,postal_code,city,country,country_iso,contact_name,contact_email,phone,carrier_name,shipping_instructions,active,created_at,updated_at
+  const lr=await client.query(`select id,customer_id,name,street,house_number,postal_code,city,country,country_iso,contact_name,contact_email,phone,carrier_id,carrier_name,shipping_instructions,source_metadata,active,created_at,updated_at
     from customer_locations where tenant_id=$1 and customer_id=$2 order by lower(name),created_at`,[tenantId,customerId]);
   const locations=lr.rows;
   if(locations.length){
@@ -55,6 +62,42 @@ async function getCustomerWithClient(client,tenantId,customerId){
     for(const location of locations) location.registration_emails=byLocation.get(location.id)||[];
   }
   return {...customer,locations};
+}
+
+async function findOneOffCustomerCandidatesInClient(client,tenantId,{account='',name=''}={}){
+  const normalizedAccount=String(account||'').trim();
+  const normalizedName=String(name||'').normalize('NFKC').trim();
+  const result=await client.query(`select id,account,name,active
+    from customers
+    where tenant_id=$1 and active=true
+      and (lower(coalesce(account,''))=lower($2)
+        or ($3<>'' and (lower(name) like '%'||lower($3)||'%' or lower($3) like '%'||lower(name)||'%')))
+    order by case when lower(coalesce(account,''))=lower($2) then 0 else 1 end,lower(name)
+    limit 8`,[tenantId,normalizedAccount,normalizedName]);
+  const rows=result.rows||[];
+  const exactAccount=normalizedAccount?rows.find(row=>String(row.account||'').trim().toLowerCase()===normalizedAccount.toLowerCase())||null:null;
+  const similar=rows.filter(row=>!exactAccount||String(row.id)!==String(exactAccount.id));
+  return {exactAccount,similar};
+}
+async function createOneOffLocationInClient(client,tenantId,customerId,recipientSnapshot,{carrierId=null}={}){
+  const source=recipientSnapshot&&typeof recipientSnapshot==='object'&&!Array.isArray(recipientSnapshot)?recipientSnapshot:{};
+  const value=validation.cleanOneOffLocation({
+    name:source.locationName||source.companyName||source.name,
+    street:source.street,
+    houseNumber:source.houseNumber,
+    postalCode:source.postalCode,
+    city:source.city,
+    country:source.country,
+    countryIso:source.countryIso,
+    contactName:source.contactName,
+    contactEmail:source.contactEmail||source.email,
+    phone:source.phone,
+    carrierId:carrierId||source.carrierId||null,
+    carrierName:source.carrierName,
+    shippingInstructions:source.shippingInstructions,
+    registrationEmails:source.registrationEmails||[]
+  });
+  return insertLocation(client,tenantId,customerId,value,{sourceMetadata:{masterdataIncomplete:value.registrationEmails.length===0,source:'ONE_OFF_RECIPIENT'}});
 }
 
 async function listCustomers(tenantId,{query='',status='all'}={}){
@@ -132,10 +175,11 @@ async function updateLocation(tenantId,actorUserId,locationId,input={}){
     return await db.withTenantMasterdataClient(tenantId,async client=>{
       const current=await client.query('select id,customer_id from customer_locations where tenant_id=$1 and id=$2 limit 1',[tenantId,locationId]);
       if(!current.rowCount) throw Object.assign(new Error('Standort wurde nicht gefunden.'),{code:'LOCATION_NOT_FOUND'});
+      await assertCarrierRef(client,tenantId,location.carrierId||null);
       const customerId=current.rows[0].customer_id;
-      const r=await client.query(`update customer_locations set name=$3,address=$4,country=$5,contact_name=$6,email=$7,phone=$8,street=$9,house_number=$10,postal_code=$11,city=$12,country_iso=$13,contact_email=$14,carrier_name=$15,shipping_instructions=$16,updated_at=now()
-        where tenant_id=$1 and id=$2 returning id,customer_id,name,street,house_number,postal_code,city,country,country_iso,contact_name,contact_email,phone,carrier_name,shipping_instructions,active,created_at,updated_at`,[
-        tenantId,locationId,location.name,locationAddress(location),location.country,location.contactName,location.contactEmail,location.phone,location.street,location.houseNumber,location.postalCode,location.city,location.countryIso,location.contactEmail,location.carrierName,location.shippingInstructions
+      const r=await client.query(`update customer_locations set name=$3,address=$4,country=$5,contact_name=$6,email=$7,phone=$8,street=$9,house_number=$10,postal_code=$11,city=$12,country_iso=$13,contact_email=$14,carrier_id=$15,carrier_name=$16,shipping_instructions=$17,updated_at=now()
+        where tenant_id=$1 and id=$2 returning id,customer_id,name,street,house_number,postal_code,city,country,country_iso,contact_name,contact_email,phone,carrier_id,carrier_name,shipping_instructions,source_metadata,active,created_at,updated_at`,[
+        tenantId,locationId,location.name,locationAddress(location),location.country,location.contactName,location.contactEmail,location.phone,location.street,location.houseNumber,location.postalCode,location.city,location.countryIso,location.contactEmail,location.carrierId||null,location.carrierName,location.shippingInstructions
       ]);
       await replaceRegistrationEmails(client,tenantId,locationId,location.registrationEmails);
       await audit(client,tenantId,actorUserId,'LOCATION_UPDATED',{entityType:'LOCATION',entityId:locationId,metadata:{customerId,registrationEmailCount:location.registrationEmails.length}});
@@ -159,7 +203,7 @@ async function listLocations(tenantId,{query='',status='all'}={}){
     const params=[tenantId],where=['l.tenant_id=$1'];
     if(q){params.push(q);const p='$'+params.length;where.push(`(l.name ilike '%'||${p}||'%' or l.city ilike '%'||${p}||'%' or l.country ilike '%'||${p}||'%' or c.name ilike '%'||${p}||'%' or c.account ilike '%'||${p}||'%')`);}
     if(active!==null){params.push(active);where.push(`l.active=$${params.length}`);}
-    const r=await client.query(`select l.id,l.customer_id,l.name,l.street,l.house_number,l.postal_code,l.city,l.country,l.country_iso,l.carrier_name,l.active,l.updated_at,
+    const r=await client.query(`select l.id,l.customer_id,l.name,l.street,l.house_number,l.postal_code,l.city,l.country,l.country_iso,l.carrier_id,l.carrier_name,l.source_metadata,l.active,l.updated_at,
       c.account as customer_account,c.name as customer_name,c.active as customer_active
       from customer_locations l join customers c on c.tenant_id=l.tenant_id and c.id=l.customer_id
       where ${where.join(' and ')} order by lower(c.name),lower(l.name)`,params);
@@ -167,4 +211,4 @@ async function listLocations(tenantId,{query='',status='all'}={}){
   });
 }
 
-module.exports={listCustomers,getCustomer,createCustomer,updateCustomer,setCustomerActive,createLocation,updateLocation,setLocationActive,listLocations};
+module.exports={listCustomers,getCustomer,createCustomer,updateCustomer,setCustomerActive,createLocation,updateLocation,setLocationActive,listLocations,findOneOffCustomerCandidatesInClient,createOneOffLocationInClient,getCustomerWithClient,getLocationWithClient};
