@@ -5,8 +5,10 @@ import {
   EMPLOYEE_BY_ID,
   getMissingDocuments
 } from './demo-data.js';
-import { getState, reset as resetDemoStore } from './demo-store.js';
+import { getState, reset as resetDemoStore, completeTask } from './demo-store.js';
 import { initShipmentWorkspace } from './demo-shipments.js';
+import { initDocumentWorkspace } from './demo-documents.js';
+import { initAvisWorkspace } from './demo-avis.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -24,6 +26,8 @@ const viewTitles = {
 };
 
 let shipmentWorkspace = null;
+let documentWorkspace = null;
+let avisWorkspace = null;
 
 function customerName(shipment) {
   return CUSTOMER_BY_ID[shipment.customerId]?.name || 'Demo-Kunde';
@@ -95,8 +99,7 @@ function renderPriorityShipments() {
   }).join('');
 
   container.querySelectorAll('[data-dashboard-shipment]').forEach(button => button.addEventListener('click', () => {
-    openView('shipments');
-    shipmentWorkspace?.select(button.dataset.dashboardShipment);
+    openShipment(button.dataset.dashboardShipment);
   }));
 }
 
@@ -120,6 +123,37 @@ function renderActions() {
   }).join('');
 }
 
+function renderTaskWorkspace() {
+  const workspace = $('#taskWorkspace');
+  if (!workspace) return;
+  const state = getState();
+  const sorted = [...state.tasks].sort((a,b) => {
+    if (a.status !== b.status) return a.status === 'Offen' ? -1 : 1;
+    return PRIORITIES.indexOf(a.priority) - PRIORITIES.indexOf(b.priority);
+  });
+  const openCount = sorted.filter(item => item.status === 'Offen').length;
+  const summary = $('#taskSummary');
+  if (summary) summary.innerHTML = `<strong>${openCount}</strong><span>offene Demo-Aufgaben</span>`;
+  if (!sorted.length) {
+    workspace.innerHTML = '<div class="task-empty">Keine Demo-Aufgaben vorhanden.</div>';
+    return;
+  }
+  workspace.innerHTML = sorted.map(task => {
+    const shipment = state.shipments.find(item => item.id === task.shipmentId);
+    const employee = EMPLOYEE_BY_ID[task.ownerId];
+    const done = task.status === 'Erledigt';
+    return `<article class="task-card ${task.priority.toLowerCase()}${done ? ' task-done' : ''}">
+      <span class="task-priority">${done ? '✓' : task.priority}</span>
+      <div class="task-copy"><strong>${task.title}</strong><span>${shipment?.reference || 'Demo'} · ${shipment ? customerName(shipment) : 'ExportHUB Demo'}</span><small>${task.due} · ${employee?.name || 'Team'}</small></div>
+      <div class="task-actions">${done ? '<span>Erledigt</span>' : `<button type="button" data-complete-task="${task.id}">Als erledigt markieren</button>`}</div>
+    </article>`;
+  }).join('');
+  workspace.querySelectorAll('[data-complete-task]').forEach(button => button.addEventListener('click', () => {
+    completeTask(button.dataset.completeTask);
+    refreshOperationalViews();
+  }));
+}
+
 function renderActivities() {
   const container = $('#activityList');
   if (!container) return;
@@ -134,6 +168,14 @@ function refreshOperationalViews() {
   renderMetrics();
   renderPriorityShipments();
   renderActions();
+  renderTaskWorkspace();
+  documentWorkspace?.refresh();
+  avisWorkspace?.refresh();
+}
+
+function openShipment(id) {
+  openView('shipments');
+  shipmentWorkspace?.select(id);
 }
 
 function openView(view) {
@@ -145,6 +187,9 @@ function openView(view) {
   $('#demoSidebar')?.classList.remove('open');
   document.getElementById('demoApp')?.scrollIntoView({ block: 'start' });
   if (view === 'shipments') shipmentWorkspace?.refresh();
+  if (view === 'tasks') renderTaskWorkspace();
+  if (view === 'documents') documentWorkspace?.refresh();
+  if (view === 'avis') avisWorkspace?.refresh();
 }
 
 function enterDemo(withTour) {
@@ -188,10 +233,15 @@ function bindNavigation() {
 }
 
 function init() {
-  refreshOperationalViews();
+  renderMetrics();
+  renderPriorityShipments();
+  renderActions();
+  renderTaskWorkspace();
   renderActivities();
   bindNavigation();
   shipmentWorkspace = initShipmentWorkspace({ onChange: refreshOperationalViews });
+  documentWorkspace = initDocumentWorkspace({ onOpenShipment: openShipment });
+  avisWorkspace = initAvisWorkspace({ onChange: refreshOperationalViews });
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
