@@ -54,6 +54,41 @@ test('autosave queue merges patches and retries with approved backoff',async()=>
   queue.dispose();
 });
 
+test('explicit flush waits for an in-flight save before navigation may release the lock',async()=>{
+  const {createAutosaveQueue}=await import('../assets/js/shipment-autosave.js');
+  const scheduled=[];let resolveSave;
+  const queue=createAutosaveQueue({
+    save:()=>new Promise(resolve=>{resolveSave=resolve;}),
+    setTimeoutFn:(fn,ms)=>{scheduled.push({fn,ms});return scheduled.length;},
+    clearTimeoutFn:()=>{}
+  });
+  queue.queue({plannedPickupDate:'2026-09-06'});
+  const running=scheduled[0].fn();
+  await Promise.resolve();
+  let flushDone=false;
+  const flushResult=queue.flush().then(result=>{flushDone=true;return result;});
+  await Promise.resolve();
+  assert.equal(flushDone,false,'flush darf einen laufenden Save nicht überholen');
+  resolveSave();
+  await running;
+  assert.equal(await flushResult,true);
+  queue.dispose();
+});
+
+test('failed explicit flush reports failure so navigation cannot discard pending changes',async()=>{
+  const {createAutosaveQueue}=await import('../assets/js/shipment-autosave.js');
+  const scheduled=[];
+  const queue=createAutosaveQueue({
+    save:async()=>{throw new Error('offline');},
+    setTimeoutFn:(fn,ms)=>{scheduled.push({fn,ms});return scheduled.length;},
+    clearTimeoutFn:()=>{}
+  });
+  queue.queue({plannedPickupDate:'2026-09-06'});
+  assert.equal(await queue.flush(),false);
+  assert.equal(scheduled.at(-1).ms,2000);
+  queue.dispose();
+});
+
 test('shipment workspace uses APIs for load create update and explicit lock release',()=>{
   assert.equal(exists('assets/js/shipments.js'),true,'shipments.js fehlt');
   const src=read('assets/js/shipments.js');
@@ -63,6 +98,14 @@ test('shipment workspace uses APIs for load create update and explicit lock rele
   assert.match(src,/action:\s*['"]release['"]/);
   assert.match(src,/x-professional-csrf/i);
   assert.match(src,/professional:session-ready/);
+});
+
+test('shipment navigation flushes pending autosave before releasing edit lock',()=>{
+  const src=read('assets/js/shipments.js');
+  assert.match(src,/async function prepareToLeaveCurrent/);
+  assert.match(src,/await autosave\.flush\(\)[\s\S]{0,500}releaseCurrentLock/);
+  assert.ok((src.match(/await prepareToLeaveCurrent\(/g)||[]).length>=2,'Sendungswechsel und Neuanlage müssen vor dem Wechsel flushen');
+  assert.match(src,/querySelectorAll\([^\n]*\.nav button[\s\S]{0,700}prepareToLeaveCurrent/);
 });
 
 test('browser shipment modules do not own ABD EU CMR or LDM business calculations',()=>{
