@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const read=path=>fs.readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
+const controlCss=()=>read('assets/css/app.css')+'\n'+read('assets/css/control-center.css');
 
 test('control center has a shared dependency-free UI kit',()=>{
   const html=read('index.html');
@@ -53,7 +54,7 @@ test('customer workspace uses compact control-center surfaces',()=>{
   const html=read('index.html');
   assert.match(html,/href="\/assets\/css\/control-center\.css"/);
   assert.equal(fs.existsSync(new URL('../assets/css/control-center.css',import.meta.url)),true,'focused Control Center stylesheet must exist');
-  const css=read('assets/css/app.css')+'\n'+read('assets/css/control-center.css');
+  const css=controlCss();
   for(const cls of ['customer-summary-strip','customer-summary-stat','location-operational-card','location-detail-section']){
     assert.match(css,new RegExp(`\\.${cls}\\b`));
   }
@@ -65,4 +66,34 @@ test('locations workspace defines quality, KPI and filter surfaces',()=>{
     assert.match(css,new RegExp(`\\.${cls}\\b`));
   }
   for(const state of ['complete','warning','blocking','inactive']) assert.match(css,new RegExp(`\\.location-quality\\.${state}\\b`));
+});
+
+test('control center defines desktop tablet and phone layouts without forced live-masterdata table width',()=>{
+  const css=controlCss();
+  assert.match(css,/@media\(max-width:1100px\)/);
+  assert.match(css,/@media\(max-width:900px\)/);
+  assert.match(css,/@media\(max-width:620px\)/);
+  assert.match(css,/@media\(max-width:900px\)[\s\S]*?\.cc-overview-workgrid\{grid-template-columns:1fr\}/);
+  assert.match(css,/@media\(max-width:900px\)[\s\S]*?\.customer-master-detail\{grid-template-columns:1fr\}/);
+  assert.match(css,/@media\(max-width:620px\)[\s\S]*?\.live-location-table\{[^}]*min-width:0/);
+});
+
+test('important actions retain visible text labels and future actions are semantically disabled',()=>{
+  const html=read('index.html');
+  const app=read('assets/js/app.js');
+  const locations=read('assets/js/locations.js');
+  const overview=read('assets/js/overview.js');
+  assert.match(html,/\+ Neuer Kunde|Neuer Kunde/);
+  assert.match(html,/Standort suchen/);
+  assert.match(app,/Bearbeiten/);
+  assert.match(locations,/Öffnen/);
+  assert.match(overview,/data-quick-action="shipment" disabled/);
+  assert.match(overview,/data-quick-action="documents" disabled/);
+});
+
+test('control center keeps keyboard focus visible and honors reduced motion',()=>{
+  const css=controlCss();
+  assert.match(css,/\.control-center-shell button:focus-visible/);
+  assert.match(css,/outline:3px solid rgba\(13,95,145,.22\)/);
+  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
 });
