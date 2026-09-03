@@ -12,6 +12,7 @@ alter table customer_locations add column if not exists city text;
 alter table customer_locations add column if not exists country_iso text;
 alter table customer_locations add column if not exists contact_email text;
 alter table customer_locations add column if not exists carrier_name text;
+alter table customer_locations add column if not exists carrier_id uuid;
 alter table customer_locations add column if not exists shipping_instructions text;
 alter table customer_locations add column if not exists active boolean not null default true;
 alter table customer_locations add column if not exists updated_at timestamptz not null default now();
