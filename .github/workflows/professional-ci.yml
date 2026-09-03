@@ -2,7 +2,7 @@ name: ExportHUB Professional CI
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, feature/customers-locations]
     paths:
       - 'index.html'
       - 'assets/**'
