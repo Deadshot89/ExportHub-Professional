@@ -72,9 +72,18 @@ async function withTenantShipmentClient(tenantId,fn,{write=false}={}){
   const client=await getPool().connect();
   try{return await transact(client,async c=>{await c.query("select set_config('app.tenant_id',$1,true)",[tid]);return fn(c);},{write,readOnly:!write});}finally{client.release();}
 }
+async function withTenantShipmentMasterdataClient(tenantId,fn,{write=false}={}){
+  const tid=String(tenantId||'').trim();if(!tid)throw Object.assign(new Error('Tenant required.'),{code:'TENANT_REQUIRED'});
+  if(write&&!masterdataWritesEnabled())throw Object.assign(new Error('Stammdaten-Schreibzugriffe sind deaktiviert.'),{code:'MASTERDATA_WRITES_DISABLED'});
+  if(write&&!shipmentWritesEnabled())throw Object.assign(new Error('Sendungs-Schreibzugriffe sind deaktiviert.'),{code:'SHIPMENT_WRITES_DISABLED'});
+  await ensureMasterdataSchema();
+  await ensureShipmentSchema();
+  const client=await getPool().connect();
+  try{return await transact(client,async c=>{await c.query("select set_config('app.tenant_id',$1,true)",[tid]);return fn(c);},{write,readOnly:!write});}finally{client.release();}
+}
 async function withControlClient(fn,{write=false}={}){
   if(write&&!controlWritesEnabled())throw Object.assign(new Error('Control writes are disabled.'),{code:'CONTROL_WRITES_DISABLED'});
   const client=await getPool().connect();
   try{return await fn(client);}finally{client.release();}
 }
-module.exports={configured,writesEnabled,controlWritesEnabled,masterdataWritesEnabled,shipmentWritesEnabled,status,ensureShipmentSchema,withTenantClient,withTenantControlClient,withTenantMasterdataClient,withTenantShipmentClient,withControlClient};
+module.exports={configured,writesEnabled,controlWritesEnabled,masterdataWritesEnabled,shipmentWritesEnabled,status,ensureMasterdataSchema,ensureShipmentSchema,withTenantClient,withTenantControlClient,withTenantMasterdataClient,withTenantShipmentClient,withTenantShipmentMasterdataClient,withControlClient};
