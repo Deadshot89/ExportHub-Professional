@@ -1,5 +1,8 @@
 const DATA_MODE=process.env.PROFESSIONAL_DATA_MODE||'migration-read-only';
+const {applyMasterdataSchema}=require('./masterdata-schema');
 let pool=null;
+let masterdataSchemaPromise=null;
+let masterdataSchemaReady=false;
 function configured(){return !!String(process.env.PROFESSIONAL_DATABASE_URL||'').trim();}
 function writesEnabled(){return DATA_MODE==='live' && process.env.PROFESSIONAL_ENABLE_WRITES==='true';}
 function controlWritesEnabled(){return process.env.PROFESSIONAL_ENABLE_CONTROL_WRITES==='true';}
@@ -9,6 +12,18 @@ function getPool(){
   if(!configured()) throw Object.assign(new Error('Professional database is not configured.'),{code:'DATABASE_NOT_CONFIGURED'});
   if(!pool){const {Pool}=require('pg');pool=new Pool({connectionString:process.env.PROFESSIONAL_DATABASE_URL,max:Number(process.env.PROFESSIONAL_DB_POOL_MAX||5),ssl:process.env.PROFESSIONAL_DATABASE_SSL==='false'?false:{rejectUnauthorized:true}});}
   return pool;
+}
+async function ensureMasterdataSchema(){
+  if(masterdataSchemaReady)return true;
+  if(!controlWritesEnabled())throw Object.assign(new Error('Stammdaten-Schemaaktualisierung ist deaktiviert.'),{code:'MASTERDATA_SCHEMA_UPGRADE_DISABLED'});
+  if(!masterdataSchemaPromise){
+    masterdataSchemaPromise=(async()=>{
+      const client=await getPool().connect();
+      try{await applyMasterdataSchema(client);masterdataSchemaReady=true;return true;}
+      finally{client.release();}
+    })().catch(err=>{masterdataSchemaPromise=null;throw err;});
+  }
+  return masterdataSchemaPromise;
 }
 async function transact(client,fn,{write=false,readOnly=false}={}){
   await client.query(readOnly?'BEGIN READ ONLY':'BEGIN');
@@ -30,6 +45,7 @@ async function withTenantControlClient(tenantId,fn,{write=false}={}){
 async function withTenantMasterdataClient(tenantId,fn,{write=false}={}){
   const tid=String(tenantId||'').trim();if(!tid)throw Object.assign(new Error('Tenant required.'),{code:'TENANT_REQUIRED'});
   if(write&&!masterdataWritesEnabled())throw Object.assign(new Error('Stammdaten-Schreibzugriffe sind deaktiviert.'),{code:'MASTERDATA_WRITES_DISABLED'});
+  await ensureMasterdataSchema();
   const client=await getPool().connect();
   try{return await transact(client,async c=>{await c.query("select set_config('app.tenant_id',$1,true)",[tid]);return fn(c);},{write,readOnly:!write});}finally{client.release();}
 }
