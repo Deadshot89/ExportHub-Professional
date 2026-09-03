@@ -63,11 +63,15 @@ function shipmentActionItems(rows,{localDate}={}){
   for(const source of rows){
     const row=source?.sourceKind?source:normalizeShipmentRow(source);
     if(!isOpen(row))continue;
+    const status=text(row.status);
     if(row.plannedPickupDate&&day&&row.plannedPickupDate<day&&!isPicked(row)){
       actions.push({code:'PICKUP_OVERDUE',kind:'bad',shipmentId:row.id,reference:row.reference,label:`${row.reference||'Sendung'} · ${row.customerName||'Empfänger'}`,reason:`Abholung seit ${row.plannedPickupDate} überfällig`});
     }
-    if(row.rework?.active===true){
+    if(row.rework?.active===true||status==='Nachbearbeitung erforderlich'){
       actions.push({code:'REWORK_ACTIVE',kind:'warn',shipmentId:row.id,reference:row.reference,label:`${row.reference||'Sendung'} · ${row.customerName||'Empfänger'}`,reason:'Nachbearbeitung erforderlich'});
+    }
+    if(status==='Wartet auf ABD'){
+      actions.push({code:'ABD_PENDING',kind:'warn',shipmentId:row.id,reference:row.reference,label:`${row.reference||'Sendung'} · ${row.customerName||'Empfänger'}`,reason:'Wartet auf ABD'});
     }
   }
   return actions;
