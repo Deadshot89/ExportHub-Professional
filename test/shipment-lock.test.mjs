@@ -81,22 +81,24 @@ test('update rejects wrong lock token before mutation',async()=>{
   assert.equal(writes,0);
 });
 
-test('update rejects stale revision after valid lock without overwriting newer data',async()=>{
-  let writes=0;
+test('update locks the matching edit-lock row and rejects stale revision without overwriting newer data',async()=>{
+  let writes=0,lockSql='';
   const client={query:async sql=>{
     const q=String(sql).toLowerCase();
     if(q.includes('from shipments')&&q.includes('for update'))return {rows:[draftRow({revision:4})]};
-    if(q.includes('from shipment_edit_locks'))return {rows:[{lock_token:'good'}]};
+    if(q.includes('from shipment_edit_locks')){lockSql=String(sql);return {rows:[{lock_token:'good'}]};}
     if(q.startsWith('update shipments'))writes++;
     return {rows:[]};
   }};
   await assert.rejects(()=>store.updateShipmentInClient(client,tenant,shipmentId,user,{lockToken:'good',revision:3,patch:{plannedPickupDate:'2026-09-05'}}),error=>error.code==='SHIPMENT_REVISION_CONFLICT');
+  assert.match(lockSql,/for\s+update/i);
   assert.equal(writes,0);
 });
 
-test('ordinary autosave patch cannot mutate reference lifecycle source or sender snapshot',()=>{
+test('ordinary autosave patch cannot mutate reference lifecycle source sender or server-derived operational facts',()=>{
   const patch=store.sanitizeShipmentPatch({
     reference:'HACKED',status:'Abgeholt',source_kind:'MIGRATED',sourceKind:'MIGRATED',sender_snapshot:{companyName:'Fake'},senderSnapshot:{companyName:'Fake'},
+    readiness:{ready:true},carrierSnapshot:{id:'fake'},fxSnapshot:{EUR:1},
     customerId:'44444444-4444-4444-8444-444444444444',plannedPickupDate:'2026-09-05',recipientSnapshot:{companyName:'Empfänger'}
   });
   assert.deepEqual(Object.keys(patch).sort(),['customer_id','planned_pickup_date','recipient_snapshot']);
