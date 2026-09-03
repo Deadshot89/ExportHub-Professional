@@ -13,6 +13,7 @@ let autosave=null;
 let loadSequence=0;
 let searchTimer=null;
 let saveState='idle';
+let navigationBypass=false;
 
 function esc(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));}
 function canWrite(){return !localMode&&!!session&&WRITE_ROLES.has(String(session?.user?.role||''));}
@@ -60,12 +61,30 @@ function clearCurrent(){
   autosave?.dispose();autosave=null;current=null;lock=null;selectedId='';saveState='idle';renderList();renderCurrent();
 }
 async function releaseCurrentLock({silent=false}={}){
-  if(!current?.id||!lock?.lockToken||!canWrite())return;
+  if(!current?.id||!lock?.lockToken||!canWrite())return true;
   const shipmentId=current.id,token=lock.lockToken;
-  lock=null;
   try{
     await apiJson(`/api/professional-shipments/${encodeURIComponent(shipmentId)}/lock`,{method:'POST',headers:csrfHeaders(),body:JSON.stringify({action:'release',lockToken:token})});
-  }catch(error){if(!silent)setMessage(error.message||'Bearbeitungssperre konnte nicht freigegeben werden.','warn');}
+    if(lock?.lockToken===token)lock=null;
+    return true;
+  }catch(error){
+    if(!silent)setMessage(error.message||'Bearbeitungssperre konnte nicht freigegeben werden.','warn');
+    return false;
+  }
+}
+async function prepareToLeaveCurrent({silent=false}={}){
+  if(!current)return true;
+  if(autosave){
+    const saved=await autosave.flush();
+    if(!saved){
+      if(!silent)setMessage('Offene Änderungen konnten nicht gespeichert werden. Die Sendung bleibt geöffnet.','bad');
+      return false;
+    }
+  }
+  const released=await releaseCurrentLock({silent});
+  if(!released)return false;
+  autosave?.dispose();autosave=null;
+  return true;
 }
 function setupAutosave(){
   autosave?.dispose();autosave=null;
@@ -98,7 +117,9 @@ export async function loadShipments(filters={}){
     const data=await apiJson(`/api/professional-shipments?q=${encodeURIComponent(String(search).trim())}&status=${encodeURIComponent(status)}&source=${encodeURIComponent(source)}`,{method:'GET',headers:{}});
     if(sequence!==loadSequence)return rows;
     rows=Array.isArray(data.shipments)?data.shipments:[];
-    if(selectedId&&!rows.some(row=>String(row.id)===String(selectedId))){await releaseCurrentLock({silent:true});clearCurrent();}
+    if(selectedId&&!rows.some(row=>String(row.id)===String(selectedId))){
+      if(await prepareToLeaveCurrent({silent:false}))clearCurrent();
+    }
     renderList();
     return rows;
   }catch(error){
@@ -110,7 +131,10 @@ export async function loadShipments(filters={}){
 
 export async function openShipment(id){
   const shipmentId=String(id||'').trim();if(!shipmentId||!syncMode())return null;
-  if(current?.id&&String(current.id)!==shipmentId){await releaseCurrentLock({silent:true});autosave?.dispose();autosave=null;}
+  if(current?.id&&String(current.id)===shipmentId)return current;
+  if(current?.id&&String(current.id)!==shipmentId){
+    if(!(await prepareToLeaveCurrent()))return current;
+  }
   selectedId=shipmentId;renderList();saveState='idle';setMessage('');
   const root=$('#shipmentEditorRoot');if(root)root.innerHTML='<div class="shipment-editor-empty"><div class="kicker">SENDUNGSDETAIL</div><h3>Wird geladen …</h3></div>';
   try{
@@ -133,7 +157,7 @@ export async function createShipment(){
   if(!syncMode()||!canWrite())return null;
   const button=$('#newShipmentBtn');if(button)button.disabled=true;setMessage('Neue Sendung wird angelegt …');
   try{
-    await releaseCurrentLock({silent:true});autosave?.dispose();autosave=null;
+    if(current&&!(await prepareToLeaveCurrent()))return null;
     const data=await apiJson('/api/professional-shipments',{method:'POST',headers:csrfHeaders(),body:'{}'});
     current=data.shipment||null;lock=data.lock||null;selectedId=current?.id||'';saveState='saved';
     setupAutosave();await loadShipments();renderCurrent();setMessage('Neue LIVE-Sendung angelegt.');return current;
@@ -142,7 +166,8 @@ export async function createShipment(){
 }
 
 async function closeShipment(){
-  await releaseCurrentLock();clearCurrent();setMessage('');
+  if(!(await prepareToLeaveCurrent()))return;
+  clearCurrent();setMessage('');
 }
 
 function wireFilters(){
@@ -151,6 +176,16 @@ function wireFilters(){
   $('#shipmentSourceFilter')?.addEventListener('change',()=>loadShipments());
   $('#newShipmentBtn')?.addEventListener('click',()=>createShipment());
   document.querySelector('[data-nav="shipments"]')?.addEventListener('click',()=>{if(syncMode())loadShipments();});
+  document.querySelectorAll('.nav button[data-nav]').forEach(button=>button.addEventListener('click',event=>{
+    if(navigationBypass||button.dataset.nav==='shipments'||!current)return;
+    event.preventDefault();event.stopImmediatePropagation();
+    void (async()=>{
+      if(!(await prepareToLeaveCurrent()))return;
+      clearCurrent();
+      navigationBypass=true;
+      try{button.click();}finally{navigationBypass=false;}
+    })();
+  },{capture:true}));
 }
 
 window.addEventListener('professional:session-ready',event=>{
