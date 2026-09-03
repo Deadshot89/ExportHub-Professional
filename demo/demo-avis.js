@@ -1,5 +1,5 @@
 import { CUSTOMER_BY_ID, LOCATION_BY_ID } from './demo-data.js';
-import { getState, saveAvis } from './demo-store.js';
+import { getState, saveAvis, canRole } from './demo-store.js';
 
 function requireShipment(id) {
   const shipment = getState().shipments.find(item => item.id === id);
@@ -46,8 +46,9 @@ export function initAvisWorkspace({ onChange } = {}) {
     if (!eligible.some(item => item.id === selectedId)) selectedId = eligible[0]?.id || null;
     const shipment = eligible.find(item => item.id === selectedId);
     const avis = state.avis.find(item => item.shipmentId === selectedId);
+    const canCreate = canRole(state.role.role, 'createAvis');
 
-    workspace.innerHTML = `<div class="avis-picker panel"><header class="ops-panel-head"><div><span class="eyebrow">SENDUNG AUSWÄHLEN</span><h3>Kunden-Avis vorbereiten</h3></div><span class="status-chip neutral">lokale Simulation</span></header><div class="avis-shipment-list">${eligible.map(item => `<button type="button" class="avis-shipment-option ${item.id === selectedId ? 'active' : ''}" data-avis-select="${item.id}"><div><strong>${item.reference}</strong><small>${CUSTOMER_BY_ID[item.customerId]?.name || 'Demo-Kunde'}</small></div><span>${item.avis}</span></button>`).join('')}</div></div><div class="avis-preview panel">${shipment ? renderAvisPreview(shipment, avis) : '<div class="shipment-empty">Keine passende Demo-Sendung.</div>'}${shipment ? `<div class="avis-actions"><div><small>Sicherheitsmodus</small><strong>Kein echter Link · keine E-Mail · keine Produktivdaten</strong></div><button type="button" class="shipment-primary-action" data-create-avis="${shipment.id}">${avis ? 'Demo-Avis aktualisieren' : 'Demo-Avis erzeugen'}</button></div>` : ''}</div>`;
+    workspace.innerHTML = `<div class="avis-picker panel"><header class="ops-panel-head"><div><span class="eyebrow">SENDUNG AUSWÄHLEN</span><h3>Kunden-Avis vorbereiten</h3></div><span class="status-chip neutral">lokale Simulation</span></header><div class="avis-shipment-list">${eligible.map(item => `<button type="button" class="avis-shipment-option ${item.id === selectedId ? 'active' : ''}" data-avis-select="${item.id}"><div><strong>${item.reference}</strong><small>${CUSTOMER_BY_ID[item.customerId]?.name || 'Demo-Kunde'}</small></div><span>${item.avis}</span></button>`).join('')}</div></div><div class="avis-preview panel">${shipment ? renderAvisPreview(shipment, avis) : '<div class="shipment-empty">Keine passende Demo-Sendung.</div>'}${shipment ? `<div class="avis-actions"><div><small>Sicherheitsmodus · Rolle ${state.role.role}</small><strong>Kein echter Link · keine E-Mail · keine Produktivdaten</strong></div>${canCreate ? `<button type="button" class="shipment-primary-action" data-create-avis="${shipment.id}">${avis ? 'Demo-Avis aktualisieren' : 'Demo-Avis erzeugen'}</button>` : '<span class="shipment-finished">Erstellung in dieser Rolle ausgeblendet</span>'}</div>` : ''}</div>`;
 
     workspace.querySelectorAll('[data-avis-select]').forEach(button => button.addEventListener('click', () => { selectedId = button.dataset.avisSelect; refresh(); }));
     workspace.querySelector('[data-create-avis]')?.addEventListener('click', () => {
@@ -58,5 +59,5 @@ export function initAvisWorkspace({ onChange } = {}) {
   };
 
   refresh();
-  return { refresh };
+  return { refresh, select(id){ selectedId = id; refresh(); } };
 }
