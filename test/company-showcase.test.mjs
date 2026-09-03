@@ -10,7 +10,9 @@ const DEMO_RUNTIME_FILES = [
   'demo/demo-data.js',
   'demo/demo-store.js',
   'demo/demo-ui.js',
-  'demo/demo-shipments.js'
+  'demo/demo-shipments.js',
+  'demo/demo-documents.js',
+  'demo/demo-avis.js'
 ];
 
 test('company showcase exposes a dedicated ExportHUB demo entry point', () => {
@@ -129,4 +131,50 @@ test('sendungen view contains filters and a master-detail workspace contract', (
   assert.match(shipments, /Abgeholt/);
   assert.match(shipments, /POD vorhanden/);
   assert.match(shipments, /ABD/);
+});
+
+test('task completion is local and survives in demo state until reset', async () => {
+  const store = await import('../demo/demo-store.js');
+  store.reset();
+  const completed = store.completeTask('task-01');
+  assert.equal(completed.status, 'Erledigt');
+  assert.equal(store.getState().tasks.find(item => item.id === 'task-01')?.status, 'Erledigt');
+  store.reset();
+  assert.equal(store.getState().tasks.find(item => item.id === 'task-01')?.status, 'Offen');
+});
+
+test('document controller explains missing required files and generates DEMO MUSTER preview only', async () => {
+  assert.equal(exists('demo/demo-documents.js'), true, 'demo/demo-documents.js must exist');
+  const documents = await import('../demo/demo-documents.js');
+  const checklist = documents.getDocumentChecklist('sh-001');
+  assert.ok(checklist.some(item => item.type === 'abd' && item.required && !item.present));
+  const preview = documents.buildDemoDocumentPreview('sh-003', 'delivery');
+  assert.match(preview, /DEMO\s*\/\s*MUSTER/i);
+  assert.match(preview, /RWD303/);
+  assert.doesNotMatch(preview, /https?:\/\//i);
+});
+
+test('customer avis remains local-only and produces a non-public demo reference', async () => {
+  assert.equal(exists('demo/demo-avis.js'), true, 'demo/demo-avis.js must exist');
+  const store = await import('../demo/demo-store.js');
+  const avisModule = await import('../demo/demo-avis.js');
+  store.reset();
+  const avis = avisModule.createDemoAvis('sh-002');
+  assert.equal(avis.demo, true);
+  assert.equal(avis.shipmentId, 'sh-002');
+  assert.match(avis.reference, /^DEMO-AVIS-/);
+  assert.match(avis.previewTarget, /^#demo-avis\//);
+  assert.doesNotMatch(avis.previewTarget, /https?:\/\//i);
+  assert.equal(store.getState().avis.length, 1);
+});
+
+test('tasks documents and avis views are real workspaces rather than placeholders', () => {
+  const html = read('demo/index.html');
+  for (const marker of ['taskWorkspace', 'documentWorkspace', 'avisWorkspace']) {
+    assert.match(html, new RegExp(`id="${marker}"`), `missing workspace: ${marker}`);
+  }
+  assert.match(html, /Lieferschein/);
+  assert.match(html, /L1 \/ QR/);
+  assert.match(html, /POD/);
+  assert.match(html, /Kunden-Avis/);
 });
