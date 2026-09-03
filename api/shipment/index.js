@@ -7,6 +7,23 @@ module.exports=async function(context,req){
     if(String(req.method||'GET').toUpperCase()==='POST'){
       const {session}=await authz.requireSession(req,{permission:'shipments.write',csrf:true});
       const body=http.bodyOf(req);
+      const operation=String(body.operation||'').trim().toLowerCase();
+      if(operation==='set-carrier'){
+        const shipment=await store.setShipmentCarrier(session.tenant_id,req.params?.shipmentId,session.user_id,{
+          lockToken:body.lockToken,revision:body.revision,carrierId:body.carrierId,carrierRequiresAbd:body.carrierRequiresAbd
+        });
+        return http.json(context,200,{ok:true,shipment});
+      }
+      if(operation==='preview-one-off-recipient'){
+        const preview=await store.previewOneOffRecipient(session.tenant_id,req.params?.shipmentId,{customerAccount:body.customerAccount});
+        return http.json(context,200,{ok:true,preview});
+      }
+      if(operation==='convert-one-off-recipient'){
+        const shipment=await store.convertOneOffRecipient(session.tenant_id,req.params?.shipmentId,session.user_id,{
+          lockToken:body.lockToken,revision:body.revision,mode:body.mode,customerAccount:body.customerAccount,customerId:body.customerId
+        });
+        return http.json(context,200,{ok:true,shipment});
+      }
       if(Object.prototype.hasOwnProperty.call(body,'colliRows')){
         const result=await store.replaceColliRows(session.tenant_id,req.params?.shipmentId,session.user_id,{
           lockToken:body.lockToken,
