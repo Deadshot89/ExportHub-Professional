@@ -53,8 +53,13 @@ test('customer masterdata styles define desktop master-detail and responsive dra
 
 test('global locations view opens the canonical customer editor',()=>{
   const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
-  const js=fs.readFileSync(new URL('../assets/js/app.js',import.meta.url),'utf8');
-  for(const id of ['globalLocationSearch','globalLocationStatusFilter','globalLocationRows']) assert.match(html,new RegExp(`id="${id}"`));
-  assert.match(js,/function loadGlobalLocations/);
-  assert.match(js,/openCustomerForLocation/);
+  for(const id of ['liveGlobalLocations','globalLocationSearch','globalLocationStatusFilter','globalLocationRows']) assert.match(html,new RegExp(`id="${id}"`));
+  const moduleUrl=new URL('../assets/js/locations.js',import.meta.url);
+  assert.equal(fs.existsSync(moduleUrl),true,'global locations module must exist');
+  const js=fs.readFileSync(moduleUrl,'utf8');
+  assert.match(js,/async function loadGlobalLocations/);
+  assert.match(js,/async function openCustomerForLocation/);
+  assert.match(js,/professional-masterdata\/locations/);
+  assert.match(js,/data-nav="customers"/);
+  assert.doesNotMatch(js,/professional-masterdata\/locations\/[^'"`]*\{locationId\}[^'"`]*method:'POST'/);
 });
