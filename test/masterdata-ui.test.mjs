@@ -82,3 +82,17 @@ test('customer detail exposes operational summary without changing canonical edi
   assert.match(js,/wireCustomerDetailActions\(\)/);
   assert.doesNotMatch(js,/deleteCustomer|deleteLocation/i);
 });
+
+test('global locations adds country carrier quality and email-count presentation',()=>{
+  const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+  for(const id of ['globalLocationCountryFilter','globalLocationCarrierFilter','globalLocationKpiActive','globalLocationKpiNoCarrier','globalLocationKpiMultiEmail','globalLocationKpiIncomplete']){
+    assert.match(html,new RegExp(`id="${id}"`));
+  }
+  const js=fs.readFileSync(new URL('../assets/js/locations.js',import.meta.url),'utf8');
+  assert.match(js,/function locationQuality/);
+  assert.match(js,/async function enrichLocationRows/);
+  assert.match(js,/registration_emails/);
+  assert.match(js,/professional-masterdata\/customers\/\$\{encodeURIComponent\(customerId\)\}/);
+  assert.match(js,/professional:open-location/);
+  assert.match(js,/openCustomerForLocation/);
+});
