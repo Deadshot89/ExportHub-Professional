@@ -12,7 +12,8 @@ const DEMO_RUNTIME_FILES = [
   'demo/demo-ui.js',
   'demo/demo-shipments.js',
   'demo/demo-documents.js',
-  'demo/demo-avis.js'
+  'demo/demo-avis.js',
+  'demo/presentation-guide.js'
 ];
 
 test('company showcase exposes a dedicated ExportHUB demo entry point', () => {
@@ -177,4 +178,52 @@ test('tasks documents and avis views are real workspaces rather than placeholder
   assert.match(html, /L1 \/ QR/);
   assert.match(html, /POD/);
   assert.match(html, /Kunden-Avis/);
+});
+
+test('presentation roles expose only the intended demo capabilities', async () => {
+  const store = await import('../demo/demo-store.js');
+  assert.equal(store.canRole('Firmenadmin', 'manageCustomers'), true);
+  assert.equal(store.canRole('Exportkoordination', 'editShipments'), true);
+  assert.equal(store.canRole('Teamleitung', 'completeTasks'), true);
+  assert.equal(store.canRole('Lager', 'confirmPickup'), true);
+  assert.equal(store.canRole('Lager', 'manageCustomers'), false);
+  assert.equal(store.canRole('Auditor', 'editShipments'), false);
+  assert.equal(store.canRole('Auditor', 'completeTasks'), false);
+});
+
+test('customers and locations are presentation-ready workspaces using only fictional baseline data', () => {
+  const html = read('demo/index.html');
+  for (const marker of ['customerWorkspace', 'customerDetail', 'locationWorkspace', 'locationQualitySummary']) {
+    assert.match(html, new RegExp(`id="${marker}"`), `missing customer/location workspace marker: ${marker}`);
+  }
+  assert.match(html, /8 Demo-Kunden/);
+  assert.match(html, /12 Demo-Standorte/);
+  assert.doesNotMatch(html, /Kunden.*folgt|Standorte.*folgt/i);
+});
+
+test('team workspace provides local role switching without authentication semantics', () => {
+  const html = read('demo/index.html');
+  assert.match(html, /id="teamWorkspace"/);
+  assert.match(html, /data-demo-role="Firmenadmin"/);
+  assert.match(html, /data-demo-role="Lager"/);
+  assert.match(html, /data-demo-role="Auditor"/);
+  assert.doesNotMatch(html, /Passwort|Anmelden|Login/i);
+});
+
+test('guided presentation has ten valid steps that only reference existing demo views and records', async () => {
+  assert.equal(exists('demo/presentation-guide.js'), true, 'demo/presentation-guide.js must exist');
+  const guide = await import('../demo/presentation-guide.js');
+  const data = await import('../demo/demo-data.js');
+  const html = read('demo/index.html');
+  assert.equal(guide.TOUR_STEPS.length, 10);
+  const shipmentIds = new Set(data.DEMO_SHIPMENTS.map(item => item.id));
+  for (const step of guide.TOUR_STEPS) {
+    assert.match(html, new RegExp(`data-demo-view="${step.view}"`), `tour references missing view: ${step.view}`);
+    if (step.shipmentId) assert.equal(shipmentIds.has(step.shipmentId), true, `tour references missing shipment: ${step.shipmentId}`);
+    assert.ok(step.title?.length > 3);
+    assert.ok(step.text?.length > 20);
+  }
+  for (const marker of ['tourDock', 'tourStepCount', 'tourPrevBtn', 'tourNextBtn', 'tourCloseBtn']) {
+    assert.match(html, new RegExp(`id="${marker}"`), `missing guided presentation control: ${marker}`);
+  }
 });
