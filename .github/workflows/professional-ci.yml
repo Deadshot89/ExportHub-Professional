@@ -6,6 +6,7 @@ on:
     paths:
       - 'index.html'
       - 'assets/**'
+      - 'demo/**'
       - 'api/**'
       - 'shared/**'
       - 'schema/**'
@@ -18,11 +19,13 @@ on:
       - 'professional-project.json'
       - '.github/workflows/professional-ci.yml'
       - '.github/workflows/professional-deploy.yml'
+      - '.github/workflows/company-showcase-preview.yml'
   pull_request:
     branches: [main]
     paths:
       - 'index.html'
       - 'assets/**'
+      - 'demo/**'
       - 'api/**'
       - 'shared/**'
       - 'schema/**'
@@ -35,6 +38,7 @@ on:
       - 'professional-project.json'
       - '.github/workflows/professional-ci.yml'
       - '.github/workflows/professional-deploy.yml'
+      - '.github/workflows/company-showcase-preview.yml'
 permissions:
   contents: read
 jobs:
@@ -80,6 +84,13 @@ jobs:
           node --check assets/js/locations.js
           node --check assets/js/ui-kit.js
           node --check assets/js/overview.js
+          node --check demo/demo-data.js
+          node --check demo/demo-store.js
+          node --check demo/demo-ui.js
+          node --check demo/demo-shipments.js
+          node --check demo/demo-documents.js
+          node --check demo/demo-avis.js
+          node --check demo/presentation-guide.js
       - name: Verify Logistics Control Center invariants
         shell: bash
         run: |
