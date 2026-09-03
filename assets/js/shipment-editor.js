@@ -74,7 +74,7 @@ function colliEditorHtml(shipment,packagingTypes,canEdit){
     </div>`;
   }).join('');
   const empty=!rows.length?`<div class="shipment-server-owned"><strong>Noch keine Colli erfasst.</strong><span>${packagingTypes.length?'Mit „Colli hinzufügen“ eine Verpackungszeile anlegen.':'Keine aktive Verpackungsart verfügbar.'}</span></div>`:'';
-  const action=canEdit?`<div class="shipment-colli-actions"><button type="button" class="btn compact" data-colli-action="add" ${packagingTypes.length?'':'disabled'}>+ Colli hinzufügen</button><span>Physische Anzahl und Gewicht erfassen. LDM kommt ausschließlich vom Server.</span></div>`:'';
+  const action=canEdit?`<div class="shipment-colli-actions"><button type="button" class="btn compact" data-colli-action="add">+ Colli hinzufügen</button><span>Physische Anzahl und Gewicht erfassen. LDM kommt ausschließlich vom Server.</span></div>`:'';
   return `<div class="shipment-colli-editor">${totalHtml}<div class="shipment-colli-rows">${rowsHtml||empty}</div>${action}</div>`;
 }
 
@@ -95,10 +95,11 @@ export function renderShipmentEditor(root,model={},permissions={}){
   const carrier=shipment.carrierSnapshot&&typeof shipment.carrierSnapshot==='object'?shipment.carrierSnapshot:{};
   const fx=shipment.fxSnapshot&&typeof shipment.fxSnapshot==='object'?shipment.fxSnapshot:{};
   const packagingTypes=Array.isArray(model.packagingTypes)?model.packagingTypes:[];
+  const colliCanEdit=canEdit&&packagingTypes.length>0;
 
   const customerBody=`<div class="shipment-field-grid"><div><span class="shipment-field-label">Kunde</span><strong>${esc(shipment.customerName||shipment.customerAccount||'Noch nicht gewählt')}</strong><small>${esc(shipment.customerAccount||'')}</small></div><div><span class="shipment-field-label">Standort</span><strong>${esc(shipment.locationName||'Noch nicht gewählt')}</strong><small>${esc([shipment.locationCity,shipment.locationCountry].filter(Boolean).join(' · '))}</small></div><div class="full"><span class="shipment-field-label">Empfänger-Snapshot</span><p>${esc(snapshotAddress(recipient))}</p></div></div>`;
   const shipmentBody=`<div class="shipment-field-grid"><label><span class="shipment-field-label">Geplantes Abholdatum</span><input id="shipmentPlannedPickupDate" type="date" value="${esc(shipment.plannedPickupDate||'')}" ${canEdit?'':'disabled'}></label><div><span class="shipment-field-label">Revision</span><strong>${esc(shipment.revision??0)}</strong><small>Optimistische Versionsprüfung</small></div><div class="full"><span class="shipment-field-label">Absender-Snapshot</span><p>${esc(snapshotAddress(shipment.senderSnapshot||{}))}</p></div></div>`;
-  const colliBody=colliEditorHtml(shipment,packagingTypes,canEdit);
+  const colliBody=colliEditorHtml(shipment,packagingTypes,colliCanEdit);
   const carrierBody=`<div class="shipment-field-grid"><div><span class="shipment-field-label">Spedition</span><strong>${esc(carrier.name||carrier.carrierName||'Noch nicht festgelegt')}</strong></div><div><span class="shipment-field-label">Status</span><strong>${esc(carrier.status||'Serverseitig')}</strong></div></div>`;
   const customsBody=`<div class="shipment-field-grid"><div><span class="shipment-field-label">Währungs-/FX-Stand</span><strong>${esc(fx.currency||'Serverseitig')}</strong></div><div><span class="shipment-field-label">Zollentscheidung</span><strong>Serverseitig</strong><small>Keine ABD-/CMR-Regel im Browser.</small></div></div>`;
   const documentsBody=`<div id="shipmentChecklist" class="shipment-checklist">${checklistHtml(readiness)}</div>`;
