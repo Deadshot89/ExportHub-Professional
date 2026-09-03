@@ -64,6 +64,7 @@ jobs:
           test -f .deploy/assets/js/ui-kit.js
           test -f .deploy/assets/js/overview.js
           test -f .deploy/assets/css/app.css
+          test -f .deploy/assets/css/control-center.css
           test -f .deploy/shared/migration-core.js
           node - <<'NODE'
           const fs=require('fs');
