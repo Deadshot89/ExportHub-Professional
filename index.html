@@ -50,6 +50,7 @@
       <button data-nav="users">Benutzer & Rollen</button>
       <button data-nav="customers">Kunden</button>
       <button data-nav="locations">Standorte</button>
+      <button data-nav="workspace-settings">Versand-Einstellungen</button>
       <button data-nav="shipments">Sendungen</button>
       <button data-nav="documents">Dokumente</button>
       <button data-nav="audit">Audit</button>
@@ -141,6 +142,23 @@
         </div>
         <div id="legacyLocationMigrationPreview"><div class="card needs-migration empty"><h2>Standorte</h2><p>Backup zuerst unter Migration prüfen.</p></div><div class="has-migration hidden"><div class="section-head"><div><h2>Kundenstandorte</h2><p id="locationsCount" class="muted"></p></div><span class="pill good">Mandant + Kunde gebunden</span></div><div class="table-wrap"><table><thead><tr><th>Kunde</th><th>Standort</th><th>Adresse</th><th>Land</th><th>Quelle</th></tr></thead><tbody id="locationRows"></tbody></table></div></div></div>
       </section>
+      <section class="view" data-view="workspace-settings">
+        <div class="cc-page-head"><div><div class="kicker">WORKSPACE</div><h2>Versand-Einstellungen</h2><p class="muted">Absender- und Versandlanddaten für zukünftige LIVE-Sendungen.</p></div><span id="workspaceShippingMode" class="cc-status neutral">Serverseitig geschützt</span></div>
+        <div id="workspaceShippingCompleteness" class="notice warn">Versand-Einstellungen werden geladen …</div>
+        <form id="workspaceShippingForm" class="cc-panel section">
+          <div class="masterdata-form-grid">
+            <div class="masterdata-form-field full"><label for="workspaceCompanyName">Firma</label><input id="workspaceCompanyName" autocomplete="organization"></div>
+            <div class="masterdata-form-field"><label for="workspaceStreet">Straße</label><input id="workspaceStreet" autocomplete="address-line1"></div>
+            <div class="masterdata-form-field"><label for="workspaceHouseNumber">Hausnummer</label><input id="workspaceHouseNumber"></div>
+            <div class="masterdata-form-field"><label for="workspacePostalCode">PLZ</label><input id="workspacePostalCode" autocomplete="postal-code"></div>
+            <div class="masterdata-form-field"><label for="workspaceCity">Ort</label><input id="workspaceCity" autocomplete="address-level2"></div>
+            <div class="masterdata-form-field"><label for="workspaceShippingCountry">Versandland</label><input id="workspaceShippingCountry" autocomplete="country-name"></div>
+            <div class="masterdata-form-field"><label for="workspaceShippingCountryIso">Länder-ISO</label><input id="workspaceShippingCountryIso" maxlength="2" placeholder="DE"></div>
+            <div class="masterdata-form-field"><label for="workspaceTimezone">Zeitzone</label><input id="workspaceTimezone" value="Europe/Berlin" placeholder="Europe/Berlin"></div>
+          </div>
+          <div class="toolbar"><button id="saveWorkspaceShipping" class="btn" type="submit">Versand-Einstellungen speichern</button><span id="workspaceShippingMessage" class="muted"></span></div>
+        </form>
+      </section>
       <section class="view" data-view="shipments"><div class="card needs-migration empty"><h2>Sendungen</h2><p>Backup zuerst unter Migration prüfen.</p></div><div class="has-migration hidden"><div class="section-head"><div><h2>Bestehende Sendungen</h2><p id="shipmentsCount" class="muted"></p></div><span class="pill good">Referenzen bleiben erhalten</span></div><div class="table-wrap"><table><thead><tr><th>Referenz</th><th>Kunde</th><th>Status</th><th>POD</th><th>Sperre</th><th>Abholdatum</th></tr></thead><tbody id="shipmentRows"></tbody></table></div></div></section>
       <section class="view" data-view="documents"><div class="card needs-migration empty"><h2>Dokumente</h2><p>Backup zuerst unter Migration prüfen.</p></div><div class="has-migration hidden"><div class="section-head"><div><h2>Dokument-Migrationsregister</h2><p id="documentsCount" class="muted"></p></div><span id="podGatePill" class="pill warn">POD-Prüfung offen</span></div><div class="card document-filter"><div><label>Suche</label><input id="documentSearch" placeholder="Referenz oder Dateiname"></div><div><label>Dokumentart</label><select id="documentKindFilter"><option value="">Alle</option></select></div><div><label>Migrationsstatus</label><select id="documentStatusFilter"><option value="">Alle</option><option value="VERIFIED_INLINE">Verifiziert</option><option value="REMOTE_CAPTURE_REQUIRED">Remote sichern</option><option value="CONTENT_MISSING">Dateiinhalt fehlt</option><option value="HASH_ERROR">Hashfehler</option></select></div></div><div id="documentSummary" class="status-overview"></div><div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Referenz</th><th>Art</th><th>Datei</th><th>Quelle</th><th>Migrationsstatus</th><th>Wiederherstellung</th><th>Priorität</th></tr></thead><tbody id="documentRows"></tbody></table></div></div></section>
       <section class="view" data-view="audit"><div class="card needs-migration empty"><h2>Audit</h2><p>Backup zuerst unter Migration prüfen.</p></div><div class="has-migration hidden"><div class="section-head"><div><h2>Strukturiertes Audit</h2><p id="auditCount" class="muted"></p></div><span class="pill good">Secret-Felder redigiert</span></div><div id="auditPreview"></div><div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Zeit</th><th>Benutzer</th><th>Kategorie</th><th>Aktion</th><th>Quelle</th></tr></thead><tbody id="auditRows"></tbody></table></div></div></section>
@@ -152,4 +170,4 @@
     <div id="masterdataDrawerBody" class="drawer-body"></div>
   </aside>
 </div>
-<script type="module" src="/assets/js/app.js"></script><script type="module" src="/assets/js/locations.js"></script><script type="module" src="/assets/js/overview.js"></script></body></html>
+<script type="module" src="/assets/js/app.js"></script><script type="module" src="/assets/js/locations.js"></script><script type="module" src="/assets/js/overview.js"></script><script type="module" src="/assets/js/workspace-settings.js"></script></body></html>
