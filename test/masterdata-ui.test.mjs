@@ -50,3 +50,11 @@ test('customer masterdata styles define desktop master-detail and responsive dra
   assert.match(css,/\.masterdata-drawer\.wide/);
   assert.match(css,/@media\(max-width:900px\)/);
 });
+
+test('global locations view opens the canonical customer editor',()=>{
+  const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+  const js=fs.readFileSync(new URL('../assets/js/app.js',import.meta.url),'utf8');
+  for(const id of ['globalLocationSearch','globalLocationStatusFilter','globalLocationRows']) assert.match(html,new RegExp(`id="${id}"`));
+  assert.match(js,/function loadGlobalLocations/);
+  assert.match(js,/openCustomerForLocation/);
+});
