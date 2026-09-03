@@ -18,6 +18,23 @@ on:
       - 'professional-project.json'
       - '.github/workflows/professional-ci.yml'
       - '.github/workflows/professional-deploy.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'assets/**'
+      - 'api/**'
+      - 'shared/**'
+      - 'schema/**'
+      - 'migration/**'
+      - 'test/**'
+      - 'tools/**'
+      - 'docs/**'
+      - 'package.json'
+      - 'staticwebapp.config.json'
+      - 'professional-project.json'
+      - '.github/workflows/professional-ci.yml'
+      - '.github/workflows/professional-deploy.yml'
 permissions:
   contents: read
 jobs:
@@ -55,6 +72,8 @@ jobs:
           node-version: '20'
       - name: Run Professional tests
         run: npm test
+      - name: Validate frontend JavaScript syntax
+        run: node --check assets/js/app.js
       - name: Install Professional API dependencies
         run: npm install --prefix api --ignore-scripts --no-audit --no-fund
       - name: Validate Professional API runtime
@@ -64,13 +83,16 @@ jobs:
           files=(
             api/health/index.js api/professional-meta/index.js
             api/shared/database.js api/shared/auth-security.js api/shared/auth-store.js api/shared/authorization.js api/shared/user-admin-store.js api/shared/http.js
+            api/shared/masterdata-validation.js api/shared/masterdata-store.js
             api/auth-login/index.js api/auth-session/index.js api/auth-logout/index.js api/onboarding-status/index.js api/onboarding-create/index.js
             api/admin-users-list/index.js api/admin-user-invite/index.js api/admin-user-role/index.js api/admin-user-status/index.js api/admin-password-reset/index.js api/admin-identity-audit/index.js
             api/invite-redeem/index.js api/password-reset-redeem/index.js
+            api/masterdata-customers/index.js api/masterdata-customer/index.js api/masterdata-customer-status/index.js api/masterdata-customer-locations/index.js
+            api/masterdata-location/index.js api/masterdata-location-status/index.js api/masterdata-locations/index.js
           )
           for f in "${files[@]}"; do node --check "$f"; done
           cd api
-          node -e "require('./shared/database.js'); require('./shared/auth-security.js'); require('./shared/auth-store.js'); require('./shared/authorization.js'); require('./shared/user-admin-store.js'); require('pg'); console.log('OK: Professional 0.7 API runtime loads');"
+          node -e "require('./shared/database.js'); require('./shared/auth-security.js'); require('./shared/auth-store.js'); require('./shared/authorization.js'); require('./shared/user-admin-store.js'); require('./shared/masterdata-validation.js'); require('./shared/masterdata-store.js'); require('pg'); console.log('OK: Professional 0.7 API runtime loads');"
       - name: Verify no legacy source backup is committed
         shell: bash
         run: |
