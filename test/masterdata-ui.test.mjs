@@ -34,12 +34,10 @@ test('customer UI supports multiple open locations and role-aware write controls
 test('new customer drawer includes first required location and repeatable registration emails',()=>{
   const js=fs.readFileSync(new URL('../assets/js/app.js',import.meta.url),'utf8');
   assert.match(js,/registrationEmails/);
-  assert.match(js,/customer-location-name/);
-  assert.match(js,/customer-location-street/);
-  assert.match(js,/customer-location-house-number/);
-  assert.match(js,/customer-location-postal-code/);
-  assert.match(js,/customer-location-city/);
-  assert.match(js,/customer-location-country/);
+  assert.match(js,/locationFormFieldsHtml\(\{\},'customer-location'\)/);
+  for(const field of ['name','street','house-number','postal-code','city','country']){
+    assert.match(js,new RegExp(`\\$\\{prefix\\}-${field}`));
+  }
   assert.match(js,/add-registration-email/);
 });
 
