@@ -3,7 +3,8 @@ let pool=null;
 function configured(){return !!String(process.env.PROFESSIONAL_DATABASE_URL||'').trim();}
 function writesEnabled(){return DATA_MODE==='live' && process.env.PROFESSIONAL_ENABLE_WRITES==='true';}
 function controlWritesEnabled(){return process.env.PROFESSIONAL_ENABLE_CONTROL_WRITES==='true';}
-function status(){return {configured:configured(),dataMode:DATA_MODE,writesEnabled:writesEnabled(),controlWritesEnabled:controlWritesEnabled()};}
+function masterdataWritesEnabled(){return process.env.PROFESSIONAL_ENABLE_MASTERDATA_WRITES==='true';}
+function status(){return {configured:configured(),dataMode:DATA_MODE,writesEnabled:writesEnabled(),controlWritesEnabled:controlWritesEnabled(),masterdataWritesEnabled:masterdataWritesEnabled()};}
 function getPool(){
   if(!configured()) throw Object.assign(new Error('Professional database is not configured.'),{code:'DATABASE_NOT_CONFIGURED'});
   if(!pool){const {Pool}=require('pg');pool=new Pool({connectionString:process.env.PROFESSIONAL_DATABASE_URL,max:Number(process.env.PROFESSIONAL_DB_POOL_MAX||5),ssl:process.env.PROFESSIONAL_DATABASE_SSL==='false'?false:{rejectUnauthorized:true}});}
@@ -26,9 +27,15 @@ async function withTenantControlClient(tenantId,fn,{write=false}={}){
   const client=await getPool().connect();
   try{return await transact(client,async c=>{await c.query("select set_config('app.tenant_id',$1,true)",[tid]);return fn(c);},{write,readOnly:!write});}finally{client.release();}
 }
+async function withTenantMasterdataClient(tenantId,fn,{write=false}={}){
+  const tid=String(tenantId||'').trim();if(!tid)throw Object.assign(new Error('Tenant required.'),{code:'TENANT_REQUIRED'});
+  if(write&&!masterdataWritesEnabled())throw Object.assign(new Error('Stammdaten-Schreibzugriffe sind deaktiviert.'),{code:'MASTERDATA_WRITES_DISABLED'});
+  const client=await getPool().connect();
+  try{return await transact(client,async c=>{await c.query("select set_config('app.tenant_id',$1,true)",[tid]);return fn(c);},{write,readOnly:!write});}finally{client.release();}
+}
 async function withControlClient(fn,{write=false}={}){
   if(write&&!controlWritesEnabled())throw Object.assign(new Error('Control writes are disabled.'),{code:'CONTROL_WRITES_DISABLED'});
   const client=await getPool().connect();
   try{return await fn(client);}finally{client.release();}
 }
-module.exports={configured,writesEnabled,controlWritesEnabled,status,withTenantClient,withTenantControlClient,withControlClient};
+module.exports={configured,writesEnabled,controlWritesEnabled,masterdataWritesEnabled,status,withTenantClient,withTenantControlClient,withTenantMasterdataClient,withControlClient};

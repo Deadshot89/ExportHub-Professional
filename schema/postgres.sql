@@ -122,6 +122,11 @@ create table if not exists customers (
 );
 create index if not exists customers_tenant_idx on customers(tenant_id);
 
+-- Live-Stammdaten-Erweiterung. Bestehende Legacy-Zeilen bleiben kompatibel.
+alter table customers add column if not exists active boolean not null default true;
+alter table customers add column if not exists updated_at timestamptz not null default now();
+create unique index if not exists customers_tenant_id_id_uq on customers(tenant_id,id);
+
 create table if not exists customer_locations (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references tenants(id),
@@ -138,6 +143,52 @@ create table if not exists customer_locations (
   created_at timestamptz not null default now()
 );
 create index if not exists customer_locations_tenant_customer_idx on customer_locations(tenant_id, customer_id);
+
+-- Strukturierte Live-Adresse zusätzlich zu den unveränderten Legacy-Feldern address/email/derived_main.
+alter table customer_locations add column if not exists street text;
+alter table customer_locations add column if not exists house_number text;
+alter table customer_locations add column if not exists postal_code text;
+alter table customer_locations add column if not exists city text;
+alter table customer_locations add column if not exists country_iso text;
+alter table customer_locations add column if not exists contact_email text;
+alter table customer_locations add column if not exists carrier_name text;
+alter table customer_locations add column if not exists shipping_instructions text;
+alter table customer_locations add column if not exists active boolean not null default true;
+alter table customer_locations add column if not exists updated_at timestamptz not null default now();
+create unique index if not exists customer_locations_tenant_id_id_uq on customer_locations(tenant_id,id);
+
+-- Zusätzliche tenant-sichere Beziehung. NOT VALID schützt den Upgradepfad für mögliche alte Inkonsistenzen;
+-- neue/aktualisierte Zeilen werden trotzdem sofort durch den Constraint geprüft.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+     where conname='customer_locations_tenant_customer_fk'
+       and conrelid='customer_locations'::regclass
+  ) then
+    alter table customer_locations
+      add constraint customer_locations_tenant_customer_fk
+      foreign key (tenant_id,customer_id)
+      references customers(tenant_id,id)
+      not valid;
+  end if;
+end $$;
+
+create table if not exists customer_location_registration_emails (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references tenants(id),
+  location_id uuid not null,
+  email text not null,
+  created_at timestamptz not null default now(),
+  constraint customer_location_registration_emails_location_fk
+    foreign key (tenant_id,location_id)
+    references customer_locations(tenant_id,id)
+    on delete cascade
+);
+create index if not exists customer_location_registration_emails_tenant_location_idx
+  on customer_location_registration_emails(tenant_id,location_id);
+create unique index if not exists customer_location_registration_emails_uq
+  on customer_location_registration_emails(tenant_id,location_id,lower(email));
 
 create table if not exists shipments (
   id uuid primary key default gen_random_uuid(),
@@ -231,7 +282,7 @@ create index if not exists audit_events_tenant_time_idx on audit_events(tenant_i
 do $$
 declare t text;
 begin
-  foreach t in array array['app_users','tenant_memberships','app_user_auth','auth_sessions','user_invitations','password_reset_tokens','tenant_settings','customers','customer_locations','shipments','documents','generated_artifacts','migration_runs','migration_source_map','audit_events']
+  foreach t in array array['app_users','tenant_memberships','app_user_auth','auth_sessions','user_invitations','password_reset_tokens','tenant_settings','customers','customer_locations','customer_location_registration_emails','shipments','documents','generated_artifacts','migration_runs','migration_source_map','audit_events']
   loop
     execute format('alter table %I enable row level security',t);
     execute format('drop policy if exists tenant_isolation on %I',t);
