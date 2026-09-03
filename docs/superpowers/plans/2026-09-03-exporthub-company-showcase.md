@@ -35,28 +35,11 @@
 - Consumes: none from production runtime.
 - Produces: `DEMO_COMPANY`, `DEMO_EMPLOYEES`, `DEMO_CUSTOMERS`, `DEMO_LOCATIONS`, `DEMO_SHIPMENTS`, `DEMO_TASKS`, `getDemoMetrics()` and a dashboard/nav renderer used by later tasks.
 
-- [ ] **Step 1: Write the failing test**
-
-Add `test/company-showcase.test.mjs` asserting `/demo/` has a visible DEMO marker, the fictional company, presentation/free-explore controls, required navigation items, baseline data counts and no network/auth/API markers.
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `node --test test/company-showcase.test.mjs`
-Expected: FAIL because `demo/index.html` and modules do not exist yet.
-
-- [ ] **Step 3: Write minimal implementation**
-
-Create the shell, fictional baseline dataset, KPI calculator and dashboard/list rendering without any backend calls.
-
-- [ ] **Step 4: Run test to verify it passes**
-
-Run: `node --test test/company-showcase.test.mjs`
-Expected: PASS.
-
-- [ ] **Step 5: Run complete project tests**
-
-Run: `npm test`
-Expected: all tests PASS.
+- [x] **Step 1: Write the failing test**
+- [x] **Step 2: Run test to verify it fails** — RED verified before the demo shell existed.
+- [x] **Step 3: Write minimal implementation**
+- [x] **Step 4: Run test to verify it passes**
+- [x] **Step 5: Run complete project tests** — 86/86 green at the Task 1 checkpoint.
 
 ### Task 2: Local store and shipment workflow
 
@@ -66,17 +49,17 @@ Expected: all tests PASS.
 - Create: `demo/demo-shipments.js`
 - Modify: `demo/demo-ui.js`
 - Modify: `demo/index.html`
-- Modify: `demo/demo.css`
+- Create: `demo/demo-shipments.css`
 
 **Interfaces:**
 - Consumes: baseline arrays from `demo-data.js`.
 - Produces: `getState()`, `reset()`, `transitionShipment()`, shipment filtering and shipment detail rendering.
 
-- [ ] **Step 1: Write failing tests** for status progression, ABD blocking, POD-before-collection rejection and post-collection edit lock.
-- [ ] **Step 2: Run focused tests** and confirm failure because store/transition logic is absent.
-- [ ] **Step 3: Implement minimal store and shipment workspace** using localStorage only.
-- [ ] **Step 4: Run focused tests** and confirm PASS.
-- [ ] **Step 5: Run `npm test`** and confirm all project tests PASS.
+- [x] **Step 1: Write failing tests** for status progression, ABD blocking, POD-before-collection rejection and post-collection edit lock.
+- [x] **Step 2: Run focused tests** — RED run #218: 85 pass / 5 expected fail before store/workspace implementation.
+- [x] **Step 3: Implement minimal store and shipment workspace** using localStorage only.
+- [x] **Step 4: Run focused tests** and confirm PASS.
+- [x] **Step 5: Run `npm test`** — run #224: 90/90 tests PASS; syntax, Control Center invariants and API runtime also PASS.
 
 ### Task 3: Tasks, documents and customer avis
 
@@ -84,28 +67,30 @@ Expected: all tests PASS.
 - Modify: `test/company-showcase.test.mjs`
 - Create: `demo/demo-documents.js`
 - Create: `demo/demo-avis.js`
+- Modify: `demo/demo-store.js`
 - Modify: `demo/demo-ui.js`
 - Modify: `demo/index.html`
-- Modify: `demo/demo.css`
+- Create: `demo/demo-operations.css`
 
 **Interfaces:**
 - Consumes: local demo store and shipment state.
 - Produces: document completeness explanation, local task completion, DEMO file preview and local-only avis preview.
 
-- [ ] **Step 1: Write failing tests** for required documents, local-only avis and DEMO/MUSTER output markers.
-- [ ] **Step 2: Run focused tests** and confirm expected failures.
-- [ ] **Step 3: Implement document/task/avis views** without network or mail calls.
-- [ ] **Step 4: Run focused tests** and confirm PASS.
-- [ ] **Step 5: Run `npm test`** and confirm all project tests PASS.
+- [x] **Step 1: Write failing tests** for required documents, local-only avis and DEMO/MUSTER output markers.
+- [x] **Step 2: Run focused tests** — RED run #225: 90 pass / 4 expected fail before document/avis/workspace implementation.
+- [x] **Step 3: Implement document/task/avis views** without network or mail calls.
+- [x] **Step 4: Run focused tests** and confirm PASS.
+- [x] **Step 5: Run `npm test`** — run #231: 94/94 tests PASS; syntax, Control Center invariants and API runtime also PASS.
 
 ### Task 4: Customers, locations, roles and guided presentation
 
 **Files:**
 - Modify: `test/company-showcase.test.mjs`
 - Create: `demo/presentation-guide.js`
+- Modify: `demo/demo-store.js`
 - Modify: `demo/demo-ui.js`
 - Modify: `demo/index.html`
-- Modify: `demo/demo.css`
+- Modify: demo styles as needed
 
 **Interfaces:**
 - Consumes: demo state and existing view IDs/actions.
