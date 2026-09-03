@@ -31,12 +31,14 @@ function normalizeShipmentRow(row={}){
   const kind=sourceKind(row);
   const rework=objectValue(row.rework);
   const readiness=objectValue(row.readiness);
+  const revisionNumber=Number(row.revision??0);
   return {
     id:text(row.id),
     reference:text(row.reference),
     sourceKind:kind,
     readOnly:kind==='MIGRATED'||PICKED_STATUSES.has(text(row.status))||text(row.status)==='Storniert',
     status:text(row.status)||'Entwurf',
+    revision:Number.isFinite(revisionNumber)?revisionNumber:0,
     sourceStatus:text(row.source_status??row.sourceStatus),
     processStatus:text(row.process_status??row.processStatus),
     customerId:text(row.customer_id??row.customerId),
@@ -46,9 +48,15 @@ function normalizeShipmentRow(row={}){
     locationName:text(row.location_name??row.locationName),
     locationCity:text(row.location_city??row.locationCity),
     locationCountry:text(row.location_country??row.locationCountry),
+    senderSnapshot:objectValue(row.sender_snapshot??row.senderSnapshot),
+    recipientSnapshot:objectValue(row.recipient_snapshot??row.recipientSnapshot),
+    carrierSnapshot:objectValue(row.carrier_snapshot??row.carrierSnapshot),
+    fxSnapshot:objectValue(row.fx_snapshot??row.fxSnapshot),
     plannedPickupDate:dateOnly(row.planned_pickup_date??row.plannedPickupDate),
     pickedUpAt:row.picked_up_at??row.pickedUpAt??null,
     actualPickupDate:dateOnly(row.actual_pickup_date??row.actualPickupDate),
+    completedAt:row.completed_at??row.completedAt??null,
+    archivedAt:row.archived_at??row.archivedAt??null,
     createdAt:row.created_at??row.createdAt??null,
     updatedAt:row.updated_at??row.updatedAt??null,
     discardedAt:row.discarded_at??row.discardedAt??null,
