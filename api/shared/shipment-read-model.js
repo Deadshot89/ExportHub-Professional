@@ -10,6 +10,9 @@ function objectValue(value){
   if(typeof value==='string'&&value.trim())try{const parsed=JSON.parse(value);return parsed&&typeof parsed==='object'&&!Array.isArray(parsed)?parsed:{};}catch{}
   return {};
 }
+function numberValue(value,fallback=0){const n=Number(value);return Number.isFinite(n)?n:fallback;}
+function nullableNumber(value){if(value===null||value===undefined||String(value).trim()==='')return null;const n=Number(value);return Number.isFinite(n)?n:null;}
+function round(value,digits){const factor=10**digits;return Math.round((Number(value)+Number.EPSILON)*factor)/factor;}
 function dateOnly(value){
   if(!value)return '';
   if(value instanceof Date&&!Number.isNaN(value.getTime()))return value.toISOString().slice(0,10);
@@ -65,6 +68,34 @@ function normalizeShipmentRow(row={}){
   };
 }
 
+function normalizeColliRow(row={}){
+  return {
+    id:text(row.id),
+    packagingTypeId:text(row.packaging_type_id??row.packagingTypeId),
+    packagingName:text(row.packaging_name_snapshot??row.packagingName),
+    quantity:numberValue(row.quantity),
+    weightKg:numberValue(row.weight_kg??row.weightKg),
+    lengthCm:nullableNumber(row.length_cm??row.lengthCm),
+    widthCm:nullableNumber(row.width_cm??row.widthCm),
+    heightCm:nullableNumber(row.height_cm??row.heightCm),
+    ldm:numberValue(row.ldm),
+    position:numberValue(row.position)
+  };
+}
+
+function withColliDetails(shipment,rows=[]){
+  const colliRows=(Array.isArray(rows)?rows:[]).map(normalizeColliRow).sort((a,b)=>a.position-b.position);
+  const totals=colliRows.reduce((acc,row)=>{
+    acc.totalColli+=row.quantity;
+    acc.totalWeightKg+=row.weightKg;
+    acc.totalLdm+=row.ldm;
+    return acc;
+  },{totalColli:0,totalWeightKg:0,totalLdm:0});
+  totals.totalWeightKg=round(totals.totalWeightKg,3);
+  totals.totalLdm=round(totals.totalLdm,4);
+  return {...shipment,colliRows,colliTotals:totals};
+}
+
 function shipmentActionItems(rows,{localDate}={}){
   const day=text(localDate);
   const actions=[];
@@ -110,4 +141,4 @@ function buildShipmentDashboard(rows=[],options={}){
   };
 }
 
-module.exports={normalizeShipmentRow,buildShipmentDashboard,shipmentActionItems,isOpen,isPicked};
+module.exports={normalizeShipmentRow,normalizeColliRow,withColliDetails,buildShipmentDashboard,shipmentActionItems,isOpen,isPicked};
