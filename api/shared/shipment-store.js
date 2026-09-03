@@ -4,6 +4,7 @@ const crypto=require('crypto');
 const db=require('./database');
 const readModel=require('./shipment-read-model');
 const domain=require('./shipment-domain');
+const calculations=require('./shipment-calculations');
 const workspaceSettings=require('./workspace-settings-store');
 
 function q(value){return value==null?'':String(value).trim();}
@@ -25,6 +26,29 @@ function nullableDate(value,name){
   const date=q(value);
   if(!/^\d{4}-\d{2}-\d{2}$/.test(date))throw shipmentError('INPUT_INVALID',`${name} muss YYYY-MM-DD entsprechen.`);
   return date;
+}
+function positiveNumber(value,name,{required=false}={}){
+  if(value===null||value===undefined||String(value).trim()===''){
+    if(required)throw shipmentError('INPUT_INVALID',`${name} fehlt.`);
+    return null;
+  }
+  const number=Number(value);
+  if(!Number.isFinite(number)||number<=0)throw shipmentError('INPUT_INVALID',`${name} muss größer als 0 sein.`);
+  return number;
+}
+function nonNegativeNumber(value,name,{required=false}={}){
+  if(value===null||value===undefined||String(value).trim()===''){
+    if(required)throw shipmentError('INPUT_INVALID',`${name} fehlt.`);
+    return null;
+  }
+  const number=Number(value);
+  if(!Number.isFinite(number)||number<0)throw shipmentError('INPUT_INVALID',`${name} darf nicht negativ sein.`);
+  return number;
+}
+function positiveInteger(value,name){
+  const number=Number(value);
+  if(!Number.isInteger(number)||number<=0)throw shipmentError('INPUT_INVALID',`${name} muss eine positive ganze Zahl sein.`);
+  return number;
 }
 function localDateInZone(timeZone='UTC',now=new Date()){
   try{
@@ -228,6 +252,91 @@ async function updateShipmentInClient(client,tenantId,shipmentId,userId,{lockTok
   return readModel.normalizeShipmentRow(updated.rows[0]);
 }
 
+function resolveColliDimension(inputValue,packagingValue,allowInput,label){
+  const supplied=positiveNumber(inputValue,label);
+  const preset=packagingValue==null?null:Number(packagingValue);
+  if(!allowInput){
+    if(supplied!==null&&preset===null)throw shipmentError('INPUT_INVALID',`${label} darf für diese Verpackungsart nicht eingegeben werden.`);
+    if(supplied!==null&&preset!==null&&Math.abs(supplied-preset)>0.0001)throw shipmentError('INPUT_INVALID',`${label} ist für diese Verpackungsart fest vorgegeben.`);
+    return preset;
+  }
+  return supplied??preset;
+}
+
+function normalizeColliInputRow(input,packaging,position){
+  if(!input||typeof input!=='object'||Array.isArray(input))throw shipmentError('INPUT_INVALID','Colli-Zeile ist ungültig.');
+  const packagingTypeId=q(input.packagingTypeId??input.packaging_type_id);
+  if(!packagingTypeId||packagingTypeId!==q(packaging.id))throw shipmentError('PACKAGING_TYPE_NOT_FOUND','Verpackungsart wurde nicht gefunden oder ist inaktiv.');
+  const quantity=positiveInteger(input.quantity,'Physische Colli-Anzahl');
+  const weightKg=nonNegativeNumber(input.weightKg??input.weight_kg,'Gewicht',{required:true});
+  const lengthCm=resolveColliDimension(input.lengthCm??input.length_cm,packaging.length_cm,packaging.allow_length===true,'Länge');
+  const widthCm=resolveColliDimension(input.widthCm??input.width_cm,packaging.width_cm,packaging.allow_width===true,'Breite');
+  const heightCm=resolveColliDimension(input.heightCm??input.height_cm,packaging.height_cm,packaging.allow_height===true,'Höhe');
+  return {packaging_type_id:packagingTypeId,packaging_name_snapshot:q(packaging.name),quantity,weight_kg:weightKg,length_cm:lengthCm,width_cm:widthCm,height_cm:heightCm,position};
+}
+
+function normalizeCalculatedColliRow(row={}){
+  return {
+    packagingTypeId:q(row.packaging_type_id),packagingName:q(row.packaging_name_snapshot),quantity:Number(row.quantity),weightKg:Number(row.weight_kg),
+    lengthCm:row.length_cm==null?null:Number(row.length_cm),widthCm:row.width_cm==null?null:Number(row.width_cm),heightCm:row.height_cm==null?null:Number(row.height_cm),
+    ldm:Number(row.ldm),position:Number(row.position||0)
+  };
+}
+
+async function replaceColliRowsInClient(client,tenantId,shipmentId,userId,{lockToken,revision,rows}={}){
+  const tid=q(tenantId),sid=q(shipmentId),uid=q(userId);
+  if(!tid||!sid||!uid)throw shipmentError('INPUT_INVALID','Sendungs- oder Benutzerkontext fehlt.');
+  if(!Array.isArray(rows))throw shipmentError('INPUT_INVALID','Colli-Zeilen müssen als Liste übergeben werden.');
+  const expected=Number(revision);
+  if(!Number.isInteger(expected)||expected<0)throw shipmentError('INPUT_INVALID','Sendungsrevision ist ungültig.');
+  const currentResult=await client.query(`select * from shipments where tenant_id=$1 and id=$2 and discarded_at is null for update`,[tid,sid]);
+  const current=currentResult.rows?.[0];
+  if(!current)throw shipmentError('SHIPMENT_NOT_FOUND','Sendung wurde nicht gefunden.');
+  domain.assertMutable(current);
+  await requireEditLockInClient(client,tid,sid,uid,lockToken);
+  if(Number(current.revision)!==expected)throw shipmentError('SHIPMENT_REVISION_CONFLICT','Sendung wurde zwischenzeitlich geändert. Bitte neu laden.');
+
+  const requestedIds=[...new Set(rows.map(row=>q(row?.packagingTypeId??row?.packaging_type_id)).filter(Boolean))];
+  if(rows.length&&requestedIds.length===0)throw shipmentError('PACKAGING_TYPE_NOT_FOUND','Verpackungsart fehlt.');
+  let packagingRows=[];
+  if(requestedIds.length){
+    const packagingResult=await client.query(`select id,name,active,length_cm,width_cm,height_cm,ldm_mode,fixed_ldm_per_unit,allow_length,allow_width,allow_height
+      from packaging_types where tenant_id=$1 and id=any($2::uuid[]) and active=true`,[tid,requestedIds]);
+    packagingRows=packagingResult.rows||[];
+  }
+  const packagingById=new Map(packagingRows.map(row=>[q(row.id),row]));
+  if(packagingById.size!==requestedIds.length)throw shipmentError('PACKAGING_TYPE_NOT_FOUND','Mindestens eine Verpackungsart wurde nicht gefunden oder ist inaktiv.');
+  const normalizedRows=rows.map((input,index)=>{
+    const id=q(input?.packagingTypeId??input?.packaging_type_id);
+    const packaging=packagingById.get(id);
+    if(!packaging)throw shipmentError('PACKAGING_TYPE_NOT_FOUND','Verpackungsart wurde nicht gefunden oder ist inaktiv.');
+    return normalizeColliInputRow(input,packaging,index);
+  });
+  const totals=calculations.calculateTotals(normalizedRows,packagingById);
+
+  await client.query('delete from shipment_colli where tenant_id=$1 and shipment_id=$2',[tid,sid]);
+  for(const calculatedRow of totals.rows){
+    const calculatedLdm=calculatedRow.ldm;
+    await client.query(`insert into shipment_colli(tenant_id,shipment_id,packaging_type_id,packaging_name_snapshot,quantity,weight_kg,length_cm,width_cm,height_cm,ldm,position,updated_at)
+      values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,now())`,[
+      tid,sid,calculatedRow.packaging_type_id,calculatedRow.packaging_name_snapshot,calculatedRow.quantity,calculatedRow.weight_kg,
+      calculatedRow.length_cm,calculatedRow.width_cm,calculatedRow.height_cm,calculatedLdm,calculatedRow.position
+    ]);
+  }
+  const updated=await client.query(`update shipments set revision=revision+1,updated_at=now()
+    where tenant_id=$1 and id=$2 and revision=$3 and discarded_at is null returning *`,[tid,sid,expected]);
+  if(!updated.rows?.[0])throw shipmentError('SHIPMENT_REVISION_CONFLICT','Sendung wurde zwischenzeitlich geändert. Bitte neu laden.');
+  await client.query(`update shipment_edit_locks set last_activity_at=now()
+    where tenant_id=$1 and shipment_id=$2 and user_id=$3 and lock_token=$4`,[tid,sid,uid,q(lockToken)]);
+  await client.query(`insert into audit_events(tenant_id,user_id,event_type,entity_type,entity_id,metadata)
+    values($1,$2,'SHIPMENT_COLLI_CHANGED','shipment',$3,$4::jsonb)`,[tid,uid,sid,JSON.stringify({rows:totals.rows.length,totalColli:totals.totalColli,totalWeightKg:totals.totalWeightKg,totalLdm:totals.totalLdm,revision:Number(updated.rows[0].revision)})]);
+  return {
+    shipment:readModel.normalizeShipmentRow(updated.rows[0]),
+    colliRows:totals.rows.map(normalizeCalculatedColliRow),
+    totals:{totalColli:totals.totalColli,totalWeightKg:totals.totalWeightKg,totalLdm:totals.totalLdm}
+  };
+}
+
 async function listShipments(tenantId,filters={}){
   return db.withTenantShipmentClient(tenantId,async client=>{
     const params=[String(tenantId)];
@@ -310,10 +419,13 @@ async function forceReleaseEditLock(tenantId,shipmentId,userId,{role,reason}={})
 async function updateShipment(tenantId,shipmentId,userId,input){
   return db.withTenantShipmentClient(tenantId,client=>updateShipmentInClient(client,tenantId,shipmentId,userId,input),{write:true});
 }
+async function replaceColliRows(tenantId,shipmentId,userId,input){
+  return db.withTenantShipmentClient(tenantId,client=>replaceColliRowsInClient(client,tenantId,shipmentId,userId,input),{write:true});
+}
 
 module.exports={
   listShipments,getShipment,getShipmentDashboard,localDateInZone,
-  createDraft,updateShipment,acquireEditLock,heartbeatEditLock,releaseEditLock,forceReleaseEditLock,
-  createDraftInClient,updateShipmentInClient,acquireEditLockInClient,heartbeatEditLockInClient,releaseEditLockInClient,
-  sanitizeShipmentPatch,normalizeLock
+  createDraft,updateShipment,replaceColliRows,acquireEditLock,heartbeatEditLock,releaseEditLock,forceReleaseEditLock,
+  createDraftInClient,updateShipmentInClient,replaceColliRowsInClient,acquireEditLockInClient,heartbeatEditLockInClient,releaseEditLockInClient,
+  sanitizeShipmentPatch,normalizeLock,normalizeCalculatedColliRow
 };
