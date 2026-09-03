@@ -4,6 +4,8 @@ const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll
 let sourceText='', sourcePayload=null, migrationPackage=null, currentInventory=null, currentDocumentRows=[];
 
 let identitySession=null, localMigrationLab=false, credentialAction=null;
+let liveCustomers=[],selectedCustomerId='',selectedCustomer=null,openLocationIds=new Set(),masterdataBusy=false,masterdataDrawerState=null;
+let customerLoadSequence=0,customerDetailSequence=0,customerSearchTimer=null;
 
 async function apiJson(url,options={}){
   const {headers={},...rest}=options;const res=await fetch(url,{credentials:'same-origin',...rest,headers:{'content-type':'application/json',...headers}});
@@ -15,6 +17,200 @@ const TENANT_ROLE_LABELS={TENANT_ADMIN:'Firmen-Admin',EXPORT_ADMIN:'Export-Admin
 function csrfHeaders(){return identitySession?.csrfToken?{'x-professional-csrf':identitySession.csrfToken}:{};}
 function roleLabel(role){return TENANT_ROLE_LABELS[String(role||'')]||String(role||'–');}
 function canManageUsers(){return !localMigrationLab&&identitySession?.user?.role==='TENANT_ADMIN';}
+function canWriteCustomers(){return !localMigrationLab&&['TENANT_ADMIN','EXPORT_ADMIN','TEAM_LEAD','OPERATOR'].includes(String(identitySession?.user?.role||''));}
+
+function syncCustomerViewMode(){
+  const useLive=!localMigrationLab&&!!identitySession;
+  $('#liveCustomerMasterdata')?.classList.toggle('hidden',!useLive);
+  $('#legacyCustomerMigrationPreview')?.classList.toggle('hidden',useLive);
+  $('#newCustomerBtn')?.classList.toggle('hidden',!useLive||!canWriteCustomers());
+  return useLive;
+}
+function activePill(active){return active?'<span class="status-pill good">Aktiv</span>':'<span class="status-pill lock">Inaktiv</span>';}
+function registrationEmailsOf(location){return Array.isArray(location?.registration_emails)?location.registration_emails:(Array.isArray(location?.registrationEmails)?location.registrationEmails:[]);}
+function customerLocationAddress(location){
+  const line1=[location?.street,location?.house_number].filter(Boolean).join(' ').trim();
+  const line2=[location?.postal_code,location?.city].filter(Boolean).join(' ').trim();
+  return [line1,line2,location?.country].filter(Boolean).join(', ')||'Keine strukturierte Adresse hinterlegt';
+}
+async function loadCustomers({selectId=selectedCustomerId,focusLocationId=null}={}){
+  if(!syncCustomerViewMode())return;
+  const seq=++customerLoadSequence, list=$('#customerMasterList'),count=$('#customerMasterCount');
+  if(list)list.innerHTML='<div class="empty compact-empty">Kunden werden geladen …</div>';
+  if(count)count.textContent='Kunden werden geladen …';
+  try{
+    const q=($('#customerSearch')?.value||'').trim(),status=$('#customerStatusFilter')?.value||'active';
+    const data=await apiJson(`/api/professional-masterdata/customers?q=${encodeURIComponent(q)}&status=${encodeURIComponent(status)}`,{method:'GET',headers:{}});
+    if(seq!==customerLoadSequence)return;
+    liveCustomers=Array.isArray(data.customers)?data.customers:[];
+    if(count)count.textContent=`${fmt(liveCustomers.length)} Kunde${liveCustomers.length===1?'':'n'}`;
+    const preferred=liveCustomers.find(c=>String(c.id)===String(selectId))?.id||liveCustomers[0]?.id||'';
+    selectedCustomerId=preferred||'';
+    renderCustomerList();
+    if(preferred)await selectCustomer(preferred,{focusLocationId});
+    else{selectedCustomer=null;openLocationIds=new Set();renderCustomerDetail();}
+  }catch(err){
+    if(seq!==customerLoadSequence)return;
+    liveCustomers=[];selectedCustomer=null;selectedCustomerId='';
+    if(count)count.textContent='Kunden konnten nicht geladen werden.';
+    if(list)list.innerHTML=`<div class="drawer-error">${esc(err.message||'Kunden konnten nicht geladen werden.')}</div>`;
+    renderCustomerDetail();
+  }
+}
+function renderCustomerList(){
+  const list=$('#customerMasterList');if(!list)return;
+  list.innerHTML=liveCustomers.map(c=>`<button class="customer-master-item ${String(c.id)===String(selectedCustomerId)?'active':''}" type="button" data-customer-id="${esc(c.id)}"><span class="customer-master-item-head"><b>${esc(c.account||'–')}</b>${activePill(c.active!==false)}</span><small>${esc(c.name||'Unbenannter Kunde')}</small><small>${fmt(c.location_count||0)} Standort${Number(c.location_count||0)===1?'':'e'}</small></button>`).join('')||'<div class="empty compact-empty">Keine Kunden für diesen Filter.</div>';
+  list.querySelectorAll('[data-customer-id]').forEach(btn=>btn.addEventListener('click',()=>selectCustomer(btn.dataset.customerId)));
+}
+async function selectCustomer(id,{focusLocationId=null}={}){
+  if(!id||localMigrationLab||!identitySession)return;
+  selectedCustomerId=String(id);renderCustomerList();
+  const pane=$('#customerDetailPane'),seq=++customerDetailSequence;
+  if(pane)pane.innerHTML='<div class="customer-detail-empty"><div class="kicker">KUNDENDETAIL</div><h3>Wird geladen …</h3></div>';
+  try{
+    const data=await apiJson(`/api/professional-masterdata/customers/${encodeURIComponent(id)}`,{method:'GET',headers:{}});
+    if(seq!==customerDetailSequence)return;
+    selectedCustomer=data.customer||null;
+    if(focusLocationId)openLocationIds.add(String(focusLocationId));
+    renderCustomerDetail();renderCustomerList();
+  }catch(err){
+    if(seq!==customerDetailSequence)return;
+    selectedCustomer=null;
+    if(pane)pane.innerHTML=`<div class="customer-detail-empty"><div class="drawer-error">${esc(err.message||'Kundendetail konnte nicht geladen werden.')}</div></div>`;
+  }
+}
+function renderCustomerDetail(){
+  const pane=$('#customerDetailPane');if(!pane)return;
+  const c=selectedCustomer;
+  if(!c){pane.innerHTML='<div class="customer-detail-empty"><div class="kicker">KUNDENDETAIL</div><h3>Kunde auswählen</h3><p class="muted">Links einen Kunden auswählen, um seine Standorte und Versanddaten zu sehen.</p></div>';return;}
+  const locations=Array.isArray(c.locations)?c.locations:[],write=canWriteCustomers();
+  const customerActions=write?`<button class="ghost compact" type="button" data-customer-action="edit">Bearbeiten</button><button class="ghost compact" type="button" data-customer-action="status" data-next-active="${c.active===false?'true':'false'}">${c.active===false?'Aktivieren':'Deaktivieren'}</button>`:'';
+  const locationHtml=locations.map(l=>{
+    const id=String(l.id),open=openLocationIds.has(id),emails=registrationEmailsOf(l);
+    return `<article class="location-accordion ${open?'open':''}" data-location-id="${esc(id)}">
+      <button class="location-accordion-toggle" type="button" data-location-toggle="${esc(id)}" aria-expanded="${open?'true':'false'}">
+        <span class="location-summary-main"><b>${esc(l.name||'Standort')}</b><small>${esc(l.city||'Ort nicht hinterlegt')} · ${activePill(l.active!==false)}</small></span>
+        <span class="location-summary-meta location-country-summary">${esc(l.country||'–')}</span>
+        <span class="location-summary-meta location-carrier-summary">${esc(l.carrier_name||'Keine Spedition')}</span>
+        <span class="location-caret">${open?'▴':'▾'}</span>
+      </button>
+      <div class="location-accordion-content ${open?'':'hidden'}">
+        <div class="location-detail-grid">
+          <div class="location-detail-box"><h4>Adresse</h4><p>${esc(customerLocationAddress(l))}</p></div>
+          <div class="location-detail-box"><h4>Kontakt</h4><p>${esc(l.contact_name||'Kein Ansprechpartner')}${l.contact_email?`\n${esc(l.contact_email)}`:''}${l.phone?`\n${esc(l.phone)}`:''}</p></div>
+          <div class="location-detail-box full"><h4>Anmelde-E-Mail</h4><div class="registration-email-chips">${emails.map(e=>`<span class="registration-email-chip">${esc(e)}</span>`).join('')||'<span class="muted">Keine Anmelde-E-Mail hinterlegt.</span>'}</div></div>
+          <div class="location-detail-box"><h4>Spedition</h4><p>${esc(l.carrier_name||'Keine Spedition hinterlegt')}</p></div>
+          <div class="location-detail-box"><h4>Versandvorgaben</h4><p>${esc(l.shipping_instructions||'Keine besonderen Vorgaben')}</p></div>
+        </div>
+        ${write?`<div class="location-actions"><button class="ghost compact" type="button" data-location-action="edit" data-location-id="${esc(id)}">Bearbeiten</button><button class="ghost compact" type="button" data-location-action="status" data-location-id="${esc(id)}" data-next-active="${l.active===false?'true':'false'}">${l.active===false?'Aktivieren':'Deaktivieren'}</button></div>`:''}
+      </div>
+    </article>`;
+  }).join('')||'<div class="empty compact-empty">Keine Standorte vorhanden.</div>';
+  pane.innerHTML=`<header class="customer-detail-head"><div><div class="kicker">KUNDE</div><h2>${esc(c.account||'–')} · ${esc(c.name||'Unbenannter Kunde')}</h2><div>${activePill(c.active!==false)}</div></div><div class="customer-detail-actions">${customerActions}</div></header><div class="customer-location-area"><div class="customer-location-area-head"><div><div class="kicker">STANDORTE</div><h3>${fmt(locations.length)} Standort${locations.length===1?'':'e'}</h3></div>${write?'<button class="btn" type="button" data-customer-action="new-location">+ Standort</button>':''}</div><div class="location-stack">${locationHtml}</div></div>`;
+  wireCustomerDetailActions();
+}
+function toggleLocationAccordion(id){
+  const key=String(id||'');if(!key)return;
+  if(openLocationIds.has(key))openLocationIds.delete(key);else openLocationIds.add(key);
+  renderCustomerDetail();
+}
+function wireCustomerDetailActions(){
+  const pane=$('#customerDetailPane');if(!pane)return;
+  pane.querySelectorAll('[data-location-toggle]').forEach(btn=>btn.addEventListener('click',()=>toggleLocationAccordion(btn.dataset.locationToggle)));
+  pane.querySelector('[data-customer-action="edit"]')?.addEventListener('click',()=>openCustomerDrawer('edit',selectedCustomer));
+  pane.querySelector('[data-customer-action="new-location"]')?.addEventListener('click',()=>openLocationDrawer('create',null));
+  pane.querySelector('[data-customer-action="status"]')?.addEventListener('click',async e=>{
+    if(!canWriteCustomers()||!selectedCustomer)return;const btn=e.currentTarget,next=btn.dataset.nextActive==='true';
+    if(!confirm(next?'Kunden wieder aktivieren?':'Kunden deaktivieren? Historische Verknüpfungen bleiben erhalten.'))return;
+    btn.disabled=true;try{await apiJson(`/api/professional-masterdata/customers/${encodeURIComponent(selectedCustomer.id)}/status`,{method:'POST',headers:csrfHeaders(),body:JSON.stringify({active:next})});await loadCustomers({selectId:selectedCustomer.id});}catch(err){alert(err.message||'Status konnte nicht geändert werden.');}finally{btn.disabled=false;}
+  });
+  pane.querySelectorAll('[data-location-action="edit"]').forEach(btn=>btn.addEventListener('click',()=>{const l=(selectedCustomer?.locations||[]).find(x=>String(x.id)===String(btn.dataset.locationId));if(l)openLocationDrawer('edit',l);}));
+  pane.querySelectorAll('[data-location-action="status"]').forEach(btn=>btn.addEventListener('click',async()=>{
+    if(!canWriteCustomers()||!selectedCustomer)return;const locationId=btn.dataset.locationId,next=btn.dataset.nextActive==='true';
+    if(!confirm(next?'Standort wieder aktivieren?':'Standort deaktivieren? Er bleibt in historischen Sendungen sichtbar.'))return;
+    btn.disabled=true;try{await apiJson(`/api/professional-masterdata/locations/${encodeURIComponent(locationId)}/status`,{method:'POST',headers:csrfHeaders(),body:JSON.stringify({active:next})});openLocationIds.add(String(locationId));await loadCustomers({selectId:selectedCustomer.id,focusLocationId:locationId});}catch(err){alert(err.message||'Standortstatus konnte nicht geändert werden.');}finally{btn.disabled=false;}
+  }));
+}
+function registrationEmailRowsHtml(emails=[]){
+  const values=emails.length?emails:[''];
+  return values.map(email=>`<div class="registration-email-row"><input class="registration-email-input" type="email" value="${esc(email)}" placeholder="anmeldung@kunde.de" required><button class="ghost compact remove-registration-email" type="button">Entfernen</button></div>`).join('');
+}
+function locationFormFieldsHtml(location={},prefix='location'){
+  return `<div class="masterdata-form-grid">
+    <div class="masterdata-form-field full"><label for="${prefix}-name">Standortname *</label><input id="${prefix}-name" name="name" value="${esc(location.name||'')}" required></div>
+    <div class="masterdata-form-field"><label for="${prefix}-street">Straße *</label><input id="${prefix}-street" name="street" value="${esc(location.street||'')}" required></div>
+    <div class="masterdata-form-field"><label for="${prefix}-house-number">Hausnummer *</label><input id="${prefix}-house-number" name="houseNumber" value="${esc(location.house_number||location.houseNumber||'')}" required></div>
+    <div class="masterdata-form-field"><label for="${prefix}-postal-code">PLZ *</label><input id="${prefix}-postal-code" name="postalCode" value="${esc(location.postal_code||location.postalCode||'')}" required></div>
+    <div class="masterdata-form-field"><label for="${prefix}-city">Ort *</label><input id="${prefix}-city" name="city" value="${esc(location.city||'')}" required></div>
+    <div class="masterdata-form-field"><label for="${prefix}-country">Land *</label><input id="${prefix}-country" name="country" value="${esc(location.country||'')}" required></div>
+    <div class="masterdata-form-field"><label for="${prefix}-country-iso">Länder-ISO</label><input id="${prefix}-country-iso" name="countryIso" maxlength="2" value="${esc(location.country_iso||location.countryIso||'')}"></div>
+    <div class="masterdata-form-field"><label for="${prefix}-contact-name">Ansprechpartner</label><input id="${prefix}-contact-name" name="contactName" value="${esc(location.contact_name||location.contactName||'')}"></div>
+    <div class="masterdata-form-field"><label for="${prefix}-contact-email">Kontakt-E-Mail</label><input id="${prefix}-contact-email" name="contactEmail" type="email" value="${esc(location.contact_email||location.contactEmail||'')}"></div>
+    <div class="masterdata-form-field"><label for="${prefix}-phone">Telefon</label><input id="${prefix}-phone" name="phone" value="${esc(location.phone||'')}"></div>
+    <div class="masterdata-form-field"><label for="${prefix}-carrier">Spedition</label><input id="${prefix}-carrier" name="carrierName" value="${esc(location.carrier_name||location.carrierName||'')}"></div>
+    <div class="masterdata-form-field full"><label for="${prefix}-shipping">Versandvorgaben</label><textarea id="${prefix}-shipping" name="shippingInstructions">${esc(location.shipping_instructions||location.shippingInstructions||'')}</textarea></div>
+  </div>`;
+}
+function registrationEmailEditorHtml(emails=[]){return `<div class="registration-email-editor"><div class="registration-email-list">${registrationEmailRowsHtml(emails)}</div><div><button class="ghost compact add-registration-email" type="button">+ Anmelde-E-Mail</button></div><div class="drawer-help">Alle hier hinterlegten Adressen werden später automatisch für die Anmeldung der Sendung übernommen.</div></div>`;}
+function wireRegistrationEmailEditor(container){
+  const list=container?.querySelector('.registration-email-list'),add=container?.querySelector('.add-registration-email');if(!list||!add)return;
+  const wireRemove=()=>list.querySelectorAll('.remove-registration-email').forEach(btn=>{btn.onclick=()=>{const rows=list.querySelectorAll('.registration-email-row');if(rows.length<=1){const input=btn.closest('.registration-email-row')?.querySelector('input');if(input)input.value='';return;}btn.closest('.registration-email-row')?.remove();};});
+  add.onclick=()=>{list.insertAdjacentHTML('beforeend',registrationEmailRowsHtml(['']));wireRemove();list.querySelector('.registration-email-row:last-child input')?.focus();};wireRemove();
+}
+function openMasterdataDrawer({title,kicker='STAMMDATEN',wide=false,body=''}){
+  const drawer=$('#masterdataDrawer'),backdrop=$('#masterdataDrawerBackdrop');if(!drawer||!backdrop)return;
+  $('#masterdataDrawerTitle').textContent=title;$('#masterdataDrawerKicker').textContent=kicker;$('#masterdataDrawerBody').innerHTML=body;
+  drawer.classList.toggle('wide',wide);drawer.classList.remove('hidden');backdrop.classList.remove('hidden');drawer.setAttribute('aria-hidden','false');backdrop.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';
+}
+function closeMasterdataDrawer(){
+  const drawer=$('#masterdataDrawer'),backdrop=$('#masterdataDrawerBackdrop');drawer?.classList.add('hidden');backdrop?.classList.add('hidden');drawer?.classList.remove('wide');drawer?.setAttribute('aria-hidden','true');backdrop?.setAttribute('aria-hidden','true');if($('#masterdataDrawerBody'))$('#masterdataDrawerBody').innerHTML='';masterdataDrawerState=null;masterdataBusy=false;document.body.style.overflow='';
+}
+function drawerActionsHtml(label){return `<div id="masterdataDrawerError" class="drawer-error hidden"></div><div class="drawer-actions"><button class="ghost" type="button" data-drawer-cancel>Abbrechen</button><button class="btn" type="submit">${esc(label)}</button></div>`;}
+function openCustomerDrawer(mode,entity=null){
+  if(!canWriteCustomers())return;const create=mode==='create';masterdataDrawerState={kind:'customer',mode:create?'create':'edit',customerId:create?null:entity?.id||selectedCustomer?.id||null};
+  const customer=entity||{};
+  const core=`<div class="masterdata-form-section"><div class="masterdata-form-grid"><div class="masterdata-form-field"><label for="customer-account">Kundennummer *</label><input id="customer-account" name="account" value="${esc(customer.account||'')}" required></div><div class="masterdata-form-field"><label for="customer-name">Firmenname *</label><input id="customer-name" name="customerName" value="${esc(customer.name||'')}" required></div></div></div>`;
+  const firstLocation=create?`<div class="masterdata-form-section"><h3>Erster Standort</h3><p class="muted">Ein neuer Kunde kann nur gemeinsam mit einem vollständigen Standort gespeichert werden.</p>${locationFormFieldsHtml({},'customer-location')}</div><div class="masterdata-form-section"><h3>Anmelde-E-Mail</h3><p class="muted">Mindestens eine Adresse ist Pflicht; mehrere sind möglich.</p>${registrationEmailEditorHtml([])}</div>`:'';
+  openMasterdataDrawer({title:create?'Neuer Kunde':'Kunde bearbeiten',kicker:create?'NEUER KUNDE':'KUNDE',wide:create,body:`<form id="masterdataDrawerForm" class="masterdata-form">${core}${firstLocation}${drawerActionsHtml(create?'Kunde anlegen':'Änderungen speichern')}</form>`});
+  const form=$('#masterdataDrawerForm');wireRegistrationEmailEditor(form);form?.querySelector('[data-drawer-cancel]')?.addEventListener('click',closeMasterdataDrawer);form?.addEventListener('submit',saveCustomerDrawer);form?.querySelector('input')?.focus();
+}
+function openLocationDrawer(mode,entity=null){
+  if(!canWriteCustomers()||!selectedCustomer)return;const create=mode==='create';const location=entity||{};masterdataDrawerState={kind:'location',mode:create?'create':'edit',customerId:selectedCustomer.id,locationId:create?null:location.id};
+  openMasterdataDrawer({title:create?'Neuer Standort':'Standort bearbeiten',kicker:'STANDORT',wide:false,body:`<form id="masterdataDrawerForm" class="masterdata-form"><div class="masterdata-form-section">${locationFormFieldsHtml(location,'location')}</div><div class="masterdata-form-section"><h3>Anmelde-E-Mail</h3><p class="muted">Alle hinterlegten Anmelde-Adressen werden später automatisch übernommen.</p>${registrationEmailEditorHtml(registrationEmailsOf(location))}</div>${drawerActionsHtml(create?'Standort anlegen':'Änderungen speichern')}</form>`});
+  const form=$('#masterdataDrawerForm');wireRegistrationEmailEditor(form);form?.querySelector('[data-drawer-cancel]')?.addEventListener('click',closeMasterdataDrawer);form?.addEventListener('submit',saveLocationDrawer);form?.querySelector('input')?.focus();
+}
+function readRegistrationEmails(form){return Array.from(form.querySelectorAll('.registration-email-input')).map(i=>i.value.trim()).filter(Boolean);}
+function readLocationPayload(form,prefix){
+  const value=id=>form.querySelector(`#${prefix}-${id}`)?.value||'';
+  return {name:value('name'),street:value('street'),houseNumber:value('house-number'),postalCode:value('postal-code'),city:value('city'),country:value('country'),countryIso:value('country-iso'),contactName:value('contact-name'),contactEmail:value('contact-email'),phone:value('phone'),carrierName:value('carrier'),shippingInstructions:value('shipping'),registrationEmails:readRegistrationEmails(form)};
+}
+function setDrawerError(message=''){
+  const box=$('#masterdataDrawerError');if(!box)return;box.textContent=message;box.classList.toggle('hidden',!message);
+}
+async function saveCustomerDrawer(e){
+  e.preventDefault();if(masterdataBusy||!masterdataDrawerState)return;const form=e.currentTarget,submit=form.querySelector('button[type=submit]');masterdataBusy=true;if(submit)submit.disabled=true;setDrawerError('');
+  try{
+    const payload={account:$('#customer-account').value,name:$('#customer-name').value};let result;
+    if(masterdataDrawerState.mode==='create'){
+      payload.location=readLocationPayload(form,'customer-location');result=await apiJson('/api/professional-masterdata/customers',{method:'POST',headers:csrfHeaders(),body:JSON.stringify(payload)});
+    }else{
+      result=await apiJson(`/api/professional-masterdata/customers/${encodeURIComponent(masterdataDrawerState.customerId)}`,{method:'POST',headers:csrfHeaders(),body:JSON.stringify(payload)});
+    }
+    const targetId=result.customer?.id||masterdataDrawerState.customerId;closeMasterdataDrawer();selectedCustomerId=targetId||'';await loadCustomers({selectId:targetId});
+  }catch(err){setDrawerError(err.message||'Kunde konnte nicht gespeichert werden.');}
+  finally{masterdataBusy=false;if(submit&&document.body.contains(submit))submit.disabled=false;}
+}
+async function saveLocationDrawer(e){
+  e.preventDefault();if(masterdataBusy||!masterdataDrawerState)return;const state={...masterdataDrawerState},form=e.currentTarget,submit=form.querySelector('button[type=submit]');masterdataBusy=true;if(submit)submit.disabled=true;setDrawerError('');
+  try{
+    const payload=readLocationPayload(form,'location');let result;
+    if(state.mode==='create')result=await apiJson(`/api/professional-masterdata/customers/${encodeURIComponent(state.customerId)}/locations`,{method:'POST',headers:csrfHeaders(),body:JSON.stringify(payload)});
+    else result=await apiJson(`/api/professional-masterdata/locations/${encodeURIComponent(state.locationId)}`,{method:'POST',headers:csrfHeaders(),body:JSON.stringify(payload)});
+    const locationId=result.location?.id||state.locationId;closeMasterdataDrawer();if(locationId)openLocationIds.add(String(locationId));await loadCustomers({selectId:state.customerId,focusLocationId:locationId});
+  }catch(err){setDrawerError(err.message||'Standort konnte nicht gespeichert werden.');}
+  finally{masterdataBusy=false;if(submit&&document.body.contains(submit))submit.disabled=false;}
+}
+
 function oneTimeUrl(kind,token){return `${location.origin}${location.pathname}#${kind}=${encodeURIComponent(token)}`;}
 function showOneTimeLink(title,url){
   $('#oneTimeLinkTitle').textContent=title;$('#oneTimeLinkOutput').value=url;$('#oneTimeLinkBox').classList.remove('hidden');
@@ -56,14 +252,14 @@ function showCredentialAction(action){
 function clearCredentialAction(){credentialAction=null;history.replaceState(null,'',location.pathname+location.search);$('#credentialActionPanel').classList.add('hidden');$('#loginForm').classList.remove('hidden');$('.auth-actions').classList.remove('hidden');$('#credentialPassword').value='';$('#credentialPassword2').value='';$('#credentialActionMessage').textContent='';}
 
 function showApplication({local=false,session=null}={}){
-  localMigrationLab=!!local;identitySession=session||null;
+  localMigrationLab=!!local;identitySession=session||null;liveCustomers=[];selectedCustomerId='';selectedCustomer=null;openLocationIds=new Set();closeMasterdataDrawer();
   $('#authGate').classList.add('hidden');$('#appShell').classList.remove('hidden');
   const badge=$('#identityBadge');badge.classList.remove('hidden');$('#logoutBtn').classList.remove('hidden');
   if(local){badge.innerHTML='<b>Lokales Migrationslabor</b><span>keine Serverdaten</span>';$('#logoutBtn').textContent='Zur Anmeldung';$('#liveUserAdmin')?.classList.add('hidden');setView('migration');}
   else {badge.innerHTML=`<b>${esc(session?.user?.displayName||session?.user?.username||'Benutzer')}</b><span>${esc(session?.tenant?.name||'Mandant')} · ${esc(roleLabel(session?.user?.role))}</span>`;$('#logoutBtn').textContent='Abmelden';setView('overview');}
 }
 function showAuthGate(message='',kind=''){
-  identitySession=null;localMigrationLab=false;$('#appShell').classList.add('hidden');$('#authGate').classList.remove('hidden');
+  identitySession=null;localMigrationLab=false;closeMasterdataDrawer();$('#appShell').classList.add('hidden');$('#authGate').classList.remove('hidden');
   const st=$('#identityStatus');if(message){st.textContent=message;st.className='auth-status '+kind;}
 }
 async function refreshOnboardingStatus(){
@@ -85,12 +281,15 @@ async function bootIdentity(){
   await refreshOnboardingStatus();
 }
 
-
 function setView(name){
   $$('.view').forEach(v=>v.classList.toggle('active',v.dataset.view===name));
   $$('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.nav===name));
   $('#pageTitle').textContent=({overview:'Übersicht',migration:'Migration',tenants:'Mandanten',users:'Benutzer & Rollen',customers:'Kunden',locations:'Standorte',shipments:'Sendungen',documents:'Dokumente',audit:'Audit'}[name]||'ExportHUB Professional');
   if(name==='users'&&!localMigrationLab&&identitySession) loadLiveUsers();
+  if(name==='customers'){
+    const live=syncCustomerViewMode();
+    if(live)loadCustomers();
+  }
 }
 $$('.nav button').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.nav)));
 
@@ -214,6 +413,13 @@ $('#downloadDocumentRegistryBtn').addEventListener('click',()=>{
   const ts=new Date().toISOString().replace(/[:.]/g,'-');download(`ExportHUB_Professional_Dokumentregister_${ts}.json`,JSON.stringify(safe,null,2));
 });
 ['documentSearch','documentKindFilter','documentStatusFilter'].forEach(id=>document.getElementById(id)?.addEventListener(id==='documentSearch'?'input':'change',renderDocumentRows));
+
+$('#newCustomerBtn')?.addEventListener('click',()=>openCustomerDrawer('create'));
+$('#customerSearch')?.addEventListener('input',()=>{clearTimeout(customerSearchTimer);customerSearchTimer=setTimeout(()=>loadCustomers({selectId:''}),180);});
+$('#customerStatusFilter')?.addEventListener('change',()=>loadCustomers({selectId:''}));
+$('#closeMasterdataDrawer')?.addEventListener('click',closeMasterdataDrawer);
+$('#masterdataDrawerBackdrop')?.addEventListener('click',closeMasterdataDrawer);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#masterdataDrawer')?.classList.contains('hidden'))closeMasterdataDrawer();});
 
 $('#inviteUserForm')?.addEventListener('submit',async e=>{
   e.preventDefault();clearOneTimeLink();const btn=e.currentTarget.querySelector('button[type=submit]');btn.disabled=true;$('#inviteMessage').textContent='Einladung wird sicher erzeugt …';
