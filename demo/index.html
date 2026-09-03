@@ -125,7 +125,28 @@
         </div>
       </section>
 
-      <section class="view" data-demo-view="shipments"><div class="placeholder-view" id="shipmentsView"><span>▣</span><h3>Sendungen</h3><p>Die vollständige Sendungsarbeitsfläche folgt im nächsten Ausbau. Die priorisierten Beispieldaten sind bereits im Dashboard aktiv.</p></div></section>
+      <section class="view" data-demo-view="shipments">
+        <div class="shipment-page-head">
+          <div><span class="eyebrow">OPERATIVE SENDUNGSSTEUERUNG</span><h3>Sendungen im Arbeitsfluss</h3><p>Fiktive Vorgänge von Entwurf über ABD und Abholung bis POD und Abschluss.</p></div>
+          <div class="shipment-head-meta"><span class="status-chip neutral">DEMO / MUSTER</span><small>Änderungen bleiben nur in diesem Browser.</small></div>
+        </div>
+        <div id="shipmentMessage" class="shipment-message" hidden></div>
+        <div class="shipment-filter-bar">
+          <label class="shipment-search-field"><span>Suche</span><input id="shipmentSearch" type="search" placeholder="Referenz, Kunde, Ziel oder Verantwortlicher"></label>
+          <label><span>Status</span><select id="shipmentStatusFilter"><option value="all">Alle Status</option><option>Entwurf</option><option>Erstellt</option><option>Bereit zur Abholung</option><option>Abgeholt</option><option>POD vorhanden</option><option>Abgeschlossen</option><option>Archiviert</option></select></label>
+          <label><span>Verantwortlich</span><select id="shipmentOwnerFilter"><option value="all">Alle Verantwortlichen</option></select></label>
+          <label><span>Region</span><select id="shipmentRegionFilter"><option value="all">EU & Nicht-EU</option><option value="eu">EU</option><option value="non-eu">Nicht-EU</option></select></label>
+          <label class="shipment-check"><input id="shipmentAttentionFilter" type="checkbox"><span>Nur Handlungsbedarf</span></label>
+        </div>
+        <div class="shipment-workspace" id="shipmentWorkspace">
+          <section class="shipment-master panel">
+            <header class="shipment-master-head"><div><span class="eyebrow">SENDUNGSLISTE</span><h4>Arbeitsvorrat</h4></div><span id="shipmentResultMeta">0 Sendungen</span></header>
+            <div id="shipmentList" class="shipment-list"></div>
+          </section>
+          <aside class="shipment-detail panel" id="shipmentDetail"></aside>
+        </div>
+      </section>
+
       <section class="view" data-demo-view="tasks"><div class="placeholder-view"><span>✓</span><h3>Aufgaben & Planung</h3><p>Aufgaben werden im nächsten Block direkt mit den Beispielsendungen verknüpft.</p></div></section>
       <section class="view" data-demo-view="documents"><div class="placeholder-view"><span>▤</span><h3>Dokumente</h3><p>Hier entsteht die Dokumentenprüfung für Lieferschein, L1, L2, CMR, ABD und POD.</p></div></section>
       <section class="view" data-demo-view="customers"><div class="placeholder-view"><span>◫</span><h3>Kunden</h3><p>Acht vollständig fiktive Kunden sind bereits im Demo-Datensatz vorbereitet.</p></div></section>
