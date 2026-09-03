@@ -75,3 +75,13 @@ test('shipping settings UI is a dedicated workspace view with blocking completen
   assert.match(js,/x-professional-csrf/);
   assert.match(js,/Unvollständig|vollständig/i);
 });
+
+test('shipping settings frontend and API are explicitly guarded by CI and deploy payload checks',()=>{
+  const ci=read('.github/workflows/professional-ci.yml');
+  const deploy=read('.github/workflows/professional-deploy.yml');
+  assert.match(ci,/node --check assets\/js\/workspace-settings\.js/);
+  assert.match(ci,/api\/shared\/workspace-settings-store\.js/);
+  assert.match(ci,/api\/workspace-shipping-settings\/index\.js/);
+  assert.match(deploy,/\.deploy\/assets\/js\/workspace-settings\.js/);
+  assert.match(deploy,/workspace-settings-store\.js/);
+});
