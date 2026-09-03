@@ -85,3 +85,45 @@ test('shipping settings frontend and API are explicitly guarded by CI and deploy
   assert.match(deploy,/\.deploy\/assets\/js\/workspace-settings\.js/);
   assert.match(deploy,/workspace-settings-store\.js/);
 });
+
+test('packaging permissions are read-wide and operational-write only',()=>{
+  for(const role of ['TENANT_ADMIN','EXPORT_ADMIN','TEAM_LEAD','OPERATOR']){
+    assert.equal(authz.hasPermission(role,'packaging.read'),true,`${role} read`);
+    assert.equal(authz.hasPermission(role,'packaging.write'),true,`${role} write`);
+  }
+  for(const role of ['WAREHOUSE','AUDITOR']){
+    assert.equal(authz.hasPermission(role,'packaging.read'),true,`${role} read`);
+    assert.equal(authz.hasPermission(role,'packaging.write'),false,`${role} write`);
+  }
+});
+
+test('packaging store validates rules and persists only through masterdata gate with audit',()=>{
+  const src=read('api/shared/packaging-store.js');
+  for(const fn of ['normalizePackagingType','listPackagingTypes','getPackagingType','createPackagingType','updatePackagingType','setPackagingTypeActive'])assert.match(src,new RegExp(`function ${fn}|async function ${fn}`),fn);
+  assert.match(src,/withTenantMasterdataClient/);
+  assert.match(src,/PACKAGING_TYPE_CREATED/);
+  assert.match(src,/PACKAGING_TYPE_UPDATED/);
+  assert.match(src,/PACKAGING_TYPE_(?:ACTIVATED|DEACTIVATED)/);
+  assert.match(src,/FIXED_PER_UNIT/);
+  assert.match(src,/FOOTPRINT/);
+  assert.doesNotMatch(src,/delete from packaging_types/i);
+});
+
+test('packaging APIs expose tenant-scoped read/write/status routes with CSRF mutations',()=>{
+  const expected={
+    'packaging-types':{route:'professional-masterdata/packaging-types',methods:['get','post']},
+    'packaging-type':{route:'professional-masterdata/packaging-types/{packagingTypeId}',methods:['get','post']},
+    'packaging-type-status':{route:'professional-masterdata/packaging-types/{packagingTypeId}/status',methods:['post']}
+  };
+  for(const [folder,want] of Object.entries(expected)){
+    const fn=JSON.parse(read(`api/${folder}/function.json`));
+    const trigger=fn.bindings.find(binding=>binding.type==='httpTrigger');
+    assert.equal(trigger.route,want.route,folder);
+    assert.deepEqual(trigger.methods,want.methods,folder);
+    const src=read(`api/${folder}/index.js`);
+    assert.match(src,/session\.tenant_id/,folder);
+    assert.doesNotMatch(src,/body\.tenant|query\.tenant|tenantId\s*=\s*.*body/i,folder);
+    if(want.methods.includes('post'))assert.match(src,/permission:'packaging\.write',csrf:true/,folder);
+    if(want.methods.includes('get'))assert.match(src,/permission:'packaging\.read'/,folder);
+  }
+});
