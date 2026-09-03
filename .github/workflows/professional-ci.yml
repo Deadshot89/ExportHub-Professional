@@ -78,6 +78,8 @@ jobs:
           set -euo pipefail
           node --check assets/js/app.js
           node --check assets/js/locations.js
+          node --check assets/js/ui-kit.js
+          node --check assets/js/overview.js
       - name: Install Professional API dependencies
         run: npm install --prefix api --ignore-scripts --no-audit --no-fund
       - name: Validate Professional API runtime
