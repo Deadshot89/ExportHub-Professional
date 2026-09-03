@@ -1,4 +1,4 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0c1f35"><title>ExportHUB Professional 0.7</title><link rel="stylesheet" href="/assets/css/app.css"><link rel="stylesheet" href="/assets/css/control-center.css"></head><body>
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0c1f35"><title>ExportHUB Professional 0.7</title><link rel="stylesheet" href="/assets/css/app.css"><link rel="stylesheet" href="/assets/css/control-center.css"><link rel="stylesheet" href="/assets/css/carriers.css"></head><body>
 <div id="authGate" class="auth-gate">
   <div class="auth-card">
     <div class="auth-brand"><div class="kicker">EXPORT & LOGISTICS MANAGEMENT</div><h1>ExportHUB Professional</h1><p>Serverseitige Anmeldung mit Firmen-Workspace und Benutzerkonto.</p></div>
@@ -50,6 +50,8 @@
       <button data-nav="users">Benutzer & Rollen</button>
       <button data-nav="customers">Kunden</button>
       <button data-nav="locations">Standorte</button>
+      <button data-nav="carriers">Speditionen</button>
+      <button data-nav="workspace-settings">Versand-Einstellungen</button>
       <button data-nav="shipments">Sendungen</button>
       <button data-nav="documents">Dokumente</button>
       <button data-nav="audit">Audit</button>
@@ -141,7 +143,46 @@
         </div>
         <div id="legacyLocationMigrationPreview"><div class="card needs-migration empty"><h2>Standorte</h2><p>Backup zuerst unter Migration prüfen.</p></div><div class="has-migration hidden"><div class="section-head"><div><h2>Kundenstandorte</h2><p id="locationsCount" class="muted"></p></div><span class="pill good">Mandant + Kunde gebunden</span></div><div class="table-wrap"><table><thead><tr><th>Kunde</th><th>Standort</th><th>Adresse</th><th>Land</th><th>Quelle</th></tr></thead><tbody id="locationRows"></tbody></table></div></div></div>
       </section>
-      <section class="view" data-view="shipments"><div class="card needs-migration empty"><h2>Sendungen</h2><p>Backup zuerst unter Migration prüfen.</p></div><div class="has-migration hidden"><div class="section-head"><div><h2>Bestehende Sendungen</h2><p id="shipmentsCount" class="muted"></p></div><span class="pill good">Referenzen bleiben erhalten</span></div><div class="table-wrap"><table><thead><tr><th>Referenz</th><th>Kunde</th><th>Status</th><th>POD</th><th>Sperre</th><th>Abholdatum</th></tr></thead><tbody id="shipmentRows"></tbody></table></div></div></section>
+      <section class="view" data-view="carriers">
+        <div id="carrierLiveWorkspace" class="hidden">
+          <div class="cc-page-head"><div><div class="kicker">STAMMDATEN</div><h2>Speditionen</h2><p id="carrierCount" class="muted">Speditionen werden geladen …</p></div><button id="newCarrierBtn" class="btn hidden" type="button">+ Neue Spedition</button></div>
+          <div class="cc-panel carrier-toolbar"><div><label for="carrierStatusFilter">Status</label><select id="carrierStatusFilter"><option value="active">Aktiv</option><option value="all">Alle</option><option value="inactive">Inaktiv</option></select></div><div id="carrierMessage" class="carrier-message" aria-live="polite"></div></div>
+          <div class="table-wrap carrier-table-wrap"><table class="carrier-table"><thead><tr><th>Spedition</th><th>ABD-Standard</th><th>Kontakt</th><th>Status</th><th>Aktionen</th></tr></thead><tbody id="carrierRows"><tr><td colspan="5" class="muted">Noch nicht geladen.</td></tr></tbody></table></div>
+        </div>
+      </section>
+      <section class="view" data-view="workspace-settings">
+        <div class="cc-page-head"><div><div class="kicker">WORKSPACE</div><h2>Versand-Einstellungen</h2><p class="muted">Absender- und Versandlanddaten für zukünftige LIVE-Sendungen.</p></div><span id="workspaceShippingMode" class="cc-status neutral">Serverseitig geschützt</span></div>
+        <div id="workspaceShippingCompleteness" class="notice warn">Versand-Einstellungen werden geladen …</div>
+        <form id="workspaceShippingForm" class="cc-panel section">
+          <div class="masterdata-form-grid">
+            <div class="masterdata-form-field full"><label for="workspaceCompanyName">Firma</label><input id="workspaceCompanyName" autocomplete="organization"></div>
+            <div class="masterdata-form-field"><label for="workspaceStreet">Straße</label><input id="workspaceStreet" autocomplete="address-line1"></div>
+            <div class="masterdata-form-field"><label for="workspaceHouseNumber">Hausnummer</label><input id="workspaceHouseNumber"></div>
+            <div class="masterdata-form-field"><label for="workspacePostalCode">PLZ</label><input id="workspacePostalCode" autocomplete="postal-code"></div>
+            <div class="masterdata-form-field"><label for="workspaceCity">Ort</label><input id="workspaceCity" autocomplete="address-level2"></div>
+            <div class="masterdata-form-field"><label for="workspaceShippingCountry">Versandland</label><input id="workspaceShippingCountry" autocomplete="country-name"></div>
+            <div class="masterdata-form-field"><label for="workspaceShippingCountryIso">Länder-ISO</label><input id="workspaceShippingCountryIso" maxlength="2" placeholder="DE"></div>
+            <div class="masterdata-form-field"><label for="workspaceTimezone">Zeitzone</label><input id="workspaceTimezone" value="Europe/Berlin" placeholder="Europe/Berlin"></div>
+          </div>
+          <div class="toolbar"><button id="saveWorkspaceShipping" class="btn" type="submit">Versand-Einstellungen speichern</button><span id="workspaceShippingMessage" class="muted"></span></div>
+        </form>
+      </section>
+      <section class="view" data-view="shipments">
+        <div id="liveShipmentWorkspace" class="hidden">
+          <div class="cc-page-head shipment-page-head"><div><div class="kicker">OPERATIVER VERSAND</div><h2>Sendungen</h2><p class="muted">LIVE-Sendungen bearbeiten und migrierte Sendungen sicher im Read-only-Modus öffnen.</p></div><button id="newShipmentBtn" class="btn hidden" type="button">+ Neue Sendung</button></div>
+          <div id="shipmentWorkspaceMessage" class="shipment-workspace-message" aria-live="polite"></div>
+          <div class="cc-panel shipment-filter-bar">
+            <div><label for="shipmentSearch">Suche</label><input id="shipmentSearch" type="search" placeholder="Referenz, Kunde oder Standort"></div>
+            <div><label for="shipmentStatusFilter">Status</label><select id="shipmentStatusFilter"><option value="all">Alle Status</option><option value="Entwurf">Entwurf</option><option value="Erstellt">Erstellt</option><option value="Bereit zur Abholung">Bereit zur Abholung</option><option value="Abgeholt">Abgeholt</option><option value="POD vorhanden">POD vorhanden</option><option value="Abgeschlossen">Abgeschlossen</option><option value="Archiviert">Archiviert</option><option value="Storniert">Storniert</option></select></div>
+            <div><label for="shipmentSourceFilter">Quelle</label><select id="shipmentSourceFilter"><option value="all">LIVE + migriert</option><option value="LIVE">LIVE</option><option value="MIGRATED">Migriert</option></select></div>
+          </div>
+          <div class="shipment-master-detail">
+            <aside class="cc-panel shipment-master-column"><div id="shipmentMasterCount" class="shipment-master-count">Sendungen werden geladen …</div><div id="shipmentMasterList" class="shipment-master-list" aria-live="polite"><div class="cc-empty">Noch nicht geladen.</div></div></aside>
+            <section id="shipmentEditorRoot" class="cc-panel shipment-editor-root" aria-live="polite"><div class="shipment-editor-empty"><div class="kicker">SENDUNGSDETAIL</div><h3>Sendung auswählen</h3><p class="muted">Links eine Sendung auswählen oder eine neue LIVE-Sendung anlegen.</p></div></section>
+          </div>
+        </div>
+        <div id="legacyShipmentMigrationPreview"><div class="card needs-migration empty"><h2>Sendungen</h2><p>Backup zuerst unter Migration prüfen.</p></div><div class="has-migration hidden"><div class="section-head"><div><h2>Bestehende Sendungen</h2><p id="shipmentsCount" class="muted"></p></div><span class="pill good">Referenzen bleiben erhalten</span></div><div class="table-wrap"><table><thead><tr><th>Referenz</th><th>Kunde</th><th>Status</th><th>POD</th><th>Sperre</th><th>Abholdatum</th></tr></thead><tbody id="shipmentRows"></tbody></table></div></div></div>
+      </section>
       <section class="view" data-view="documents"><div class="card needs-migration empty"><h2>Dokumente</h2><p>Backup zuerst unter Migration prüfen.</p></div><div class="has-migration hidden"><div class="section-head"><div><h2>Dokument-Migrationsregister</h2><p id="documentsCount" class="muted"></p></div><span id="podGatePill" class="pill warn">POD-Prüfung offen</span></div><div class="card document-filter"><div><label>Suche</label><input id="documentSearch" placeholder="Referenz oder Dateiname"></div><div><label>Dokumentart</label><select id="documentKindFilter"><option value="">Alle</option></select></div><div><label>Migrationsstatus</label><select id="documentStatusFilter"><option value="">Alle</option><option value="VERIFIED_INLINE">Verifiziert</option><option value="REMOTE_CAPTURE_REQUIRED">Remote sichern</option><option value="CONTENT_MISSING">Dateiinhalt fehlt</option><option value="HASH_ERROR">Hashfehler</option></select></div></div><div id="documentSummary" class="status-overview"></div><div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Referenz</th><th>Art</th><th>Datei</th><th>Quelle</th><th>Migrationsstatus</th><th>Wiederherstellung</th><th>Priorität</th></tr></thead><tbody id="documentRows"></tbody></table></div></div></section>
       <section class="view" data-view="audit"><div class="card needs-migration empty"><h2>Audit</h2><p>Backup zuerst unter Migration prüfen.</p></div><div class="has-migration hidden"><div class="section-head"><div><h2>Strukturiertes Audit</h2><p id="auditCount" class="muted"></p></div><span class="pill good">Secret-Felder redigiert</span></div><div id="auditPreview"></div><div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Zeit</th><th>Benutzer</th><th>Kategorie</th><th>Aktion</th><th>Quelle</th></tr></thead><tbody id="auditRows"></tbody></table></div></div></section>
     </div>
@@ -151,5 +192,13 @@
     <header class="drawer-head"><div><div id="masterdataDrawerKicker" class="kicker">STAMMDATEN</div><h2 id="masterdataDrawerTitle">Bearbeiten</h2></div><button id="closeMasterdataDrawer" class="ghost compact" type="button">Schließen</button></header>
     <div id="masterdataDrawerBody" class="drawer-body"></div>
   </aside>
+  <div id="carrierDrawerBackdrop" class="drawer-backdrop hidden" aria-hidden="true"></div>
+  <aside id="carrierDrawer" class="masterdata-drawer hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="carrierDrawerTitle">
+    <header class="drawer-head"><div><div class="kicker">SPEDITION</div><h2 id="carrierDrawerTitle">Spedition bearbeiten</h2></div><button id="closeCarrierDrawer" class="ghost compact" type="button">Schließen</button></header>
+    <form id="carrierForm" class="drawer-body masterdata-form"><div class="masterdata-form-grid"><div class="masterdata-form-field full"><label for="carrierName">Name *</label><input id="carrierName" required></div><div class="masterdata-form-field full"><label class="check-row"><input id="carrierAbdDefault" type="checkbox"> ABD standardmäßig erforderlich</label></div><div class="masterdata-form-field full"><label for="carrierContactName">Ansprechpartner</label><input id="carrierContactName"></div><div class="masterdata-form-field"><label for="carrierEmail">E-Mail</label><input id="carrierEmail" type="email"></div><div class="masterdata-form-field"><label for="carrierPhone">Telefon</label><input id="carrierPhone"></div><div class="masterdata-form-field full"><label for="carrierPortalUrl">Portal-/Website-Link</label><input id="carrierPortalUrl" type="url" placeholder="https://"></div></div><div class="drawer-actions"><button id="saveCarrierBtn" class="btn" type="submit">Speichern</button><button id="cancelCarrierBtn" class="ghost" type="button">Abbrechen</button></div></form>
+  </aside>
+  <div id="oneOffRecipientModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="oneOffRecipientTitle">
+    <section class="cc-panel one-off-modal"><header class="one-off-modal-head"><div><div class="kicker">EINMAL-EMPFÄNGER</div><h2 id="oneOffRecipientTitle">In Stammdaten übernehmen</h2><p class="muted">Der gespeicherte Empfänger-Snapshot bleibt unverändert.</p></div><button id="closeOneOffRecipientModal" class="ghost compact" type="button">Schließen</button></header><div class="one-off-modal-body"><label for="oneOffCustomerAccount">Kundennummer *</label><div class="one-off-preview-row"><input id="oneOffCustomerAccount" autocomplete="off"><button id="previewOneOffRecipientBtn" class="btn" type="button">Prüfen</button></div><div id="oneOffCandidateResult" class="one-off-candidates"><div class="muted">Kundennummer eingeben und zuerst prüfen.</div></div><div class="one-off-outcomes"><button id="convertOneOffNewCustomerBtn" class="btn" type="button" disabled>Neuer Kunde + Standort</button><button id="convertOneOffExistingCustomerBtn" class="ghost" type="button" disabled>Neuer Standort bei bestehendem Kunden</button></div></div></section>
+  </div>
 </div>
-<script type="module" src="/assets/js/app.js"></script><script type="module" src="/assets/js/locations.js"></script><script type="module" src="/assets/js/overview.js"></script></body></html>
+<script type="module" src="/assets/js/app.js"></script><script type="module" src="/assets/js/locations.js"></script><script type="module" src="/assets/js/overview.js"></script><script type="module" src="/assets/js/workspace-settings.js"></script><script type="module" src="/assets/js/carriers.js"></script><script type="module" src="/assets/js/shipments.js"></script></body></html>

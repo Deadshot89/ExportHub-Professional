@@ -2,12 +2,12 @@ const store=require('./auth-store');
 const sec=require('./auth-security');
 
 const ROLE_PERMISSIONS={
-  TENANT_ADMIN:new Set(['tenant.settings.read','tenant.settings.write','users.read','users.manage','customers.read','customers.write','shipments.read','shipments.write','tasks.read','tasks.write','documents.read','documents.upload','pickup.confirm','pod.upload','pallets.read','pallets.write','reports.read','audit.read']),
-  EXPORT_ADMIN:new Set(['tenant.settings.read','users.read','customers.read','customers.write','shipments.read','shipments.write','tasks.read','tasks.write','documents.read','documents.upload','pickup.confirm','pod.upload','pallets.read','pallets.write','reports.read','audit.read']),
-  TEAM_LEAD:new Set(['customers.read','customers.write','shipments.read','shipments.write','tasks.read','tasks.write','documents.read','documents.upload','pickup.confirm','pod.upload','pallets.read','reports.read']),
-  OPERATOR:new Set(['customers.read','customers.write','shipments.read','shipments.write','tasks.read','tasks.write','documents.read','documents.upload','reports.read']),
-  WAREHOUSE:new Set(['customers.read','shipments.read','tasks.read','documents.read','pickup.confirm','pod.upload','pallets.read','pallets.write']),
-  AUDITOR:new Set(['tenant.settings.read','users.read','customers.read','shipments.read','tasks.read','documents.read','pallets.read','reports.read','audit.read'])
+  TENANT_ADMIN:new Set(['tenant.settings.read','tenant.settings.write','workspace.shipping.read','workspace.shipping.write','users.read','users.manage','customers.read','customers.write','packaging.read','packaging.write','carriers.read','carriers.write','shipments.read','shipments.write','tasks.read','tasks.write','documents.read','documents.upload','pickup.confirm','pod.upload','pallets.read','pallets.write','reports.read','audit.read']),
+  EXPORT_ADMIN:new Set(['tenant.settings.read','workspace.shipping.read','users.read','customers.read','customers.write','packaging.read','packaging.write','carriers.read','carriers.write','shipments.read','shipments.write','tasks.read','tasks.write','documents.read','documents.upload','pickup.confirm','pod.upload','pallets.read','pallets.write','reports.read','audit.read']),
+  TEAM_LEAD:new Set(['workspace.shipping.read','customers.read','customers.write','packaging.read','packaging.write','carriers.read','carriers.write','shipments.read','shipments.write','tasks.read','tasks.write','documents.read','documents.upload','pickup.confirm','pod.upload','pallets.read','reports.read']),
+  OPERATOR:new Set(['workspace.shipping.read','customers.read','customers.write','packaging.read','packaging.write','carriers.read','carriers.write','shipments.read','shipments.write','tasks.read','tasks.write','documents.read','documents.upload','reports.read']),
+  WAREHOUSE:new Set(['workspace.shipping.read','customers.read','packaging.read','carriers.read','shipments.read','tasks.read','documents.read','pickup.confirm','pod.upload','pallets.read','pallets.write']),
+  AUDITOR:new Set(['tenant.settings.read','workspace.shipping.read','users.read','customers.read','packaging.read','carriers.read','shipments.read','tasks.read','documents.read','pallets.read','reports.read','audit.read'])
 };
 const TENANT_ROLES=Object.freeze(Object.keys(ROLE_PERMISSIONS));
 

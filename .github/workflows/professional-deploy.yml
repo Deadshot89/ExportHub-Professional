@@ -47,7 +47,7 @@ jobs:
           test -f api/host.json
           node -e "const c=require('./staticwebapp.config.json'); if(c.platform?.apiRuntime!=='node:20') process.exit(1); console.log('OK: Azure API runtime node:20');"
           cd api
-          node -e "require('./shared/database.js'); require('./shared/auth-security.js'); require('./shared/auth-store.js'); require('./shared/authorization.js'); require('./shared/user-admin-store.js'); require('pg'); console.log('OK: Professional API runtime loads');"
+          node -e "require('./shared/database.js'); require('./shared/auth-security.js'); require('./shared/auth-store.js'); require('./shared/authorization.js'); require('./shared/user-admin-store.js'); require('./shared/masterdata-schema.js'); require('./shared/masterdata-store.js'); require('./shared/packaging-store.js'); require('./shared/carrier-store.js'); require('./shared/shipment-schema.js'); require('./shared/shipment-domain.js'); require('./shared/shipment-calculations.js'); require('./shared/shipment-read-model.js'); require('./shared/shipment-store.js'); require('./shared/workspace-settings-store.js'); require('pg'); console.log('OK: Professional API runtime loads');"
 
       - name: Prepare public frontend payload
         shell: bash
@@ -63,16 +63,25 @@ jobs:
           test -f .deploy/assets/js/app.js
           test -f .deploy/assets/js/ui-kit.js
           test -f .deploy/assets/js/overview.js
+          test -f .deploy/assets/js/workspace-settings.js
+          test -f .deploy/assets/js/carriers.js
+          test -f .deploy/assets/js/shipment-autosave.js
+          test -f .deploy/assets/js/shipment-editor.js
+          test -f .deploy/assets/js/shipments.js
           test -f .deploy/assets/css/app.css
           test -f .deploy/assets/css/control-center.css
+          test -f .deploy/assets/css/carriers.css
           test -f .deploy/shared/migration-core.js
           node - <<'NODE'
           const fs=require('fs');
           const path=require('path');
-          const file='.deploy/assets/js/app.js';
-          const source=fs.readFileSync(file,'utf8');
-          const imports=[...source.matchAll(/(?:from\s+|import\s*)['"]([^'"]+)['"]/g)].map(m=>m[1]).filter(x=>x.startsWith('.'));
-          for(const spec of imports){
+          const files=['.deploy/assets/js/app.js','.deploy/assets/js/carriers.js','.deploy/assets/js/shipments.js'];
+          let imports=[];
+          for(const file of files){
+            const source=fs.readFileSync(file,'utf8');
+            imports.push(...[...source.matchAll(/(?:from\s+|import\s*)['"]([^'"]+)['"]/g)].map(m=>({file,spec:m[1]})).filter(x=>x.spec.startsWith('.')));
+          }
+          for(const {file,spec} of imports){
             const target=path.resolve(path.dirname(file),spec);
             if(!fs.existsSync(target)){
               console.error(`Missing frontend module in deploy payload: ${spec} -> ${target}`);

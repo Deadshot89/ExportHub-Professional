@@ -35,7 +35,6 @@ test('overview is an operational control center without marketing hero or fake s
     'overviewOpenShipments','overviewPickupsToday','overviewMissingDocuments','overviewActionRequired',
     'overviewShippingWork','overviewActionList','overviewQuickActions','overviewRecentActivity'
   ]) assert.match(overview,new RegExp(`id="${id}"`));
-  assert.match(overview,/Datenquelle noch nicht live/);
   assert.doesNotMatch(overview,/id="overviewOpenShipments"[^>]*>\s*0\s*</);
   assert.doesNotMatch(overview,/id="overviewPickupsToday"[^>]*>\s*0\s*</);
   assert.doesNotMatch(overview,/id="overviewMissingDocuments"[^>]*>\s*0\s*</);
@@ -49,6 +48,18 @@ test('overview uses real professional meta and masterdata endpoints',()=>{
   assert.match(js,/function buildMasterdataActions/);
   assert.match(js,/function buildRecentActivity/);
   assert.match(js,/professional:session-ready/);
+});
+
+test('overview consumes the real shipment dashboard and keeps failures unavailable instead of fake zero',()=>{
+  const js=read('assets/js/overview.js');
+  assert.match(js,/professional-shipment-dashboard/);
+  assert.match(js,/shipmentDashboard/);
+  assert.match(js,/shipmentError/);
+  assert.match(js,/overviewOpenShipments/);
+  assert.match(js,/overviewPickupsToday/);
+  assert.match(js,/overviewMissingDocuments/);
+  assert.match(js,/todayRows/);
+  assert.doesNotMatch(js,/shipmentError[^\n]{0,120}\?\s*['"]?0['"]?/);
 });
 
 test('overview session fallback uses the canonical Professional auth endpoint',()=>{

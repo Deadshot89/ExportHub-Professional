@@ -1,4 +1,5 @@
 const EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const UUID_RE=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function inputError(label){return Object.assign(new Error(`${label} ist erforderlich oder ungültig.`),{code:'INPUT_INVALID'});}
 function requiredText(value,label,max=160){
@@ -12,6 +13,12 @@ function optionalText(value,max=500){
   if(v.length>max) throw inputError('Eingabe');
   return v;
 }
+function optionalUuid(value,label='ID'){
+  const v=optionalText(value,64);
+  if(!v)return null;
+  if(!UUID_RE.test(v))throw inputError(label);
+  return v.toLowerCase();
+}
 function cleanEmail(value,{required=false}={}){
   const v=String(value??'').normalize('NFKC').trim().toLowerCase();
   if(!v){
@@ -21,7 +28,7 @@ function cleanEmail(value,{required=false}={}){
   if(v.length>254||!EMAIL_RE.test(v)) throw Object.assign(new Error('E-Mail-Adresse ist ungültig.'),{code:'EMAIL_INVALID'});
   return v;
 }
-function cleanRegistrationEmails(value){
+function normalizeRegistrationEmails(value){
   const values=Array.isArray(value)?value:(value==null?[]:[value]);
   const out=[];
   const seen=new Set();
@@ -32,6 +39,10 @@ function cleanRegistrationEmails(value){
     if(seen.has(email)) continue;
     seen.add(email);out.push(email);
   }
+  return out;
+}
+function cleanRegistrationEmails(value){
+  const out=normalizeRegistrationEmails(value);
   if(!out.length) throw Object.assign(new Error('Mindestens eine Anmelde-E-Mail-Adresse ist erforderlich.'),{code:'REGISTRATION_EMAIL_REQUIRED'});
   return out;
 }
@@ -48,8 +59,8 @@ function cleanCustomer(input={}){
     name:requiredText(input.name,'Firmenname',160)
   };
 }
-function cleanLocation(input={}){
-  return {
+function cleanLocationBase(input={},{registrationEmailRequired=true}={}){
+  const location={
     name:requiredText(input.name,'Standortname',160),
     street:requiredText(input.street,'Straße',160),
     houseNumber:requiredText(input.houseNumber,'Hausnummer',40),
@@ -62,8 +73,13 @@ function cleanLocation(input={}){
     phone:optionalText(input.phone,80),
     carrierName:optionalText(input.carrierName,160),
     shippingInstructions:optionalText(input.shippingInstructions,4000),
-    registrationEmails:cleanRegistrationEmails(input.registrationEmails)
+    registrationEmails:registrationEmailRequired?cleanRegistrationEmails(input.registrationEmails):normalizeRegistrationEmails(input.registrationEmails)
   };
+  const carrierId=optionalUuid(input.carrierId??input.carrier_id,'Spedition');
+  if(carrierId)location.carrierId=carrierId;
+  return location;
 }
+function cleanLocation(input={}){return cleanLocationBase(input,{registrationEmailRequired:true});}
+function cleanOneOffLocation(input={}){return cleanLocationBase(input,{registrationEmailRequired:false});}
 
-module.exports={cleanCustomer,cleanLocation,cleanEmail,cleanRegistrationEmails};
+module.exports={cleanCustomer,cleanLocation,cleanOneOffLocation,cleanEmail,cleanRegistrationEmails,cleanCountryIso,optionalUuid};
