@@ -1,10 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
 
 const domain=require('../api/shared/shipment-domain.js');
 const calc=require('../api/shared/shipment-calculations.js');
+const shipmentStore=require('../api/shared/shipment-store.js');
+const read=path=>fs.readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 function live(overrides={}){
   return {source_kind:'LIVE',status:'Entwurf',recipient_snapshot:{},rework:{},...overrides};
@@ -149,4 +152,49 @@ test('shipment totals use physical Colli quantity, row weight and calculated LDM
   assert.equal(totals.totalWeightKg,150);
   assert.equal(totals.totalLdm,1.4);
   assert.deepEqual(totals.rows.map(r=>r.ldm),[0.6,0.8]);
+});
+
+test('colli replacement is revisioned locked and never inserts browser ldm directly',()=>{
+  const src=read('api/shared/shipment-store.js');
+  assert.match(src,/async function replaceColliRowsInClient|function replaceColliRowsInClient/);
+  assert.match(src,/calculateTotals/);
+  assert.match(src,/delete from shipment_colli/i);
+  assert.match(src,/revision\s*=\s*revision\s*\+\s*1/i);
+  assert.match(src,/SHIPMENT_COLLI_CHANGED/);
+  assert.doesNotMatch(src,/\brow\.ldm\b[^\n]*insert/i);
+});
+
+test('server colli replacement ignores forged ldm and returns calculated totals',async()=>{
+  const tenant='11111111-1111-4111-8111-111111111111';
+  const user='22222222-2222-4222-8222-222222222222';
+  const shipmentId='33333333-3333-4333-8333-333333333333';
+  const pal='44444444-4444-4444-8444-444444444444';
+  const box='55555555-5555-4555-8555-555555555555';
+  const inserted=[];
+  const client={query:async(sql,params=[])=>{
+    const q=String(sql).toLowerCase();
+    if(q.includes('from shipments')&&q.includes('for update'))return {rows:[{id:shipmentId,tenant_id:tenant,reference:'ABC123',source_kind:'LIVE',status:'Entwurf',revision:2,sender_snapshot:{},recipient_snapshot:{},carrier_snapshot:{},fx_snapshot:{},readiness:{},rework:{}}]};
+    if(q.includes('from shipment_edit_locks'))return {rows:[{lock_token:'lock-good'}]};
+    if(q.includes('from packaging_types'))return {rows:[
+      {id:pal,name:'Euro Palette',active:true,ldm_mode:'FIXED_PER_UNIT',fixed_ldm_per_unit:0.2,length_cm:120,width_cm:80,height_cm:null,allow_length:false,allow_width:false,allow_height:true},
+      {id:box,name:'Sonderpalette',active:true,ldm_mode:'FOOTPRINT',fixed_ldm_per_unit:null,length_cm:120,width_cm:80,height_cm:null,allow_length:true,allow_width:true,allow_height:true}
+    ]};
+    if(q.startsWith('delete from shipment_colli'))return {rows:[]};
+    if(q.includes('insert into shipment_colli')){inserted.push(params);return {rows:[{}]};}
+    if(q.startsWith('update shipments'))return {rows:[{id:shipmentId,tenant_id:tenant,reference:'ABC123',source_kind:'LIVE',status:'Entwurf',revision:3,sender_snapshot:{},recipient_snapshot:{},carrier_snapshot:{},fx_snapshot:{},readiness:{},rework:{}}]};
+    if(q.startsWith('update shipment_edit_locks'))return {rows:[]};
+    if(q.includes('insert into audit_events'))return {rows:[]};
+    throw new Error(`Unexpected SQL: ${sql}`);
+  }};
+  const result=await shipmentStore.replaceColliRowsInClient(client,tenant,shipmentId,user,{lockToken:'lock-good',revision:2,rows:[
+    {packagingTypeId:pal,quantity:3,weightKg:120,ldm:999},
+    {packagingTypeId:box,quantity:2,weightKg:30,lengthCm:120,widthCm:80,ldm:999}
+  ]});
+  assert.equal(result.totals.totalColli,5);
+  assert.equal(result.totals.totalWeightKg,150);
+  assert.equal(result.totals.totalLdm,1.4);
+  assert.deepEqual(result.colliRows.map(row=>row.ldm),[0.6,0.8]);
+  assert.equal(inserted.length,2);
+  assert.ok(inserted.every(params=>!params.includes(999)),'gefälschte Browser-LDM darf nie persistiert werden');
+  assert.equal(result.shipment.revision,3);
 });
