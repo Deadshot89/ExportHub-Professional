@@ -104,10 +104,26 @@ function renderDetail(shipment) {
   const action = nextAction(shipment);
   const allowedAction = action && canRole(role, action.capability) ? action : null;
   const docs = Object.entries(DOC_LABELS).filter(([type]) => type !== 'abd' || shipment.requiresAbd || shipment.documents?.abd).filter(([type]) => type !== 'pod' || ['Abgeholt','POD vorhanden','Abgeschlossen','Archiviert'].includes(shipment.status) || shipment.documents?.pod);
+  const statusIndex = Math.max(0, STATUS_ORDER.indexOf(shipment.status));
+  const progress = Math.round((statusIndex / (STATUS_ORDER.length - 1)) * 100);
+  const regionLabel = shipment.nonEu ? 'Nicht-EU' : 'EU';
 
-  detail.innerHTML = `<div class="shipment-detail-head">
-    <div><span class="eyebrow">SENDUNG</span><div class="shipment-detail-title"><h3>${escapeHtml(shipment.reference)}</h3><span class="shipment-status ${statusClass(shipment.status)}">${escapeHtml(shipment.status)}</span></div><p>${escapeHtml(customer?.name || 'Demo-Kunde')} · ${escapeHtml(shipment.destination)}</p></div>
-    <span class="demo-watermark">DEMO / MUSTER</span>
+  detail.innerHTML = `<div class="shipment-detail-hero">
+    <div class="shipment-detail-hero-top">
+      <div><span class="eyebrow">SENDUNG</span><div class="shipment-detail-title"><h3>${escapeHtml(shipment.reference)}</h3><span class="shipment-status ${statusClass(shipment.status)}">${escapeHtml(shipment.status)}</span></div></div>
+      <span class="demo-watermark">DEMO / MUSTER</span>
+    </div>
+    <div class="shipment-route-summary">
+      <div><small>Auftraggeber</small><strong>${escapeHtml(customer?.name || 'Demo-Kunde')}</strong></div>
+      <span class="shipment-route-arrow">→</span>
+      <div><small>Ziel</small><strong>${escapeHtml(shipment.destination)}</strong><span>${escapeHtml(location?.city || '')}${location?.country ? ` · ${escapeHtml(location.country)}` : ''}</span></div>
+      <span class="shipment-region-chip">${regionLabel}</span>
+    </div>
+    <div class="shipment-progress-meter">
+      <div><span>Prozessfortschritt</span><strong>${progress}%</strong></div>
+      <i aria-hidden="true"><span style="width:${progress}%"></span></i>
+      <small>Aktueller Schritt: ${escapeHtml(shipment.status)}</small>
+    </div>
   </div>
 
   ${shipment.attention ? `<div class="shipment-alert"><strong>Handlungsbedarf</strong><span>${escapeHtml(shipment.attention)}</span></div>` : '<div class="shipment-ok"><strong>Aktuell kein blockierender Hinweis</strong><span>Der nächste Arbeitsschritt kann durchgeführt werden.</span></div>'}
@@ -118,7 +134,7 @@ function renderDetail(shipment) {
     <div><small>Verantwortlich</small><strong>${escapeHtml(owner?.name || '–')}</strong><span>${escapeHtml(owner?.role || '')}</span></div>
     <div><small>Geplante Abholung</small><strong>${formatDate(shipment.plannedPickup)}</strong><span>${shipment.actualPickup ? `Tatsächlich ${formatDate(shipment.actualPickup)}` : 'Noch nicht abgeholt'}</span></div>
     <div><small>Colli</small><strong>${escapeHtml(shipment.packages)}</strong><span>${escapeHtml(shipment.weightKg)} kg</span></div>
-    <div><small>Warenwert</small><strong>${Number(shipment.valueEur).toLocaleString('de-DE')} €</strong><span>${shipment.nonEu ? 'Nicht-EU' : 'EU'}</span></div>
+    <div><small>Warenwert</small><strong>${Number(shipment.valueEur).toLocaleString('de-DE')} €</strong><span>${regionLabel}</span></div>
   </div>
 
   <section class="shipment-detail-section">
