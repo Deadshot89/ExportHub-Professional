@@ -10,6 +10,15 @@ export const DOCUMENT_LABELS = Object.freeze({
   pod: 'POD'
 });
 
+export const DOCUMENT_DESCRIPTIONS = Object.freeze({
+  delivery: 'Waren- und Liefernachweis zur Sendung.',
+  l1: 'Interne L1-Ausgabe mit QR-Code für Abholung und Verladung.',
+  l2: 'Interne L2-Ausgabe als Versand-/Speditionsunterlage.',
+  cmr: 'CMR-Frachtbrief für grenzüberschreitende Straßentransporte.',
+  abd: 'Ausfuhrbegleitdokument für ausfuhrpflichtige Nicht-EU-Sendungen.',
+  pod: 'Proof of Delivery als Zustell- bzw. Abliefernachweis nach der Abholung.'
+});
+
 function requireShipment(id) {
   const shipment = getState().shipments.find(item => item.id === id);
   if (!shipment || shipment.demo !== true) throw new Error('DEMO_SENDUNG_NICHT_GEFUNDEN');
@@ -22,6 +31,7 @@ export function getDocumentChecklist(shipmentId) {
   return Object.entries(DOCUMENT_LABELS).map(([type, label]) => ({
     type,
     label,
+    description: DOCUMENT_DESCRIPTIONS[type],
     required: required.has(type),
     present: shipment.documents?.[type] === true,
     demo: true
@@ -39,6 +49,7 @@ export function buildDemoDocumentPreview(shipmentId, documentType) {
     `Referenz: ${shipment.reference}`,
     `Kunde: ${customer?.name || 'Demo-Kunde'}`,
     `Ziel: ${shipment.destination}`,
+    DOCUMENT_DESCRIPTIONS[documentType],
     'Diese Musterausgabe enthält ausschließlich fiktive Präsentationsdaten.'
   ].join('\n');
 }
@@ -64,7 +75,7 @@ export function initDocumentWorkspace({ onOpenShipment } = {}) {
 
     workspace.innerHTML = rows.map(({ shipment, checklist, missing, customer }) => `<article class="ops-card document-card ${missing.length ? 'needs-action' : 'complete'}">
       <header><div><span class="ops-ref">${shipment.reference}</span><strong>${customer?.name || 'Demo-Kunde'}</strong><small>${shipment.destination}</small></div><span class="ops-state ${missing.length ? 'warn' : 'good'}">${missing.length ? `${missing.length} offen` : 'Vollständig'}</span></header>
-      <div class="document-strip">${checklist.map(item => `<span class="doc-pill ${item.present ? 'present' : 'missing'}" title="${item.required ? 'Pflichtdokument' : 'Optional'}"><b>${item.present ? '✓' : '!'}</b>${item.label}</span>`).join('')}</div>
+      <div class="document-strip">${checklist.map(item => `<span class="doc-pill ${item.present ? 'present' : 'missing'}" title="${item.required ? 'Pflichtdokument' : 'Optional'}"><b>${item.present ? '✓' : '!'}</b><span class="doc-pill-copy"><strong>${item.label}</strong><small>${item.description}</small></span></span>`).join('')}</div>
       <footer><span>${missing.length ? `Fehlt: ${missing.map(item => item.label).join(', ')}` : 'Alle erforderlichen Unterlagen sind vorhanden.'}</span><button type="button" data-doc-open="${shipment.id}">Sendung öffnen →</button></footer>
     </article>`).join('');
 

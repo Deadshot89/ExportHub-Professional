@@ -24,14 +24,24 @@ export function createDemoAvis(shipmentId) {
 function renderAvisPreview(shipment, avis) {
   const customer = CUSTOMER_BY_ID[shipment.customerId];
   const location = LOCATION_BY_ID[shipment.locationId];
-  const allowedDocuments = ['Lieferschein', 'L1 / QR', 'L2', ...(shipment.nonEu ? ['CMR'] : [])];
+  const allowedDocuments = [
+    'Lieferschein',
+    'L1 / QR · interne Abholausgabe',
+    'L2 · interne Speditionsausgabe',
+    ...(shipment.nonEu ? ['CMR'] : [])
+  ];
   return `<div class="avis-preview-card">
     <div class="avis-preview-banner">DEMO / MUSTER · EXTERNE KUNDENANSICHT</div>
+    <div class="avis-process-strip" aria-label="Kunden-Avis Ablauf">
+      <article><span>1</span><div><strong>Sichere Kundenansicht</strong><small>Nur ausgewählte Sendungsinformationen werden gezeigt.</small></div></article>
+      <article><span>2</span><div><strong>Freigegebene Unterlagen</strong><small>Nur die für den Vorgang vorgesehenen Dokumente erscheinen.</small></div></article>
+      <article><span>3</span><div><strong>Lokale Demo-Vorschau</strong><small>Kein echter Link, kein Versand und keine Produktivdaten.</small></div></article>
+    </div>
     <header><div><small>Abholavis</small><h4>${shipment.reference}</h4></div><span>${avis?.status || 'Noch nicht erzeugt'}</span></header>
     <div class="avis-preview-customer"><strong>${customer?.name || 'Demo-Kunde'}</strong><span>${location?.label || 'Demo-Standort'} · ${location?.city || ''} · ${location?.country || ''}</span></div>
     <div class="avis-preview-grid"><div><small>Geplante Abholung</small><strong>${shipment.plannedPickup}</strong></div><div><small>Colli</small><strong>${shipment.packages}</strong></div><div><small>Gewicht</small><strong>${shipment.weightKg} kg</strong></div></div>
-    <div class="avis-documents"><small>Für die Demo freigegebene Unterlagen</small>${allowedDocuments.map(label => `<span>✓ ${label}</span>`).join('')}</div>
-    <div class="avis-preview-foot"><span>Persönlicher Demo-Verweis</span><code>${avis?.previewTarget || '#demo-avis/vorschau'}</code><small>Nur lokale Vorschau. Kein öffentlicher Token, kein Mailversand.</small></div>
+    <div class="avis-documents"><small>Freigegebene Unterlagen</small>${allowedDocuments.map(label => `<span>✓ ${label}</span>`).join('')}</div>
+    <div class="avis-preview-foot"><span>Persönlicher Demo-Verweis</span><code>${avis?.previewTarget || '#demo-avis/vorschau'}</code><small>Lokale Demo-Vorschau · kein öffentlicher Token, kein Mailversand.</small></div>
   </div>`;
 }
 

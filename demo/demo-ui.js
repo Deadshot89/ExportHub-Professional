@@ -161,6 +161,8 @@ function renderTaskWorkspace() {
     return PRIORITIES.indexOf(a.priority) - PRIORITIES.indexOf(b.priority);
   });
   const openCount = sorted.filter(item => item.status === 'Offen').length;
+  const doneCount = sorted.filter(item => item.status === 'Erledigt').length;
+  const criticalCount = sorted.filter(item => item.status === 'Offen' && ['P0','P1'].includes(item.priority)).length;
   const canComplete = canRole(state.role.role, 'completeTasks');
   const summary = $('#taskSummary');
   if (summary) summary.innerHTML = `<strong>${openCount}</strong><span>offene Demo-Aufgaben</span>`;
@@ -168,7 +170,11 @@ function renderTaskWorkspace() {
     workspace.innerHTML = '<div class="task-empty">Keine Demo-Aufgaben vorhanden.</div>';
     return;
   }
-  workspace.innerHTML = sorted.map(task => {
+  workspace.innerHTML = `<section class="task-control-strip" aria-label="Operative Aufgabenlage">
+    <article class="critical"><span>!</span><div><small>Kritisch P0/P1</small><strong>${criticalCount}</strong><em>zuerst bearbeiten</em></div></article>
+    <article><span>↗</span><div><small>Offen</small><strong>${openCount}</strong><em>nach Priorität & Zuständigkeit</em></div></article>
+    <article class="done"><span>✓</span><div><small>Erledigt</small><strong>${doneCount}</strong><em>lokal in dieser Demo</em></div></article>
+  </section>` + sorted.map(task => {
     const shipment = state.shipments.find(item => item.id === task.shipmentId);
     const employee = EMPLOYEE_BY_ID[task.ownerId];
     const done = task.status === 'Erledigt';

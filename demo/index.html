@@ -169,7 +169,15 @@
       </section>
 
       <section class="view" data-demo-view="documents">
-        <div class="ops-page-head"><div><span class="eyebrow">DOKUMENTENKONTROLLE</span><h3>Pflichtunterlagen auf einen Blick</h3><p>Lieferschein, L1 / QR, L2, CMR, ABD und POD werden abhängig vom Sendungsstatus geprüft.</p></div><div id="documentSummary" class="ops-summary"></div></div>
+        <div class="ops-page-head"><div><span class="eyebrow">DOKUMENTENKONTROLLE</span><h3>Pflichtunterlagen auf einen Blick</h3><p>Pflichtunterlagen werden je nach Sendungsart und Status geprüft. Die internen ExportHUB-Ausgaben L1 und L2 werden hier direkt erklärt.</p></div><div id="documentSummary" class="ops-summary"></div></div>
+        <div class="document-guide-grid" aria-label="Dokumentarten erklärt">
+          <article><span>LS</span><div><strong>Lieferschein</strong><small>Waren- und Liefernachweis zur Sendung.</small></div><b>Basis</b></article>
+          <article class="internal"><span>L1</span><div><strong>Interne L1-Ausgabe</strong><small>QR-Code für Abholung und Verladung; unterstützt den Abholprozess.</small></div><b>ExportHUB</b></article>
+          <article class="internal"><span>L2</span><div><strong>Interne L2-Ausgabe</strong><small>Versand-/Speditionsunterlage für die operative Weitergabe.</small></div><b>ExportHUB</b></article>
+          <article><span>CMR</span><div><strong>CMR-Frachtbrief</strong><small>Frachtbrief für grenzüberschreitende Straßentransporte.</small></div><b>Ausland</b></article>
+          <article><span>ABD</span><div><strong>Ausfuhrbegleitdokument</strong><small>Nachweis für ausfuhrpflichtige Nicht-EU-Sendungen.</small></div><b>bei Pflicht</b></article>
+          <article><span>POD</span><div><strong>Proof of Delivery</strong><small>Zustell- bzw. Abliefernachweis nach der Abholung.</small></div><b>nach Abholung</b></article>
+        </div>
         <div class="document-legend"><span><i class="legend-dot present"></i>vorhanden</span><span><i class="legend-dot missing"></i>fehlt / erforderlich</span><strong>DEMO / MUSTER</strong></div>
         <div id="documentWorkspace" class="document-workspace"></div>
       </section>
