@@ -63,7 +63,8 @@ test('showcase preview smoke-checks the deployed Azure URL and demo markers', ()
   const workflow = read('.github/workflows/company-showcase-preview.yml');
   assert.match(workflow, /id:\s*deploy/);
   assert.match(workflow, /steps\.deploy\.outputs\.static_web_app_url/);
-  assert.match(workflow, /curl[^\n]*\/demo\//);
+  assert.match(workflow, /demo_url="[^\n]*\/demo\/"/);
+  assert.match(workflow, /curl[^\n]*\$\{demo_url\}/);
   assert.match(workflow, /ExportHUB Professional/);
   assert.match(workflow, /DEMO \/ MUSTER/);
   assert.match(workflow, /Rheinwerk Industrial Solutions GmbH/);
