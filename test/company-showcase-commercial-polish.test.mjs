@@ -19,7 +19,7 @@ test('overview adds an operational signal strip with useful daily context', () =
   assert.match(html, /operations-signal-strip/);
   assert.match(html, /Exportstatus/);
   assert.match(html, /Dokumentenlage/);
-  assert.match(html, /Abholung & POD/);
+  assert.match(html, /Abholung (?:&|&amp;) POD/);
 });
 
 test('dashboard KPI cards expose context labels instead of number-only tiles', () => {
