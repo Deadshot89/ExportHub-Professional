@@ -117,14 +117,12 @@ test('every document sheet visibly carries DEMO MUSTER and shipment/customer con
   }
 });
 
-test('documents view exposes package trigger and professional preview host with print and local download actions', () => {
-  const html = read('demo/index.html');
-  assert.match(html, /id="documentOutputDrawer"/);
-  assert.match(html, /id="documentOutputPanel"/);
-  assert.match(html, /id="documentOutputTabs"/);
-  assert.match(html, /id="documentOutputPaper"/);
-  assert.match(html, /id="documentPrintBtn"/);
-  assert.match(html, /id="documentDownloadBtn"/);
+test('documents view exposes package trigger and runtime-created professional preview host', () => {
+  assert.equal(exists('demo/demo-document-output.js'), true, 'runtime missing');
+  const runtime = read('demo/demo-document-output.js');
+  for (const id of ['documentOutputDrawer','documentOutputPanel','documentOutputTabs','documentOutputPaper','documentPrintBtn','documentDownloadBtn']) {
+    assert.match(runtime, new RegExp(`id=["']${id}["']|id=\\"${id}\\"`), `preview host id missing: ${id}`);
+  }
 
   const workspace = read('demo/demo-documents.js');
   assert.match(workspace, /Dokumentpaket öffnen/);
