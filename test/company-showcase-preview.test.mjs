@@ -59,6 +59,16 @@ test('showcase preview publishes only the self-contained demo payload under slas
   assert.doesNotMatch(workflow, /api_location:\s*api/);
 });
 
+test('showcase preview smoke-checks the deployed Azure URL and demo markers', () => {
+  const workflow = read('.github/workflows/company-showcase-preview.yml');
+  assert.match(workflow, /id:\s*deploy/);
+  assert.match(workflow, /steps\.deploy\.outputs\.static_web_app_url/);
+  assert.match(workflow, /curl[^\n]*\/demo\//);
+  assert.match(workflow, /ExportHUB Professional/);
+  assert.match(workflow, /DEMO \/ MUSTER/);
+  assert.match(workflow, /Rheinwerk Industrial Solutions GmbH/);
+});
+
 test('production deploy remains restricted to successful main CI runs', () => {
   const deploy = read('.github/workflows/professional-deploy.yml');
   assert.match(deploy, /github\.event\.workflow_run\.head_branch\s*==\s*'main'/);
