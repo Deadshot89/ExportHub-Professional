@@ -13,6 +13,7 @@ const DEMO_JS = [
   'demo/demo-shipments.js',
   'demo/demo-shipment-create.js',
   'demo/demo-documents.js',
+  'demo/demo-document-output.js',
   'demo/demo-avis.js',
   'demo/presentation-guide.js'
 ];
