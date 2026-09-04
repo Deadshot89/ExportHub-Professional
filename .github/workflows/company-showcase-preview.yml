@@ -87,6 +87,19 @@ jobs:
           rm -rf .showcase-preview
           mkdir -p .showcase-preview
           cp -R demo .showcase-preview/demo
+          cat > .showcase-preview/index.html <<'HTML'
+          <!doctype html>
+          <html lang="de">
+          <head>
+            <meta charset="utf-8">
+            <meta http-equiv="refresh" content="0;url=/demo/">
+            <meta name="robots" content="noindex,nofollow">
+            <title>ExportHUB Professional · Demo</title>
+          </head>
+          <body><p><a href="/demo/">ExportHUB Professional Demo öffnen</a></p></body>
+          </html>
+          HTML
+          test -f .showcase-preview/index.html
           test -f .showcase-preview/demo/index.html
           test -f .showcase-preview/demo/demo.css
           test -f .showcase-preview/demo/demo-data.js
