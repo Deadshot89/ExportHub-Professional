@@ -21,6 +21,7 @@ import { initPresentationGuide } from './presentation-guide.js';
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 const PRIORITIES = ['P0','P1','P2','P3','P4'];
+const NON_EU_COUNTRIES = new Set(['CH','GB']);
 
 const viewTitles = {
   overview: 'Übersicht',
@@ -50,6 +51,7 @@ let documentWorkspace = null;
 let avisWorkspace = null;
 let presentationGuide = null;
 let selectedCustomerId = 'cus-05';
+let locationFilter = 'all';
 
 const escapeHtml = value => String(value ?? '')
   .replaceAll('&','&amp;')
@@ -210,10 +212,22 @@ function renderCustomerWorkspace() {
   if (!list || !detail) return;
   if (!state.customers.some(item => item.id === selectedCustomerId)) selectedCustomerId = state.customers[0]?.id || null;
 
-  list.innerHTML = state.customers.map(customer => {
+  const customerShipments = customerId => state.shipments.filter(item => item.customerId === customerId);
+  const isOpen = shipment => !['Abgeschlossen', 'Archiviert'].includes(shipment.status);
+  const openCustomers = state.customers.filter(customer => customerShipments(customer.id).some(isOpen)).length;
+  const attentionCustomers = state.customers.filter(customer => customerShipments(customer.id).some(shipment => isOpen(shipment) && (shipment.attention || getMissingDocuments(shipment).length))).length;
+  const nonEuCustomers = state.customers.filter(customer => customerShipments(customer.id).some(shipment => shipment.nonEu)).length;
+
+  list.innerHTML = `<section class="customer-signal-strip" aria-label="Operativer Kundenkontext">
+      <article><small>Kunden mit offenen Sendungen</small><strong>${openCustomers}</strong><span>von ${state.customers.length} Demo-Kunden</span></article>
+      <article class="warning"><small>Handlungsbedarf</small><strong>${attentionCustomers}</strong><span>Kunden mit offenem Punkt</span></article>
+      <article><small>Nicht-EU-Bezug</small><strong>${nonEuCustomers}</strong><span>Kunden mit Exportvorgang</span></article>
+    </section>` + state.customers.map(customer => {
     const locations = state.locations.filter(item => item.customerId === customer.id).length;
-    const shipments = state.shipments.filter(item => item.customerId === customer.id).length;
-    return `<button type="button" class="customer-demo-row${customer.id === selectedCustomerId ? ' active' : ''}" data-customer-id="${customer.id}"><div><strong>${escapeHtml(customer.name)}</strong><small>${escapeHtml(customer.number)} · ${escapeHtml(customer.country)} · ${locations} Standort${locations === 1 ? '' : 'e'}</small></div><span>${shipments} Sendung${shipments === 1 ? '' : 'en'}</span></button>`;
+    const shipments = customerShipments(customer.id);
+    const open = shipments.filter(isOpen).length;
+    const attention = shipments.filter(item => isOpen(item) && (item.attention || getMissingDocuments(item).length)).length;
+    return `<button type="button" class="customer-demo-row${customer.id === selectedCustomerId ? ' active' : ''}" data-customer-id="${customer.id}"><div><strong>${escapeHtml(customer.name)}</strong><small>${escapeHtml(customer.number)} · ${escapeHtml(customer.country)} · ${locations} Standort${locations === 1 ? '' : 'e'}</small></div><span><b>${open} offen</b><em>${attention ? `${attention} prüfen` : `${shipments.length} gesamt`}</em></span></button>`;
   }).join('');
 
   const customer = state.customers.find(item => item.id === selectedCustomerId);
@@ -222,9 +236,15 @@ function renderCustomerWorkspace() {
     return;
   }
   const locations = state.locations.filter(item => item.customerId === customer.id);
-  const shipments = state.shipments.filter(item => item.customerId === customer.id);
+  const shipments = customerShipments(customer.id);
+  const openShipments = shipments.filter(isOpen).sort((a,b) => PRIORITIES.indexOf(a.priority) - PRIORITIES.indexOf(b.priority) || a.plannedPickup.localeCompare(b.plannedPickup));
+  const attentionShipments = openShipments.filter(item => item.attention || getMissingDocuments(item).length);
+  const nextShipment = attentionShipments[0] || openShipments[0] || null;
+  const missingForNext = nextShipment ? getMissingDocuments(nextShipment) : [];
+  const nextAction = !nextShipment ? 'Kein offener Schritt' : nextShipment.attention || (missingForNext.length ? `${missingForNext.length} Pflichtdokument${missingForNext.length === 1 ? '' : 'e'} prüfen` : nextShipment.status === 'Bereit zur Abholung' ? 'Abholung koordinieren' : 'Sendung weiterführen');
   detail.innerHTML = `<div class="customer-detail-head"><div><span class="eyebrow">DEMO-KUNDE</span><h3>${escapeHtml(customer.name)}</h3><p>${escapeHtml(customer.number)} · ${escapeHtml(customer.country)}</p></div><span class="status-chip good">${escapeHtml(customer.status)}</span></div>
-    <div class="customer-detail-facts"><div><small>Kundennummer</small><strong>${escapeHtml(customer.number)}</strong></div><div><small>Lieferstandorte</small><strong>${locations.length}</strong></div><div><small>Demo-Sendungen</small><strong>${shipments.length}</strong></div></div>
+    <div class="customer-detail-facts"><div><small>Kundennummer</small><strong>${escapeHtml(customer.number)}</strong></div><div><small>Lieferstandorte</small><strong>${locations.length}</strong></div><div><small>Offene Sendungen</small><strong>${openShipments.length}</strong></div></div>
+    <section class="customer-next-action${nextShipment?.attention ? ' warning' : ''}"><div><small>Nächster operativer Schritt</small><strong>${escapeHtml(nextAction)}</strong><span>${nextShipment ? `${escapeHtml(nextShipment.reference)} · ${escapeHtml(nextShipment.destination)} · ${escapeHtml(nextShipment.priority)}` : 'Für diesen Demo-Kunden ist aktuell nichts offen.'}</span></div>${nextShipment ? `<button type="button" data-customer-next-shipment="${nextShipment.id}">Sendung öffnen →</button>` : ''}</section>
     <section class="customer-location-list"><h4>Zugeordnete Standorte</h4>${locations.map(location => `<div class="customer-location-entry"><div><strong>${escapeHtml(location.label)}</strong><small>${escapeHtml(location.address)} · ${escapeHtml(location.city)}</small></div><span>${escapeHtml(location.country)}</span></div>`).join('') || '<small>Keine Standorte</small>'}</section>
     <section class="customer-shipment-list"><h4>Sendungen in dieser Demo</h4>${shipments.map(shipment => `<div class="customer-shipment-mini"><div><strong>${escapeHtml(shipment.reference)} · ${escapeHtml(shipment.status)}</strong><small>${escapeHtml(shipment.destination)} · ${escapeHtml(shipment.packages)}</small></div><button type="button" data-customer-shipment="${shipment.id}">Öffnen →</button></div>`).join('') || '<small>Keine Sendungen</small>'}</section>`;
 
@@ -232,7 +252,7 @@ function renderCustomerWorkspace() {
     selectedCustomerId = button.dataset.customerId;
     renderCustomerWorkspace();
   }));
-  detail.querySelectorAll('[data-customer-shipment]').forEach(button => button.addEventListener('click', () => openShipment(button.dataset.customerShipment)));
+  detail.querySelectorAll('[data-customer-shipment],[data-customer-next-shipment]').forEach(button => button.addEventListener('click', () => openShipment(button.dataset.customerShipment || button.dataset.customerNextShipment)));
 }
 
 function renderLocationWorkspace() {
@@ -241,14 +261,28 @@ function renderLocationWorkspace() {
   const workspace = $('#locationWorkspace');
   if (!summary || !workspace) return;
   const countries = new Set(state.locations.map(item => item.country)).size;
-  const usedLocations = new Set(state.shipments.map(item => item.locationId)).size;
-  const nonEuLocations = state.locations.filter(item => ['CH','GB'].includes(item.country)).length;
-  summary.innerHTML = `<div><small>Länder</small><strong>${countries}</strong><span>im fiktiven Standortbestand</span></div><div><small>In Sendungen genutzt</small><strong>${usedLocations} / ${state.locations.length}</strong><span>Standorte mit operativem Bezug</span></div><div><small>Nicht-EU-Ziele</small><strong>${nonEuLocations}</strong><span>mit Exportrelevanz in der Demo</span></div>`;
-  workspace.innerHTML = state.locations.map(location => {
+  const usedLocations = new Set(state.shipments.map(item => item.locationId));
+  const nonEuLocations = state.locations.filter(item => NON_EU_COUNTRIES.has(item.country)).length;
+  const filteredLocations = state.locations.filter(location => {
+    if (locationFilter === 'used') return usedLocations.has(location.id);
+    if (locationFilter === 'non-eu') return NON_EU_COUNTRIES.has(location.country);
+    return true;
+  });
+  summary.innerHTML = `<div><small>Länder</small><strong>${countries}</strong><span>im fiktiven Standortbestand</span></div><div><small>In Sendungen genutzt</small><strong>${usedLocations.size} / ${state.locations.length}</strong><span>Standorte mit operativem Bezug</span></div><div><small>Nicht-EU-Ziele</small><strong>${nonEuLocations}</strong><span>mit Exportrelevanz in der Demo</span></div>`;
+  workspace.innerHTML = `<div class="location-filter-strip" aria-label="Standortansicht filtern">
+      <button type="button" data-location-filter="all" class="${locationFilter === 'all' ? 'active' : ''}"><strong>Alle Standorte</strong><span>${state.locations.length}</span></button>
+      <button type="button" data-location-filter="used" class="${locationFilter === 'used' ? 'active' : ''}"><strong>Operativ genutzt</strong><span>${usedLocations.size}</span></button>
+      <button type="button" data-location-filter="non-eu" class="${locationFilter === 'non-eu' ? 'active' : ''}"><strong>Exportrelevant · Nicht-EU</strong><span>${nonEuLocations}</span></button>
+    </div>` + (filteredLocations.length ? filteredLocations.map(location => {
     const customer = state.customers.find(item => item.id === location.customerId);
     const usage = state.shipments.filter(item => item.locationId === location.id).length;
-    return `<article class="location-demo-card"><header><div><strong>${escapeHtml(location.label)}</strong><small>${escapeHtml(customer?.name || 'Demo-Kunde')}</small></div><span class="location-country">${escapeHtml(location.country)}</span></header><div class="location-address">${escapeHtml(location.address)}<br>${escapeHtml(location.city)}</div><div class="location-usage"><span>Verwendung im Demo-Bestand</span><strong>${usage}×</strong></div></article>`;
-  }).join('');
+    const nonEu = NON_EU_COUNTRIES.has(location.country);
+    return `<article class="location-demo-card${nonEu ? ' export-relevant' : ''}"><header><div><strong>${escapeHtml(location.label)}</strong><small>${escapeHtml(customer?.name || 'Demo-Kunde')}</small></div><div class="location-badges"><span class="location-country">${escapeHtml(location.country)}</span><span class="location-export-badge ${nonEu ? 'non-eu' : 'eu'}">${nonEu ? 'Exportrelevant · Nicht-EU' : 'EU-Ziel'}</span></div></header><div class="location-address">${escapeHtml(location.address)}<br>${escapeHtml(location.city)}</div><div class="location-usage"><span>${usage ? 'Operativ genutzt' : 'Noch ohne Sendungsbezug'}</span><strong>${usage}×</strong></div></article>`;
+  }).join('') : '<div class="location-empty">Für diesen Filter sind keine Demo-Standorte vorhanden.</div>');
+  workspace.querySelectorAll('[data-location-filter]').forEach(button => button.addEventListener('click', () => {
+    locationFilter = button.dataset.locationFilter;
+    renderLocationWorkspace();
+  }));
 }
 
 function renderTeamWorkspace() {
@@ -269,7 +303,15 @@ function renderTeamWorkspace() {
   });
   if (!detail) return;
   const peers = state.employees.filter(item => item.role === role);
-  detail.innerHTML = `<div class="role-context-profile"><strong>${escapeHtml(employee?.name || role)}</strong><span>${escapeHtml(role)} · ${escapeHtml(employee?.team || 'Demo-Team')}</span></div><div class="capability-list">${Object.entries(capabilityLabels).map(([key,label]) => `<div class="capability-item ${capabilities[key] ? 'allowed' : 'blocked'}"><i>${capabilities[key] ? '✓' : '–'}</i><span>${escapeHtml(label)}</span></div>`).join('')}</div><div class="role-context-note">Der Wechsel betrifft ausschließlich die Darstellung und lokale Demo-Aktionen. Alle Geschäftsdatensätze bleiben fiktiv.</div><div class="role-team-list"><h4>Beispielpersonen mit dieser Rolle</h4><div class="role-team-people">${peers.map(item => `<span>${escapeHtml(item.name)}</span>`).join('')}</div></div>`;
+  const teamMembers = state.employees.filter(item => item.team === employee?.team);
+  const permissionEntries = Object.keys(capabilityLabels);
+  const allowedCount = permissionEntries.filter(key => capabilities[key]).length;
+  const blockedCount = permissionEntries.length - allowedCount;
+  detail.innerHTML = `<section class="role-impact-strip" aria-label="Auswirkung der aktiven Rolle">
+      <article class="allowed"><small>Freigegebene Aktionen</small><strong>${allowedCount}</strong><span>im Demo-Arbeitsbereich</span></article>
+      <article class="blocked"><small>Gesperrt</small><strong>${blockedCount}</strong><span>rollenbedingt nicht verfügbar</span></article>
+      <article><small>Teamkontext</small><strong>${teamMembers.length}</strong><span>${escapeHtml(employee?.team || 'Demo-Team')}</span></article>
+    </section><div class="role-context-profile"><strong>${escapeHtml(employee?.name || role)}</strong><span>${escapeHtml(role)} · ${escapeHtml(employee?.team || 'Demo-Team')}</span></div><div class="capability-list">${Object.entries(capabilityLabels).map(([key,label]) => `<div class="capability-item ${capabilities[key] ? 'allowed' : 'blocked'}"><i>${capabilities[key] ? '✓' : '–'}</i><span>${escapeHtml(label)}</span></div>`).join('')}</div><div class="role-context-note">Der Wechsel betrifft ausschließlich die Darstellung und lokale Demo-Aktionen. Alle Geschäftsdatensätze bleiben fiktiv.</div><section class="role-team-context"><div><h4>Teamkontext</h4><p>Die aktive Person wird zusammen mit ihrem fiktiven Team gezeigt. So lässt sich im Gespräch erklären, wie Arbeitsbereiche nach Rolle begrenzt werden.</p></div><div class="role-team-context-people">${teamMembers.map(item => `<span class="${item.id === employee?.id ? 'active' : ''}"><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.role)}</small></span>`).join('')}</div></section><div class="role-team-list"><h4>Beispielpersonen mit dieser Rolle</h4><div class="role-team-people">${peers.map(item => `<span>${escapeHtml(item.name)}</span>`).join('')}</div></div>`;
 }
 
 function setPresentationRole(role, employeeId) {
@@ -327,6 +369,7 @@ function bindNavigation() {
   $('#demoResetBtn')?.addEventListener('click', () => {
     resetDemoStore();
     selectedCustomerId = 'cus-05';
+    locationFilter = 'all';
     refreshOperationalViews();
     shipmentWorkspace?.refresh();
     openView('overview');
