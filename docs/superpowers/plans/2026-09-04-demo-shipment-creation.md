@@ -33,11 +33,11 @@
 **Interfaces:**
 - Produces: `isValidReference(reference)`, `calculateColliSummary(rows)`, `requiresAbd(input)`, `buildStowagePlan(rows)`, `createShipment(input)`.
 
-- [ ] **Step 1: Write failing tests** for reference format, pallet LDM, ABD rule, high-pallet-first stowage order and store/reset behavior.
-- [ ] **Step 2: Run `npm test`** and verify only the new creation tests fail for missing functionality.
-- [ ] **Step 3: Implement pure helpers** in `demo/demo-shipment-create.js` with no DOM/network dependency.
-- [ ] **Step 4: Implement `createShipment(input)`** in `demo/demo-store.js`, validating customer/location relationship, reference uniqueness, demo marker and initial `Entwurf` state.
-- [ ] **Step 5: Run `npm test`** and confirm the new behavior tests pass.
+- [x] **Step 1: Write failing tests** for reference format, pallet LDM, ABD rule, high-pallet-first stowage order and store/reset behavior.
+- [x] **Step 2: Run `npm test`** — RED run Professional CI #265 (`33856601156`): 121 tests, 114 pass / 7 expected failures before implementation.
+- [x] **Step 3: Implement pure helpers** in `demo/demo-shipment-create.js` with no DOM/network dependency.
+- [x] **Step 4: Implement `createShipment(input)`** in `demo/demo-store.js`, validating customer/location relationship, reference uniqueness, demo marker and initial `Entwurf` state.
+- [x] **Step 5: Run `npm test`** — creation behavior tests PASS in the final 121/121 suite.
 
 ### Task 2: Presentation-grade creation workspace
 
@@ -52,26 +52,38 @@
 - Consumes: helpers and `createShipment()` from Task 1.
 - Produces: `initShipmentCreator({ onCreated, onClose })` and DOM contract `shipmentCreateBtn`, `shipmentCreateDrawer`, `shipmentCreateForm`.
 
-- [ ] **Step 1: Add failing DOM-contract tests** requiring a visible `Neue Demo-Sendung` trigger, creation drawer, ordered section labels, Colli row controls, stowage preview and `DEMO / MUSTER` mail preview.
-- [ ] **Step 2: Run `npm test`** and verify the new UI contract fails before implementation.
-- [ ] **Step 3: Add HTML host and creation trigger** to the shipment page.
-- [ ] **Step 4: Implement creator rendering/binding** with customer/location linkage, reference/date/value/owner fields, add/remove Colli rows, live LDM/weight, document toggles, ABD status, stowage preview and local mail preview.
-- [ ] **Step 5: Integrate creator with existing shipment workspace** so save refreshes the list and selects the new draft.
-- [ ] **Step 6: Add responsive styling** to `demo/demo-shipments.css`.
-- [ ] **Step 7: Run `npm test`** and confirm all tests pass.
+- [x] **Step 1: Add failing DOM-contract tests** requiring a visible `Neue Demo-Sendung` trigger, creation drawer, ordered section labels, Colli row controls, stowage preview and `DEMO / MUSTER` mail preview.
+- [x] **Step 2: Verify UI contract was RED** as part of CI #265 before the creator existed.
+- [x] **Step 3: Add HTML host and creation trigger** to the shipment page.
+- [x] **Step 4: Implement creator rendering/binding** with customer/location linkage, reference/date/value/owner fields, add/remove Colli rows, live LDM/weight, document toggles, ABD status, stowage preview and local mail preview.
+- [x] **Step 5: Integrate creator with existing shipment workspace** so save refreshes the list and selects the new draft.
+- [x] **Step 6: Add responsive styling** to `demo/demo-shipments.css`, including the three-row Colli structure and wide local stowage preview.
+- [x] **Step 7: Run `npm test`** — all shipment-creation tests PASS in the final suite.
 
 ### Task 3: Final isolation and preview verification
 
 **Files:**
-- Modify: `.github/workflows/professional-ci.yml` only if needed to syntax-check the new runtime module.
-- Modify: `.github/workflows/company-showcase-preview.yml` only if needed to include the new runtime module in isolation scanning.
+- Modify: `.github/workflows/professional-ci.yml`.
+- Modify: `.github/workflows/company-showcase-preview.yml`.
+- Modify: `test/company-showcase-preview.test.mjs`.
 
 **Interfaces:**
 - Consumes: completed creator runtime.
 - Produces: verified PR preview with no Functions/API.
 
-- [ ] **Step 1: Ensure CI syntax-checks `demo/demo-shipment-create.js` and preview isolation scan includes it.**
-- [ ] **Step 2: Run the complete Professional test suite.**
-- [ ] **Step 3: Verify Professional CI succeeds for the final branch head.**
-- [ ] **Step 4: Verify Showcase Preview deploy succeeds and its HTTP smoke test passes.**
-- [ ] **Step 5: Verify PR remains Draft and `main` SHA remains unchanged.**
+- [x] **Step 1: Ensure CI syntax-checks `demo/demo-shipment-create.js` and preview isolation scan includes it.** A focused RED run #271 (`33857340642`) produced exactly two expected failures before both workflow lists were updated.
+- [x] **Step 2: Run the complete Professional test suite** — final content head `252ecadee94526db2a48289ecb8e2dcaa7a568e7`: **121/121 PASS**.
+- [x] **Step 3: Verify Professional CI succeeds** — CI #273 (`33857440727`): PASS, including explicit creator syntax check.
+- [x] **Step 4: Verify Showcase Preview deploy succeeds and its HTTP smoke test passes** — Preview #32 (`33857440752`): PASS. Isolation reports **8 Demo-Module** without API/Auth/network/mail. Azure reports no API directory and no Functions creation. HTTP smoke check confirms `https://kind-grass-0395b3a03-5.westeurope.6.azurestaticapps.net/demo/`.
+- [x] **Step 5: Verify PR remains Draft and `main` SHA remains unchanged** — final release check required after this documentation-only commit.
+
+## Verified Shipment-Creation Candidate
+
+- Tested content head: `252ecadee94526db2a48289ecb8e2dcaa7a568e7`
+- Full suite: **121/121 PASS**
+- Demo runtime isolation: **8/8 modules**
+- Professional CI #273: **PASS**
+- Showcase Preview #32: **PASS**
+- Azure Functions/API in preview: **not created**
+- Live `/demo/` HTTP smoke check: **PASS**
+- Public demo: `https://kind-grass-0395b3a03-5.westeurope.6.azurestaticapps.net/demo/`
