@@ -41,3 +41,37 @@ test('shipment detail uses a presentation-grade summary and visible workflow pro
   assert.match(css, /\.shipment-detail-hero/);
   assert.match(css, /\.shipment-progress-meter/);
 });
+
+test('document control explains internal L1 and L2 names instead of showing unexplained abbreviations', () => {
+  const html = read('demo/index.html');
+  const runtime = read('demo/demo-documents.js');
+  const css = read('demo/demo-operations.css');
+  assert.match(html, /document-guide-grid/);
+  assert.match(html, /Interne L1-Ausgabe/);
+  assert.match(html, /QR-Code für Abholung/);
+  assert.match(html, /Interne L2-Ausgabe/);
+  assert.match(html, /Versand-\/Speditionsunterlage/);
+  assert.match(runtime, /DOCUMENT_DESCRIPTIONS/);
+  assert.match(runtime, /doc-pill-copy/);
+  assert.match(css, /\.document-guide-grid/);
+});
+
+test('task planning exposes operational counts for open critical and completed work', () => {
+  const runtime = read('demo/demo-ui.js');
+  const css = read('demo/demo-operations.css');
+  assert.match(runtime, /task-control-strip/);
+  assert.match(runtime, /Kritisch P0\/P1/);
+  assert.match(runtime, /Offen/);
+  assert.match(runtime, /Erledigt/);
+  assert.match(css, /\.task-control-strip/);
+});
+
+test('customer avis preview explains the external handoff and its safety state', () => {
+  const runtime = read('demo/demo-avis.js');
+  const css = read('demo/demo-operations.css');
+  assert.match(runtime, /avis-process-strip/);
+  assert.match(runtime, /Sichere Kundenansicht/);
+  assert.match(runtime, /Freigegebene Unterlagen/);
+  assert.match(runtime, /Lokale Demo-Vorschau/);
+  assert.match(css, /\.avis-process-strip/);
+});
