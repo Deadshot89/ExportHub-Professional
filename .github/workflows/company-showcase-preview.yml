@@ -122,6 +122,7 @@ jobs:
           fi
 
       - name: Deploy isolated company showcase preview
+        id: deploy
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
@@ -130,6 +131,21 @@ jobs:
           app_location: .showcase-preview
           output_location: ''
           skip_app_build: true
+
+      - name: Smoke-check deployed slash demo
+        shell: bash
+        env:
+          STATIC_WEB_APP_URL: ${{ steps.deploy.outputs.static_web_app_url }}
+        run: |
+          set -euo pipefail
+          test -n "${STATIC_WEB_APP_URL}"
+          demo_url="${STATIC_WEB_APP_URL%/}/demo/"
+          body_file="$(mktemp)"
+          curl --fail --silent --show-error --location --retry 6 --retry-delay 3 --retry-all-errors "${demo_url}" --output "${body_file}"
+          grep -Fq 'ExportHUB Professional' "${body_file}"
+          grep -Fq 'DEMO / MUSTER' "${body_file}"
+          grep -Fq 'Rheinwerk Industrial Solutions GmbH' "${body_file}"
+          echo "Company showcase verified: ${demo_url}"
 
   close-preview:
     if: github.event.action == 'closed' && github.head_ref == 'demo/company-showcase'
