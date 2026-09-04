@@ -43,6 +43,7 @@ jobs:
           node --check demo/demo-store.js
           node --check demo/demo-ui.js
           node --check demo/demo-shipments.js
+          node --check demo/demo-shipment-create.js
           node --check demo/demo-documents.js
           node --check demo/demo-avis.js
           node --check demo/presentation-guide.js
@@ -60,6 +61,7 @@ jobs:
             'demo/demo-store.js',
             'demo/demo-ui.js',
             'demo/demo-shipments.js',
+            'demo/demo-shipment-create.js',
             'demo/demo-documents.js',
             'demo/demo-avis.js',
             'demo/presentation-guide.js'
@@ -106,6 +108,7 @@ jobs:
           test -f .showcase-preview/demo/demo-store.js
           test -f .showcase-preview/demo/demo-ui.js
           test -f .showcase-preview/demo/demo-shipments.js
+          test -f .showcase-preview/demo/demo-shipment-create.js
           test -f .showcase-preview/demo/demo-documents.js
           test -f .showcase-preview/demo/demo-avis.js
           test -f .showcase-preview/demo/presentation-guide.js
