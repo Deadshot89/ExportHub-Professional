@@ -7,6 +7,7 @@ import {
   DEMO_TASKS,
   DEMO_TODAY
 } from './demo-data.js';
+import { calculateColliSummary, isNonEuCountry, isValidReference, requiresAbd } from './demo-shipment-create.js';
 
 const STORAGE_KEY = 'exporthub-professional-company-showcase-v1';
 const STATUS_FLOW = Object.freeze([
@@ -159,6 +160,27 @@ function assertUnlocked(shipment) {
   if (LOCKED_STATUSES.has(shipment.status)) throw new Error('SENDUNG_GESPERRT');
 }
 
+function nextCreatedShipmentId(state) {
+  let number = state.shipments.length + 1;
+  let id = `sh-demo-${String(number).padStart(3, '0')}`;
+  while (state.shipments.some(item => item.id === id)) {
+    number += 1;
+    id = `sh-demo-${String(number).padStart(3, '0')}`;
+  }
+  return id;
+}
+
+function safeDocuments(input = {}) {
+  return {
+    delivery: Boolean(input.delivery),
+    l1: Boolean(input.l1),
+    l2: Boolean(input.l2),
+    cmr: Boolean(input.cmr),
+    abd: Boolean(input.abd),
+    pod: false
+  };
+}
+
 export function canRole(role, capability) {
   return DEMO_ROLE_CAPABILITIES[role]?.[capability] === true;
 }
@@ -171,6 +193,65 @@ export function reset() {
   memoryState = baselineState();
   persist();
   return getState();
+}
+
+export function createShipment(input = {}) {
+  const state = loadState();
+  const reference = String(input.reference || '').trim().toUpperCase();
+  if (!isValidReference(reference)) throw new Error('UNGUELTIGE_REFERENZ');
+  if (state.shipments.some(item => item.reference === reference)) throw new Error('REFERENZ_VERGEBEN');
+
+  const customer = state.customers.find(item => item.id === input.customerId && item.demo === true);
+  if (!customer) throw new Error('DEMO_KUNDE_NICHT_GEFUNDEN');
+  const location = state.locations.find(item => item.id === input.locationId && item.demo === true);
+  if (!location) throw new Error('DEMO_STANDORT_NICHT_GEFUNDEN');
+  if (location.customerId !== customer.id) throw new Error('STANDORT_GEHOERT_NICHT_ZUM_KUNDEN');
+  const owner = state.employees.find(item => item.id === input.ownerId && item.demo === true);
+  if (!owner) throw new Error('DEMO_MITARBEITER_NICHT_GEFUNDEN');
+
+  const colliSummary = calculateColliSummary(Array.isArray(input.colli) ? input.colli : []);
+  if (!colliSummary.rows.length || colliSummary.totalQuantity < 1) throw new Error('COLLI_FEHLEN');
+
+  const nonEu = isNonEuCountry(location.country);
+  const valueEur = Math.max(0, Number(input.valueEur) || 0);
+  const forwarderRequiresAbd = Boolean(input.forwarderRequiresAbd);
+  const abdRequired = requiresAbd({ nonEu, valueEur, forwarderRequiresAbd });
+  const documents = safeDocuments(input.documents);
+  const missingBase = ['delivery','l1','l2'].filter(type => documents[type] !== true);
+  const attention = abdRequired && documents.abd !== true
+    ? 'ABD fehlt'
+    : missingBase.length
+      ? 'Sendung vervollständigen'
+      : null;
+
+  const created = {
+    id: nextCreatedShipmentId(state),
+    reference,
+    customerId: customer.id,
+    locationId: location.id,
+    status: 'Entwurf',
+    ownerId: owner.id,
+    plannedPickup: String(input.plannedPickup || DEMO_TODAY),
+    actualPickup: null,
+    destination: `${location.city} · ${location.country}`,
+    nonEu,
+    requiresAbd: abdRequired,
+    forwarderRequiresAbd,
+    valueEur,
+    packages: `${colliSummary.totalQuantity} Colli`,
+    weightKg: colliSummary.totalWeightKg,
+    ldm: colliSummary.totalLdm,
+    colli: colliSummary.rows,
+    documents,
+    avis: 'Offen',
+    attention,
+    priority: String(input.priority || 'P2'),
+    demo: true
+  };
+
+  state.shipments.unshift(created);
+  persist();
+  return clone(created);
 }
 
 export function updateShipment(id, patch) {
