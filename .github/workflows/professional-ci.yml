@@ -88,6 +88,7 @@ jobs:
           node --check demo/demo-store.js
           node --check demo/demo-ui.js
           node --check demo/demo-shipments.js
+          node --check demo/demo-shipment-create.js
           node --check demo/demo-documents.js
           node --check demo/demo-avis.js
           node --check demo/presentation-guide.js
