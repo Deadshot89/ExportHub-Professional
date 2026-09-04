@@ -1,5 +1,6 @@
 import { CUSTOMER_BY_ID, EMPLOYEE_BY_ID, LOCATION_BY_ID, getMissingDocuments } from './demo-data.js';
-import { getState, setDocumentState, transitionShipment, canRole } from './demo-store.js';
+import { getState, setDocumentState, transitionShipment, canRole, createShipment } from './demo-store.js';
+import { initShipmentCreator } from './demo-shipment-create.js';
 
 const STATUS_ORDER = ['Entwurf','Erstellt','Bereit zur Abholung','Abgeholt','POD vorhanden','Abgeschlossen','Archiviert'];
 const DOC_LABELS = { delivery:'Lieferschein', l1:'L1 / QR', l2:'L2', cmr:'CMR', abd:'ABD', pod:'POD' };
@@ -133,7 +134,7 @@ function renderDetail(shipment) {
     <div><small>Standort</small><strong>${escapeHtml(location?.label || '–')}</strong><span>${escapeHtml(location?.city || '')} · ${escapeHtml(location?.country || '')}</span></div>
     <div><small>Verantwortlich</small><strong>${escapeHtml(owner?.name || '–')}</strong><span>${escapeHtml(owner?.role || '')}</span></div>
     <div><small>Geplante Abholung</small><strong>${formatDate(shipment.plannedPickup)}</strong><span>${shipment.actualPickup ? `Tatsächlich ${formatDate(shipment.actualPickup)}` : 'Noch nicht abgeholt'}</span></div>
-    <div><small>Colli</small><strong>${escapeHtml(shipment.packages)}</strong><span>${escapeHtml(shipment.weightKg)} kg</span></div>
+    <div><small>Colli</small><strong>${escapeHtml(shipment.packages)}</strong><span>${escapeHtml(shipment.weightKg)} kg${shipment.ldm !== undefined ? ` · ${Number(shipment.ldm).toFixed(2)} LDM` : ''}</span></div>
     <div><small>Warenwert</small><strong>${Number(shipment.valueEur).toLocaleString('de-DE')} €</strong><span>${regionLabel}</span></div>
   </div>
 
@@ -166,14 +167,29 @@ function populateOwnerFilter() {
   select.dataset.ready = 'true';
 }
 
+function clearFilters() {
+  const search = document.getElementById('shipmentSearch');
+  const status = document.getElementById('shipmentStatusFilter');
+  const owner = document.getElementById('shipmentOwnerFilter');
+  const region = document.getElementById('shipmentRegionFilter');
+  const attention = document.getElementById('shipmentAttentionFilter');
+  if (search) search.value = '';
+  if (status) status.value = 'all';
+  if (owner) owner.value = 'all';
+  if (region) region.value = 'all';
+  if (attention) attention.checked = false;
+}
+
 export function initShipmentWorkspace({ onChange } = {}) {
   const workspace = document.getElementById('shipmentWorkspace');
-  if (!workspace) return { refresh(){} };
+  if (!workspace) return { refresh(){}, select(){}, openCreator(){} };
 
   let selectedId = 'sh-001';
+  let creator = null;
 
   const refresh = () => {
     populateOwnerFilter();
+    creator?.refreshRole();
     const state = getState();
     const filtered = filterShipments(state.shipments, currentFilters());
     if (!state.shipments.some(item => item.id === selectedId)) selectedId = filtered[0]?.id || null;
@@ -226,6 +242,23 @@ export function initShipmentWorkspace({ onChange } = {}) {
     control?.addEventListener(event, refresh);
   }
 
+  creator = initShipmentCreator({
+    getState,
+    createShipment,
+    canCreate: () => canRole(getState().role.role, 'editShipments'),
+    onCreated(created) {
+      selectedId = created.id;
+      clearFilters();
+      const message = document.getElementById('shipmentMessage');
+      if (message) {
+        message.hidden = false;
+        message.textContent = `${created.reference} wurde als lokaler Demo-Entwurf angelegt.`;
+      }
+      onChange?.();
+      refresh();
+    }
+  });
+
   refresh();
-  return { refresh, select(id){ selectedId = id; refresh(); } };
+  return { refresh, select(id){ selectedId = id; refresh(); }, openCreator(){ creator?.open(); } };
 }
