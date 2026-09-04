@@ -96,25 +96,37 @@
 - Consumes: demo state and existing view IDs/actions.
 - Produces: local role switching, customer/location workspace and guided 10-step presentation.
 
-- [ ] **Step 1: Write failing tests** for role scoping and guided-tour view/action references.
-- [ ] **Step 2: Run focused tests** and confirm expected failures.
-- [ ] **Step 3: Implement role and tour behavior** with no authentication calls.
-- [ ] **Step 4: Run focused tests** and confirm PASS.
-- [ ] **Step 5: Run `npm test`** and confirm all project tests PASS.
+- [x] **Step 1: Write failing tests** for role scoping and guided-tour view/action references.
+- [x] **Step 2: Run focused tests** — RED run #233 (`33811118965`): 98 tests, 93 pass / 5 expected fail before the presentation workspaces existed.
+- [x] **Step 3: Implement role and tour behavior** with no authentication calls.
+- [x] **Step 4: Run focused tests** and confirm PASS.
+- [x] **Step 5: Run `npm test`** — GREEN run #240 (`33811539379`): 98/98 tests PASS; syntax, Control Center invariants and API runtime also PASS.
 
 ### Task 5: Isolated preview workflow and final verification
 
 **Files:**
 - Modify: `.github/workflows/professional-ci.yml`
 - Create: `.github/workflows/company-showcase-preview.yml`
-- Modify: `test/company-showcase.test.mjs`
+- Create/Modify: `test/company-showcase-preview.test.mjs`
 
 **Interfaces:**
 - Consumes: completed `demo/` static application.
-- Produces: PR-only Azure preview deployment and isolation verification.
+- Produces: PR-only Azure preview deployment, root redirect to `/demo/`, runtime isolation checks and an HTTP smoke check against the deployed demo.
 
-- [ ] **Step 1: Write failing workflow contract tests** requiring demo syntax checks, isolation scan and `/demo/` payload.
-- [ ] **Step 2: Run focused tests** and confirm failure before workflow exists.
-- [ ] **Step 3: Add preview workflow** limited to the showcase branch/PR and explicitly separate from main production deployment.
-- [ ] **Step 4: Run `npm test`** and confirm all tests PASS.
-- [ ] **Step 5: Verify PR workflow and preview URL**, then update Draft PR with exact test counts and deployment evidence.
+- [x] **Step 1: Write failing workflow contract tests** requiring demo syntax checks, isolation scan and `/demo/` payload.
+- [x] **Step 2: Run focused tests** — RED run #241 (`33811822363`): 103 tests, 100 pass / 3 expected fail before the preview workflow existed. A second RED test captured Azure's requirement for a root `index.html`; run #245 (`33852587957`) then captured the missing deployed-site smoke check with 104 tests, 103 pass / 1 expected fail.
+- [x] **Step 3: Add preview workflow** limited to the showcase branch/PR and explicitly separate from main production deployment. The payload contains only `.showcase-preview/index.html` plus `.showcase-preview/demo/**`; no API directory is deployed.
+- [x] **Step 4: Run `npm test`** — GREEN code head `f386e8814ee62c3ce1738c1ca866903c68724598`: 104/104 tests PASS. Seven demo runtime modules pass syntax and isolation checks.
+- [x] **Step 5: Verify PR workflow and preview URL** — Professional CI #247 (`33852740982`) PASS; Showcase Preview #6 (`33852740984`) PASS; Azure reports no Functions/API deployment; post-deploy HTTP smoke check confirms `ExportHUB Professional`, `DEMO / MUSTER` and `Rheinwerk Industrial Solutions GmbH` at `https://kind-grass-0395b3a03-5.westeurope.6.azurestaticapps.net/demo/`.
+
+## Verified Showcase Release Candidate
+
+- Demo code head: `f386e8814ee62c3ce1738c1ca866903c68724598`
+- Full test suite: **104/104 PASS**
+- Demo runtime isolation: **7/7 modules** without API/Auth/network/mail integration
+- Azure preview workflow: **PASS**
+- Azure Functions/API in preview: **not created**
+- Live HTTP smoke check: **PASS**
+- Public presentation URL: `https://kind-grass-0395b3a03-5.westeurope.6.azurestaticapps.net/demo/`
+- Production branch: `main` remains outside the demo workflow and is not modified by preview deployment.
+- Pull request stays **Draft / DO NOT MERGE** until explicit release approval.
