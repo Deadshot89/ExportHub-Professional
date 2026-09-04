@@ -75,3 +75,36 @@ test('customer avis preview explains the external handoff and its safety state',
   assert.match(runtime, /Lokale Demo-Vorschau/);
   assert.match(css, /\.avis-process-strip/);
 });
+
+test('customer workspace exposes portfolio pressure and selected-customer operational context', () => {
+  const runtime = read('demo/demo-ui.js');
+  const css = read('demo/demo-presentation.css');
+  assert.match(runtime, /customer-signal-strip/);
+  assert.match(runtime, /Kunden mit offenen Sendungen/);
+  assert.match(runtime, /Handlungsbedarf/);
+  assert.match(runtime, /Nächster operativer Schritt/);
+  assert.match(css, /\.customer-signal-strip/);
+  assert.match(css, /\.customer-next-action/);
+});
+
+test('location workspace makes export relevance and operational usage visible', () => {
+  const runtime = read('demo/demo-ui.js');
+  const css = read('demo/demo-presentation.css');
+  assert.match(runtime, /location-filter-strip/);
+  assert.match(runtime, /Nicht-EU/);
+  assert.match(runtime, /Operativ genutzt/);
+  assert.match(runtime, /Exportrelevant/);
+  assert.match(css, /\.location-filter-strip/);
+  assert.match(css, /\.location-export-badge/);
+});
+
+test('team workspace quantifies role impact and shows the active team context', () => {
+  const runtime = read('demo/demo-ui.js');
+  const css = read('demo/demo-presentation.css');
+  assert.match(runtime, /role-impact-strip/);
+  assert.match(runtime, /Freigegebene Aktionen/);
+  assert.match(runtime, /Gesperrt/);
+  assert.match(runtime, /Teamkontext/);
+  assert.match(css, /\.role-impact-strip/);
+  assert.match(css, /\.role-team-context/);
+});
