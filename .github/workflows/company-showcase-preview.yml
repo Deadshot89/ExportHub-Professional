@@ -45,6 +45,7 @@ jobs:
           node --check demo/demo-shipments.js
           node --check demo/demo-shipment-create.js
           node --check demo/demo-documents.js
+          node --check demo/demo-document-output.js
           node --check demo/demo-avis.js
           node --check demo/presentation-guide.js
 
@@ -63,6 +64,7 @@ jobs:
             'demo/demo-shipments.js',
             'demo/demo-shipment-create.js',
             'demo/demo-documents.js',
+            'demo/demo-document-output.js',
             'demo/demo-avis.js',
             'demo/presentation-guide.js'
           ];
@@ -110,6 +112,8 @@ jobs:
           test -f .showcase-preview/demo/demo-shipments.js
           test -f .showcase-preview/demo/demo-shipment-create.js
           test -f .showcase-preview/demo/demo-documents.js
+          test -f .showcase-preview/demo/demo-document-output.js
+          test -f .showcase-preview/demo/demo-document-output.css
           test -f .showcase-preview/demo/demo-avis.js
           test -f .showcase-preview/demo/presentation-guide.js
           grep -Fq 'DEMO / MUSTER' .showcase-preview/demo/index.html
