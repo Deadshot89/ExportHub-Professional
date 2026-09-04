@@ -52,6 +52,8 @@ test('showcase preview publishes only the self-contained demo payload under slas
   const workflow = read('.github/workflows/company-showcase-preview.yml');
   assert.match(workflow, /\.showcase-preview\/demo/);
   assert.match(workflow, /cp -R demo\/?\s+\.showcase-preview\/demo/);
+  assert.match(workflow, /\.showcase-preview\/index\.html/);
+  assert.match(workflow, /\/demo\//);
   assert.match(workflow, /app_location:\s*\.showcase-preview/);
   assert.match(workflow, /skip_app_build:\s*true/);
   assert.doesNotMatch(workflow, /api_location:\s*api/);
