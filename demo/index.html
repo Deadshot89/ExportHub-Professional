@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="./demo-shipments.css">
   <link rel="stylesheet" href="./demo-operations.css">
   <link rel="stylesheet" href="./demo-presentation.css">
+  <link rel="stylesheet" href="./demo-commercial-polish.css">
 </head>
 <body>
   <div class="demo-ribbon" role="status"><strong>DEMO / MUSTER</strong><span>Ausschließlich fiktive Beispieldaten · keine Verbindung zu Produktivdaten</span></div>
@@ -26,6 +27,12 @@
         <span>✓ Rollenbasierte Arbeitsbereiche</span>
         <span>✓ Dokumenten- & ABD-Status</span>
         <span>✓ Abholung bis POD nachvollziehbar</span>
+      </div>
+      <div class="showcase-proof-grid" aria-label="Geschäftlicher Nutzen">
+        <article class="showcase-proof"><i>01</i><strong>Zentrale Steuerung</strong><span>Sendungen, Aufgaben, Dokumente und Nachweise in einem gemeinsamen Arbeitskontext.</span></article>
+        <article class="showcase-proof"><i>02</i><strong>Klare Verantwortung</strong><span>Rolle, zuständige Person und nächster Arbeitsschritt bleiben direkt am Vorgang sichtbar.</span></article>
+        <article class="showcase-proof"><i>03</i><strong>Dokumentensicherheit</strong><span>Pflichtunterlagen, ABD-Sperren und fehlende Nachweise werden vor dem nächsten Schritt sichtbar.</span></article>
+        <article class="showcase-proof"><i>04</i><strong>Nachvollziehbarer Abschluss</strong><span>Abholung, POD und Statuskette führen den Vorgang kontrolliert bis zum Abschluss.</span></article>
       </div>
     </div>
     <div class="showcase-preview" aria-hidden="true">
@@ -91,11 +98,17 @@
           <div class="today-status"><span class="status-chip good">Demo-Daten aktiv</span><span class="status-chip neutral">Kein Backend</span></div>
         </div>
 
+        <div class="operations-signal-strip" aria-label="Operative Tageslage">
+          <article class="operations-signal info"><i>EX</i><div><strong>Exportstatus</strong><small>Arbeitsvorrat nach Priorität und Prozessstatus strukturiert.</small></div><span>gesteuert</span></article>
+          <article class="operations-signal warning"><i>DO</i><div><strong>Dokumentenlage</strong><small>Pflichtunterlagen und ABD-Sperren direkt vor der Freigabe prüfen.</small></div><span>prüfen</span></article>
+          <article class="operations-signal"><i>PO</i><div><strong>Abholung &amp; POD</strong><small>Abholung bestätigen, Nachweis ergänzen und Vorgang sauber abschließen.</small></div><span>nachverfolgbar</span></article>
+        </div>
+
         <div class="kpi-grid" id="overviewKpis">
-          <article class="kpi-card"><div class="kpi-icon">▣</div><div><span>Offene Sendungen</span><strong id="metricOpen">–</strong><small>noch nicht abgeschlossen</small></div></article>
-          <article class="kpi-card"><div class="kpi-icon">⇄</div><div><span>Abholungen heute</span><strong id="metricPickups">–</strong><small>geplante Abholungen</small></div></article>
-          <article class="kpi-card"><div class="kpi-icon">▤</div><div><span>Fehlende Dokumente</span><strong id="metricDocuments">–</strong><small>über alle Pflichtdokumente</small></div></article>
-          <article class="kpi-card attention"><div class="kpi-icon">!</div><div><span>Handlungsbedarf</span><strong id="metricAction">–</strong><small>Vorgänge mit offenem Punkt</small></div></article>
+          <article class="kpi-card" data-kpi-tone="info"><div class="kpi-icon">▣</div><div><span>Offene Sendungen</span><strong id="metricOpen">–</strong><small>noch nicht abgeschlossen</small><small class="kpi-context">Arbeitsvorrat priorisieren</small></div></article>
+          <article class="kpi-card" data-kpi-tone="positive"><div class="kpi-icon">⇄</div><div><span>Abholungen heute</span><strong id="metricPickups">–</strong><small>geplante Abholungen</small><small class="kpi-context">Tagesfenster im Blick</small></div></article>
+          <article class="kpi-card" data-kpi-tone="warning"><div class="kpi-icon">▤</div><div><span>Fehlende Dokumente</span><strong id="metricDocuments">–</strong><small>über alle Pflichtdokumente</small><small class="kpi-context">vor Freigabe schließen</small></div></article>
+          <article class="kpi-card attention" data-kpi-tone="critical"><div class="kpi-icon">!</div><div><span>Handlungsbedarf</span><strong id="metricAction">–</strong><small>Vorgänge mit offenem Punkt</small><small class="kpi-context">zuerst bearbeiten</small></div></article>
         </div>
 
         <div class="overview-grid">
