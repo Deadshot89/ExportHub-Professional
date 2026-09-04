@@ -144,7 +144,7 @@
       <section class="view" data-demo-view="shipments">
         <div class="shipment-page-head">
           <div><span class="eyebrow">OPERATIVE SENDUNGSSTEUERUNG</span><h3>Sendungen im Arbeitsfluss</h3><p>Fiktive Vorgänge von Entwurf über ABD und Abholung bis POD und Abschluss.</p></div>
-          <div class="shipment-head-meta"><span class="status-chip neutral">DEMO / MUSTER</span><small>Änderungen bleiben nur in diesem Browser.</small></div>
+          <div class="shipment-head-actions"><div class="shipment-head-meta"><span class="status-chip neutral">DEMO / MUSTER</span><small>Änderungen bleiben nur in diesem Browser.</small></div><button type="button" class="shipment-create-trigger" id="shipmentCreateBtn">＋ Neue Demo-Sendung</button></div>
         </div>
         <div id="shipmentMessage" class="shipment-message" hidden></div>
         <div class="shipment-filter-bar">
@@ -160,6 +160,9 @@
             <div id="shipmentList" class="shipment-list"></div>
           </section>
           <aside class="shipment-detail panel" id="shipmentDetail"></aside>
+        </div>
+        <div class="shipment-create-backdrop" id="shipmentCreateDrawer" hidden>
+          <aside class="shipment-create-drawer" role="dialog" aria-modal="true" aria-label="Neue Demo-Sendung erstellen"><div id="shipmentCreateForm"></div></aside>
         </div>
       </section>
 
