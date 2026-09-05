@@ -1,59 +1,69 @@
 export const TOUR_STEPS = Object.freeze([
   Object.freeze({
+    view: 'management',
+    title: '1 · Management-Lagebild zuerst',
+    text: 'Zum Einstieg zeigt ExportHUB den fiktiven Arbeitsvorrat aus Management-Sicht: offene Sendungen, abholbereite Vorgänge, Dokumentenquote, kritische Aufgaben, Nicht-EU-Bezug und offene POD-Nachweise.'
+  }),
+  Object.freeze({
     view: 'overview',
-    title: '1 · Tagesüberblick statt Einzelrecherche',
-    text: 'Der Einstieg zeigt offene Sendungen, heutige Abholungen, fehlende Dokumente und priorisierten Handlungsbedarf aus einem gemeinsamen fiktiven Arbeitsstand.'
+    title: '2 · Tagesüberblick statt Einzelrecherche',
+    text: 'Die operative Übersicht zeigt offene Sendungen, heutige Abholungen, fehlende Dokumente und priorisierten Handlungsbedarf aus einem gemeinsamen fiktiven Arbeitsstand.'
   }),
   Object.freeze({
     view: 'shipments',
     shipmentId: 'sh-001',
-    title: '2 · Blockierte Nicht-EU-Sendung erkennen',
+    title: '3 · Blockierte Nicht-EU-Sendung erkennen',
     text: 'RWD301 ist bewusst mit fehlendem ABD vorbereitet. ExportHUB macht sichtbar, warum der Vorgang noch nicht zur Abholung freigegeben werden darf.'
   }),
   Object.freeze({
     view: 'documents',
-    title: '3 · Pflichtdokumente automatisch einordnen',
+    title: '4 · Pflichtdokumente automatisch einordnen',
     text: 'Die Dokumentenübersicht unterscheidet je Sendung zwischen vorhandenen und fehlenden Pflichtunterlagen wie Lieferschein, L1, L2, CMR, ABD und POD.'
   }),
   Object.freeze({
     view: 'tasks',
-    title: '4 · Offene Schritte klar zuweisen',
+    title: '5 · Offene Schritte klar zuweisen',
     text: 'Aufgaben verbinden Priorität, Fälligkeit, verantwortliche Person und Sendungsreferenz. In der Demo lassen sie sich lokal als erledigt markieren.'
   }),
   Object.freeze({
     view: 'shipments',
     shipmentId: 'sh-002',
-    title: '5 · QR-Abholung mit PIN und Colli prüfen',
+    title: '6 · QR-Abholung mit PIN und Colli prüfen',
     text: 'RWD302 steht bereit zur Abholung. Über „QR-Abholung öffnen“ lässt sich die externe DEMO-Abholansicht zeigen: Verlade-PIN und physische Colli müssen stimmen, bevor der Status auf Abgeholt wechselt.'
   }),
   Object.freeze({
     view: 'shipments',
     shipmentId: 'sh-005',
-    title: '6 · Abholung und POD sauber trennen',
+    title: '7 · Abholung und POD sauber trennen',
     text: 'RWD305 ist bereits abgeholt und operative Daten sind gesperrt. Über „POD-Nachweis öffnen“ wird der fehlende Nachweis als eigener Schritt ergänzt und die Nachweiskette abgeschlossen.'
   }),
   Object.freeze({
     view: 'avis',
     shipmentId: 'sh-002',
-    title: '7 · Kunden-Avis ohne internen Zugriff',
+    title: '8 · Kunden-Avis ohne internen Zugriff',
     text: 'Die Präsentation zeigt eine getrennte Kundenansicht mit Referenz, Abholinformationen und freigegebenen Unterlagen. Der Demo-Verweis bleibt ausschließlich lokal.'
   }),
   Object.freeze({
     view: 'customers',
-    title: '8 · Kunden zentral mit Vorgängen verbinden',
+    title: '9 · Kunden zentral mit Vorgängen verbinden',
     text: 'Die Kundenansicht fasst fiktive Kundennummer, Land, Standorte und zugehörige Sendungen zusammen, ohne die operative Oberfläche mit Stammdatenformularen zu überladen.'
   }),
   Object.freeze({
     view: 'locations',
-    title: '9 · Lieferstandorte getrennt pflegen und prüfen',
+    title: '10 · Lieferstandorte getrennt pflegen und prüfen',
     text: 'Zwölf fiktive Lieferstandorte machen sichtbar, welchem Kunden und Land ein Ziel zugeordnet ist und wie häufig es im Demo-Sendungsbestand verwendet wird.'
   }),
   Object.freeze({
     view: 'team',
     role: 'Lager',
     employeeId: 'emp-06',
-    title: '10 · Rollen zeigen nur den passenden Arbeitskontext',
-    text: 'Zum Abschluss wechselt die Präsentation lokal in die Lagerrolle. Abholung und POD sind verfügbar, während Kundenverwaltung und andere nicht benötigte Aktionen ausgeblendet bleiben.'
+    title: '11 · Rollen zeigen nur den passenden Arbeitskontext',
+    text: 'Zum Ende des Prozessdurchlaufs wechselt die Präsentation lokal in die Lagerrolle. Abholung und POD sind verfügbar, während Kundenverwaltung und andere nicht benötigte Aktionen ausgeblendet bleiben.'
+  }),
+  Object.freeze({
+    view: 'conclusion',
+    title: '12 · Abschluss mit klarer Entscheidungsgrundlage',
+    text: 'Die Abschlussansicht fasst die gezeigten Prozessbausteine zusammen und leitet zu einem sinnvollen Folgegespräch über: den realen Exportprozess des Unternehmens gegen den Demo-Ablauf spiegeln.'
   })
 ]);
 
