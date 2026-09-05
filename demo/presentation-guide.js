@@ -23,14 +23,14 @@ export const TOUR_STEPS = Object.freeze([
   Object.freeze({
     view: 'shipments',
     shipmentId: 'sh-002',
-    title: '5 · Bereite Sendung an das Lager übergeben',
-    text: 'RWD302 besitzt die notwendigen Ausfuhrunterlagen und steht bereit zur Abholung. Der nächste zulässige Status ist damit eindeutig.'
+    title: '5 · QR-Abholung mit PIN und Colli prüfen',
+    text: 'RWD302 steht bereit zur Abholung. Über „QR-Abholung öffnen“ lässt sich die externe DEMO-Abholansicht zeigen: Verlade-PIN und physische Colli müssen stimmen, bevor der Status auf Abgeholt wechselt.'
   }),
   Object.freeze({
     view: 'shipments',
     shipmentId: 'sh-005',
     title: '6 · Abholung und POD sauber trennen',
-    text: 'Nach bestätigter Abholung sind operative Sendungsdaten gesperrt. Der fehlende POD bleibt als eigener Nachweisschritt sichtbar, bis er ergänzt wurde.'
+    text: 'RWD305 ist bereits abgeholt und operative Daten sind gesperrt. Über „POD-Nachweis öffnen“ wird der fehlende Nachweis als eigener Schritt ergänzt und die Nachweiskette abgeschlossen.'
   }),
   Object.freeze({
     view: 'avis',
