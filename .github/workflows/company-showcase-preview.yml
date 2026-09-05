@@ -43,6 +43,7 @@ jobs:
           node --check demo/demo-store.js
           node --check demo/demo-ui.js
           node --check demo/demo-shipments.js
+          node --check demo/demo-pickup.js
           node --check demo/demo-shipment-create.js
           node --check demo/demo-documents.js
           node --check demo/demo-document-output.js
@@ -63,6 +64,7 @@ jobs:
             'demo/demo-store.js',
             'demo/demo-ui.js',
             'demo/demo-shipments.js',
+            'demo/demo-pickup.js',
             'demo/demo-shipment-create.js',
             'demo/demo-documents.js',
             'demo/demo-document-output.js',
@@ -74,7 +76,7 @@ jobs:
             { name: 'Professional API', re: /\/api\//i },
             { name: 'Auth endpoint', re: /\/\.auth\//i },
             { name: 'fetch', re: /fetch\s*\(/i },
-            { name: 'network transport', re: /XMLHttpRequest|WebSocket|EventSource|sendBeacon/i },
+            { name: 'network or camera transport', re: /XMLHttpRequest|WebSocket|EventSource|sendBeacon|getUserMedia/i },
             { name: 'real mail', re: /mailto:/i }
           ];
           for (const file of files) {
@@ -83,7 +85,7 @@ jobs:
               if (check.re.test(source)) throw new Error(`${file}: verbotene ${check.name}-Verbindung gefunden`);
             }
           }
-          console.log(`OK: ${files.length} Demo-Module ohne API/Auth/Netzwerk/Mail-Verbindung`);
+          console.log(`OK: ${files.length} Demo-Module ohne API/Auth/Netzwerk/Kamera/Mail-Verbindung`);
           NODE
 
       - name: Prepare isolated slash demo payload
@@ -112,6 +114,8 @@ jobs:
           test -f .showcase-preview/demo/demo-store.js
           test -f .showcase-preview/demo/demo-ui.js
           test -f .showcase-preview/demo/demo-shipments.js
+          test -f .showcase-preview/demo/demo-pickup.js
+          test -f .showcase-preview/demo/demo-pickup.css
           test -f .showcase-preview/demo/demo-shipment-create.js
           test -f .showcase-preview/demo/demo-documents.js
           test -f .showcase-preview/demo/demo-document-output.js
