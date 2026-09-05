@@ -1,6 +1,7 @@
 import { CUSTOMER_BY_ID, EMPLOYEE_BY_ID, LOCATION_BY_ID, getMissingDocuments } from './demo-data.js';
 import { getState, setDocumentState, transitionShipment, canRole, createShipment } from './demo-store.js';
 import { initShipmentCreator } from './demo-shipment-create.js';
+import { initDemoPickupFlow } from './demo-pickup.js';
 
 const STATUS_ORDER = ['Entwurf','Erstellt','Bereit zur Abholung','Abgeholt','POD vorhanden','Abgeschlossen','Archiviert'];
 const DOC_LABELS = { delivery:'Lieferschein', l1:'L1 / QR', l2:'L2', cmr:'CMR', abd:'ABD', pod:'POD' };
@@ -57,8 +58,8 @@ function nextAction(shipment) {
     if (shipment.requiresAbd && shipment.documents?.abd !== true) return { label:'DEMO-ABD hinzufügen', action:'add-abd', capability:'editShipments', warn:true };
     return { label:'Bereit zur Abholung', action:'advance', capability:'editShipments' };
   }
-  if (shipment.status === 'Bereit zur Abholung') return { label:'Abholung bestätigen', action:'advance', capability:'confirmPickup' };
-  if (shipment.status === 'Abgeholt') return { label:'DEMO-POD hinzufügen', action:'add-pod', capability:'addPod' };
+  if (shipment.status === 'Bereit zur Abholung') return { label:'QR-Abholung öffnen', action:'open-pickup', capability:'confirmPickup' };
+  if (shipment.status === 'Abgeholt') return { label:'POD-Nachweis öffnen', action:'open-pickup', capability:'addPod' };
   if (shipment.status === 'POD vorhanden') return { label:'Sendung abschließen', action:'advance', capability:'editShipments' };
   if (shipment.status === 'Abgeschlossen') return { label:'Archivieren', action:'advance', capability:'editShipments' };
   return null;
@@ -86,6 +87,16 @@ function renderList(shipments, selectedId) {
       <div class="shipment-list-state"><span class="shipment-status ${statusClass(shipment.status)}">${escapeHtml(shipment.status)}</span>${missing.length ? `<small class="missing-note">${missing.length} Dokument${missing.length === 1 ? '' : 'e'} offen</small>` : '<small class="complete-note">Dokumente vollständig</small>'}</div>
     </button>`;
   }).join('');
+}
+
+function renderAction(allowedAction, shipment, action) {
+  if (allowedAction?.action === 'open-pickup') {
+    return `<button type="button" class="shipment-primary-action" data-shipment-action="open-pickup" data-shipment-id="${escapeHtml(shipment.id)}">${escapeHtml(allowedAction.label)}</button>`;
+  }
+  if (allowedAction) {
+    return `<button type="button" class="shipment-primary-action${allowedAction.warn ? ' warn' : ''}" data-shipment-action="${allowedAction.action}" data-shipment-id="${escapeHtml(shipment.id)}">${escapeHtml(allowedAction.label)}</button>`;
+  }
+  return action ? '<span class="shipment-finished">Aktion in dieser Rolle ausgeblendet</span>' : '<span class="shipment-finished">Vorgang archiviert</span>';
 }
 
 function renderDetail(shipment) {
@@ -154,7 +165,7 @@ function renderDetail(shipment) {
 
   <div class="shipment-detail-actions">
     <div><small>Präsentationsrolle ${escapeHtml(role)}</small><strong>${['Abgeholt','POD vorhanden','Abgeschlossen','Archiviert'].includes(shipment.status) ? 'Operative Daten gesperrt' : allowedAction ? 'Passende Demo-Aktion verfügbar' : 'Nur Ansicht für diese Rolle'}</strong></div>
-    ${allowedAction ? `<button type="button" class="shipment-primary-action${allowedAction.warn ? ' warn' : ''}" data-shipment-action="${allowedAction.action}" data-shipment-id="${escapeHtml(shipment.id)}">${escapeHtml(allowedAction.label)}</button>` : action ? '<span class="shipment-finished">Aktion in dieser Rolle ausgeblendet</span>' : '<span class="shipment-finished">Vorgang archiviert</span>'}
+    ${renderAction(allowedAction, shipment, action)}
   </div>`;
 }
 
@@ -186,6 +197,7 @@ export function initShipmentWorkspace({ onChange } = {}) {
 
   let selectedId = 'sh-001';
   let creator = null;
+  let pickupFlow = null;
 
   const refresh = () => {
     populateOwnerFilter();
@@ -221,14 +233,15 @@ export function initShipmentWorkspace({ onChange } = {}) {
     workspace.querySelectorAll('[data-shipment-action]').forEach(button => button.addEventListener('click', () => {
       const id = button.dataset.shipmentId;
       const action = button.dataset.shipmentAction;
+      if (action === 'open-pickup') {
+        pickupFlow?.open(id);
+        return;
+      }
       mutate(() => {
         const shipment = getState().shipments.find(item => item.id === id);
         if (!shipment) return;
         if (action === 'add-abd') setDocumentState(id, 'abd', true);
-        else if (action === 'add-pod') {
-          setDocumentState(id, 'pod', true);
-          transitionShipment(id, 'POD vorhanden');
-        } else if (action === 'advance') {
+        else if (action === 'advance') {
           const next = STATUS_ORDER[STATUS_ORDER.indexOf(shipment.status) + 1];
           if (next) transitionShipment(id, next);
         }
@@ -254,6 +267,13 @@ export function initShipmentWorkspace({ onChange } = {}) {
         message.hidden = false;
         message.textContent = `${created.reference} wurde als lokaler Demo-Entwurf angelegt.`;
       }
+      onChange?.();
+      refresh();
+    }
+  });
+
+  pickupFlow = initDemoPickupFlow({
+    onChange() {
       onChange?.();
       refresh();
     }
