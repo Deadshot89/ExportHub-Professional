@@ -13,6 +13,7 @@ const DEMO_RUNTIME_FILES = [
   'demo/demo-shipments.js',
   'demo/demo-documents.js',
   'demo/demo-avis.js',
+  'demo/demo-management.js',
   'demo/presentation-guide.js'
 ];
 
@@ -210,15 +211,18 @@ test('team workspace provides local role switching without authentication semant
   assert.doesNotMatch(html, /Passwort|Anmelden|Login/i);
 });
 
-test('guided presentation has ten valid steps that only reference existing demo views and records', async () => {
+test('guided presentation has twelve valid steps that only reference existing or injected demo views and records', async () => {
   assert.equal(exists('demo/presentation-guide.js'), true, 'demo/presentation-guide.js must exist');
   const guide = await import('../demo/presentation-guide.js');
   const data = await import('../demo/demo-data.js');
   const html = read('demo/index.html');
-  assert.equal(guide.TOUR_STEPS.length, 10);
+  const management = read('demo/demo-management.js');
+  assert.equal(guide.TOUR_STEPS.length, 12);
   const shipmentIds = new Set(data.DEMO_SHIPMENTS.map(item => item.id));
   for (const step of guide.TOUR_STEPS) {
-    assert.match(html, new RegExp(`data-demo-view="${step.view}"`), `tour references missing view: ${step.view}`);
+    const staticView = new RegExp(`data-demo-view="${step.view}"`).test(html);
+    const injectedView = new RegExp(`dataset\\.demoView = '${step.view}'`).test(management);
+    assert.equal(staticView || injectedView, true, `tour references missing view: ${step.view}`);
     if (step.shipmentId) assert.equal(shipmentIds.has(step.shipmentId), true, `tour references missing shipment: ${step.shipmentId}`);
     assert.ok(step.title?.length > 3);
     assert.ok(step.text?.length > 20);
