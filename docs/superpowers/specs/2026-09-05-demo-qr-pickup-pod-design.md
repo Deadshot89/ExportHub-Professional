@@ -31,7 +31,7 @@ Die Firmen-Demo zeigt den Abholprozess nicht mehr als direkten Statussprung, son
 
 ## TDD-Vertrag
 
-Die Implementierung muss folgende Fälle abdecken:
+Die Implementierung deckt folgende Fälle ab:
 
 - lokaler Pickup-Verweis und vierstelliger Demo-PIN
 - falscher PIN blockiert
@@ -47,8 +47,8 @@ Die Implementierung muss folgende Fälle abdecken:
 - RED: 147 Tests gesamt, 139 PASS, exakt 8 neue Pickup/POD-Verträge FAIL
 - GREEN: **147/147 PASS**
 - **11/11 Demo-Runtime-Module** ohne API/Auth/Netzwerk/Kamera/Mail
-- Professional CI **#305** / Run `33974969031`: PASS
-- Company Showcase Preview **#64** / Run `33974969125`: PASS
+- Professional CI **#306** / Run `33975103941`: PASS
+- Company Showcase Preview **#65** / Run `33975103947`: PASS
 - Azure-Deployment: Succeeded
 - Azure Functions/API im Preview: nicht erstellt
 - veröffentlichter `/demo/`-Endpunkt: HTTP-Smoke-Test PASS
