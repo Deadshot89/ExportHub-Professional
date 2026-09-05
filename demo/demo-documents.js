@@ -1,6 +1,7 @@
 import { CUSTOMER_BY_ID, requiredDocumentTypes } from './demo-data.js';
 import { getState } from './demo-store.js';
 import { initDocumentOutput } from './demo-document-output.js';
+import { initDocumentBundle } from './demo-document-bundle.js';
 
 export const DOCUMENT_LABELS = Object.freeze({
   delivery: 'Lieferschein',
@@ -59,6 +60,7 @@ export function initDocumentWorkspace({ onOpenShipment } = {}) {
   const workspace = document.getElementById('documentWorkspace');
   if (!workspace) return { refresh(){} };
   const documentOutput = initDocumentOutput({ getState });
+  const documentBundle = initDocumentBundle({ getState });
 
   const refresh = () => {
     const state = getState();
@@ -78,9 +80,10 @@ export function initDocumentWorkspace({ onOpenShipment } = {}) {
     workspace.innerHTML = rows.map(({ shipment, checklist, missing, customer }) => `<article class="ops-card document-card ${missing.length ? 'needs-action' : 'complete'}">
       <header><div><span class="ops-ref">${shipment.reference}</span><strong>${customer?.name || 'Demo-Kunde'}</strong><small>${shipment.destination}</small></div><span class="ops-state ${missing.length ? 'warn' : 'good'}">${missing.length ? `${missing.length} offen` : 'Vollständig'}</span></header>
       <div class="document-strip">${checklist.map(item => `<span class="doc-pill ${item.present ? 'present' : 'missing'}" title="${item.required ? 'Pflichtdokument' : 'Optional'}"><b>${item.present ? '✓' : '!'}</b><span class="doc-pill-copy"><strong>${item.label}</strong><small>${item.description}</small></span></span>`).join('')}</div>
-      <footer><span>${missing.length ? `Fehlt: ${missing.map(item => item.label).join(', ')}` : 'Alle erforderlichen Unterlagen sind vorhanden.'}</span><div class="document-card-actions"><button type="button" class="document-package-btn" data-doc-package="${shipment.id}">Dokumentpaket öffnen</button><button type="button" data-doc-open="${shipment.id}">Sendung öffnen →</button></div></footer>
+      <footer><span>${missing.length ? `Fehlt: ${missing.map(item => item.label).join(', ')}` : 'Alle erforderlichen Unterlagen sind vorhanden.'}</span><div class="document-card-actions"><button type="button" class="document-bundle-btn" data-doc-bundle="${shipment.id}">Gesamtausgabe öffnen</button><button type="button" class="document-package-btn" data-doc-package="${shipment.id}">Dokumentpaket öffnen</button><button type="button" data-doc-open="${shipment.id}">Sendung öffnen →</button></div></footer>
     </article>`).join('');
 
+    workspace.querySelectorAll('[data-doc-bundle]').forEach(button => button.addEventListener('click', () => documentBundle.open(button.dataset.docBundle)));
     workspace.querySelectorAll('[data-doc-package]').forEach(button => button.addEventListener('click', () => documentOutput.open(button.dataset.docPackage)));
     workspace.querySelectorAll('[data-doc-open]').forEach(button => button.addEventListener('click', () => onOpenShipment?.(button.dataset.docOpen)));
   };
