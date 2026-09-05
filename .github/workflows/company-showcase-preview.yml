@@ -49,6 +49,7 @@ jobs:
           node --check demo/demo-document-output.js
           node --check demo/demo-document-bundle.js
           node --check demo/demo-avis.js
+          node --check demo/demo-management.js
           node --check demo/presentation-guide.js
 
       - name: Verify fictional markers and runtime isolation
@@ -70,6 +71,7 @@ jobs:
             'demo/demo-document-output.js',
             'demo/demo-document-bundle.js',
             'demo/demo-avis.js',
+            'demo/demo-management.js',
             'demo/presentation-guide.js'
           ];
           const forbidden = [
@@ -123,6 +125,8 @@ jobs:
           test -f .showcase-preview/demo/demo-document-bundle.js
           test -f .showcase-preview/demo/demo-document-bundle.css
           test -f .showcase-preview/demo/demo-avis.js
+          test -f .showcase-preview/demo/demo-management.js
+          test -f .showcase-preview/demo/demo-management.css
           test -f .showcase-preview/demo/presentation-guide.js
           grep -Fq 'DEMO / MUSTER' .showcase-preview/demo/index.html
 
