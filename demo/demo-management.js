@@ -1,7 +1,12 @@
 import { getMissingDocuments, requiredDocumentTypes } from './demo-data.js';
+import { getState as getDemoState } from './demo-store.js';
 
 const CLOSED_STATUSES = new Set(['Abgeschlossen', 'Archiviert']);
 const PRIORITIES = ['P0', 'P1', 'P2', 'P3', 'P4'];
+const PRESENTATION_TITLES = Object.freeze({
+  management: 'Management',
+  conclusion: 'Präsentationsabschluss'
+});
 
 const escapeHtml = value => String(value ?? '')
   .replaceAll('&', '&amp;')
@@ -48,6 +53,71 @@ export function getManagementSnapshot({ shipments = [], tasks = [] } = {}) {
   };
 }
 
+function ensureManagementStyles() {
+  if (document.querySelector('link[data-demo-management-styles]')) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = './demo-management.css';
+  link.dataset.demoManagementStyles = 'true';
+  document.head.append(link);
+}
+
+function ensureManagementShell() {
+  const nav = document.querySelector('.demo-nav');
+  const workspace = document.querySelector('.workspace');
+  if (!nav || !workspace) return;
+
+  if (!nav.querySelector('[data-view="management"]')) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.view = 'management';
+    button.innerHTML = '<span>◈</span>Management';
+    nav.prepend(button);
+  }
+
+  if (!nav.querySelector('[data-view="conclusion"]')) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.view = 'conclusion';
+    button.innerHTML = '<span>◆</span>Präsentationsabschluss';
+    nav.append(button);
+  }
+
+  if (!workspace.querySelector('[data-demo-view="management"]')) {
+    const section = document.createElement('section');
+    section.className = 'view';
+    section.dataset.demoView = 'management';
+    section.innerHTML = '<div class="ops-page-head"><div><span class="eyebrow">MANAGEMENT & STEUERUNG</span><h3>Exportprozesse als Lagebild führen</h3><p>Alle Werte werden aus den fiktiven Demo-Sendungen, Aufgaben und Pflichtdokumenten berechnet.</p></div><span class="status-chip neutral">DEMO / MUSTER</span></div><div id="managementWorkspace"></div>';
+    workspace.prepend(section);
+  }
+
+  if (!workspace.querySelector('[data-demo-view="conclusion"]')) {
+    const section = document.createElement('section');
+    section.className = 'view';
+    section.dataset.demoView = 'conclusion';
+    section.innerHTML = '<div id="conclusionWorkspace"></div>';
+    workspace.append(section);
+  }
+}
+
+function activateStandaloneView(view) {
+  if (!PRESENTATION_TITLES[view]) return;
+  document.querySelectorAll('.view').forEach(section => section.classList.toggle('active', section.dataset.demoView === view));
+  document.querySelectorAll('.demo-nav button[data-view]').forEach(button => button.classList.toggle('active', button.dataset.view === view));
+  const title = document.getElementById('viewTitle');
+  if (title) title.textContent = PRESENTATION_TITLES[view];
+  document.getElementById('demoSidebar')?.classList.remove('open');
+  document.getElementById('demoApp')?.scrollIntoView({ block: 'start' });
+}
+
+function openViaNavigation(view) {
+  if (PRESENTATION_TITLES[view]) {
+    activateStandaloneView(view);
+    return;
+  }
+  document.querySelector(`.demo-nav button[data-view="${view}"]`)?.click();
+}
+
 function renderManagement(state, openView, openShipment) {
   const workspace = document.getElementById('managementWorkspace');
   if (!workspace) return;
@@ -66,7 +136,7 @@ function renderManagement(state, openView, openShipment) {
     : '<div class="management-empty">Im aktuellen Demo-Bestand gibt es keinen offenen Handlungsbedarf.</div>';
 
   workspace.innerHTML = `<section class="management-hero panel">
-      <div><span class="eyebrow">MANAGEMENT-LAGEBILD · DEMO / MUSTER</span><h3>Management-Lagebild für Export & Logistik</h3><p>Die Kennzahlen werden direkt aus dem lokalen Demo-Bestand berechnet. Sie zeigen Arbeitsvorrat, Dokumentenqualität, kritische Aufgaben und Prozesslücken – ohne erfundene Nutzen- oder ROI-Werte.</p></div>
+      <div><span class="eyebrow">MANAGEMENT-LAGEBILD · DEMO / MUSTER</span><h3>Management-Lagebild für Export & Logistik</h3><p>Die Kennzahlen werden direkt aus dem lokalen Demo-Bestand berechnet. Sie zeigen Arbeitsvorrat, Dokumentenqualität, kritische Aufgaben und Prozesslücken – ohne erfundene Nutzen- oder Wirtschaftlichkeitswerte.</p></div>
       <div class="management-hero-status"><small>Beispieldaten</small><strong>${snapshot.openShipments}</strong><span>offene Sendungen im Demo-Bestand</span></div>
     </section>
 
@@ -121,12 +191,38 @@ function renderConclusion(state, openView) {
 }
 
 export function initManagementWorkspace({ getState, openView, openShipment } = {}) {
+  const stateReader = getState || getDemoState;
   const refresh = () => {
-    const state = getState?.();
+    const state = stateReader?.();
     if (!state) return;
     renderManagement(state, openView, openShipment);
     renderConclusion(state, openView);
   };
   refresh();
   return { refresh };
+}
+
+function initStandaloneManagement() {
+  ensureManagementStyles();
+  ensureManagementShell();
+  const workspace = initManagementWorkspace({
+    getState: getDemoState,
+    openView: openViaNavigation,
+    openShipment: () => openViaNavigation('shipments')
+  });
+
+  document.querySelectorAll('.demo-nav button[data-view="management"], .demo-nav button[data-view="conclusion"]').forEach(button => {
+    button.addEventListener('click', () => {
+      workspace.refresh();
+      activateStandaloneView(button.dataset.view);
+    });
+  });
+
+  document.getElementById('demoResetBtn')?.addEventListener('click', () => queueMicrotask(() => workspace.refresh()));
+  window.addEventListener('storage', () => workspace.refresh());
+}
+
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initStandaloneManagement, { once: true });
+  else initStandaloneManagement();
 }
