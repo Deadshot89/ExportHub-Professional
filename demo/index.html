@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b1f33">
+  <title>ExportHUB Professional · Firmen-Demo</title>
+  <link rel="stylesheet" href="./demo.css">
+  <link rel="stylesheet" href="./demo-shipments.css">
+  <link rel="stylesheet" href="./demo-pickup.css">
+  <link rel="stylesheet" href="./demo-operations.css">
+  <link rel="stylesheet" href="./demo-presentation.css">
+  <link rel="stylesheet" href="./demo-commercial-polish.css">
+</head>
+<body>
+  <div class="demo-ribbon" role="status"><strong>DEMO / MUSTER</strong><span>Ausschließlich fiktive Beispieldaten · keine Verbindung zu Produktivdaten</span></div>
+
+  <section class="showcase-intro" id="showcaseIntro">
+    <div class="showcase-copy">
+      <div class="eyebrow">EXPORT & LOGISTICS CONTROL CENTER</div>
+      <h1>Exportprozesse steuern, bevor aus offenen Punkten Verzögerungen werden.</h1>
+      <p>ExportHUB Professional verbindet Sendungen, Aufgaben, Dokumente, Abholung und Nachweise in einem gemeinsamen Arbeitsbereich. Diese Präsentation zeigt den Ablauf mit vollständig fiktiven Daten.</p>
+      <div class="intro-actions">
+        <button type="button" class="primary-btn" id="startTourBtn">Geführte Tour starten</button>
+        <button type="button" class="secondary-btn" id="exploreBtn">Demo frei erkunden</button>
+      </div>
+      <div class="trust-row" aria-label="Demo-Eigenschaften">
+        <span>✓ Rollenbasierte Arbeitsbereiche</span>
+        <span>✓ Dokumenten- & ABD-Status</span>
+        <span>✓ Abholung bis POD nachvollziehbar</span>
+      </div>
+      <div class="showcase-proof-grid" aria-label="Geschäftlicher Nutzen">
+        <article class="showcase-proof"><i>01</i><strong>Zentrale Steuerung</strong><span>Sendungen, Aufgaben, Dokumente und Nachweise in einem gemeinsamen Arbeitskontext.</span></article>
+        <article class="showcase-proof"><i>02</i><strong>Klare Verantwortung</strong><span>Rolle, zuständige Person und nächster Arbeitsschritt bleiben direkt am Vorgang sichtbar.</span></article>
+        <article class="showcase-proof"><i>03</i><strong>Dokumentensicherheit</strong><span>Pflichtunterlagen, ABD-Sperren und fehlende Nachweise werden vor dem nächsten Schritt sichtbar.</span></article>
+        <article class="showcase-proof"><i>04</i><strong>Nachvollziehbarer Abschluss</strong><span>Abholung, POD und Statuskette führen den Vorgang kontrolliert bis zum Abschluss.</span></article>
+      </div>
+    </div>
+    <div class="showcase-preview" aria-hidden="true">
+      <div class="preview-window">
+        <div class="preview-head"><span></span><span></span><span></span><b>ExportHUB Professional</b></div>
+        <div class="preview-kpis">
+          <div><small>Offene Sendungen</small><strong id="introMetricOpen">–</strong></div>
+          <div><small>Abholungen heute</small><strong id="introMetricPickup">–</strong></div>
+          <div class="preview-alert"><small>Handlungsbedarf</small><strong id="introMetricAction">–</strong></div>
+        </div>
+        <div class="preview-list">
+          <span><i class="dot critical"></i> ABD fehlt · RWD301</span>
+          <span><i class="dot warning"></i> Lieferschein fehlt · RWD303</span>
+          <span><i class="dot good"></i> Bereit zur Abholung · RWD302</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="demo-app" id="demoApp">
+    <aside class="sidebar" id="demoSidebar">
+      <div class="brand-block">
+        <div class="brand-mark">EH</div>
+        <div><strong>ExportHUB</strong><small>Professional</small></div>
+      </div>
+      <div class="company-card">
+        <small>DEMO-FIRMA</small>
+        <strong>Rheinwerk Industrial<br>Solutions GmbH</strong>
+        <span>rheinwerk-demo</span>
+      </div>
+      <nav class="demo-nav" aria-label="Demo-Navigation">
+        <button type="button" class="active" data-view="overview"><span>⌂</span>Übersicht</button>
+        <button type="button" data-view="shipments"><span>▣</span>Sendungen</button>
+        <button type="button" data-view="tasks"><span>✓</span>Aufgaben & Planung</button>
+        <button type="button" data-view="documents"><span>▤</span>Dokumente</button>
+        <button type="button" data-view="customers"><span>◫</span>Kunden</button>
+        <button type="button" data-view="locations"><span>⌖</span>Standorte</button>
+        <button type="button" data-view="avis"><span>↗</span>Kunden-Avis</button>
+        <button type="button" data-view="team"><span>◎</span>Team & Rollen</button>
+      </nav>
+      <div class="sidebar-foot">
+        <button type="button" class="reset-btn" id="demoResetBtn">↻ Demo zurücksetzen</button>
+        <small>Lokale Präsentationsdaten</small>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <header class="workspace-topbar">
+        <button type="button" class="mobile-menu" id="mobileMenuBtn" aria-label="Navigation öffnen">☰</button>
+        <div>
+          <div class="eyebrow">LOGISTICS CONTROL CENTER</div>
+          <h2 id="viewTitle">Übersicht</h2>
+        </div>
+        <div class="topbar-actions">
+          <div class="role-pill"><span class="role-dot"></span><div><small>Präsentationsrolle</small><strong id="activeRoleName">Exportkoordination</strong></div></div>
+          <button type="button" class="ghost-btn" id="restartTourBtn">Tour starten</button>
+        </div>
+      </header>
+
+      <section class="view active" data-demo-view="overview">
+        <div class="today-panel">
+          <div><span class="eyebrow">HEUTE IM EXPORT</span><strong>Donnerstag, 03. September 2026</strong><small>Rheinwerk Industrial Solutions GmbH · DEMO / MUSTER</small></div>
+          <div class="today-status"><span class="status-chip good">Demo-Daten aktiv</span><span class="status-chip neutral">Kein Backend</span></div>
+        </div>
+
+        <div class="operations-signal-strip" aria-label="Operative Tageslage">
+          <article class="operations-signal info"><i>EX</i><div><strong>Exportstatus</strong><small>Arbeitsvorrat nach Priorität und Prozessstatus strukturiert.</small></div><span>gesteuert</span></article>
+          <article class="operations-signal warning"><i>DO</i><div><strong>Dokumentenlage</strong><small>Pflichtunterlagen und ABD-Sperren direkt vor der Freigabe prüfen.</small></div><span>prüfen</span></article>
+          <article class="operations-signal"><i>PO</i><div><strong>Abholung &amp; POD</strong><small>Abholung bestätigen, Nachweis ergänzen und Vorgang sauber abschließen.</small></div><span>nachverfolgbar</span></article>
+        </div>
+
+        <div class="kpi-grid" id="overviewKpis">
+          <article class="kpi-card" data-kpi-tone="info"><div class="kpi-icon">▣</div><div><span>Offene Sendungen</span><strong id="metricOpen">–</strong><small>noch nicht abgeschlossen</small><small class="kpi-context">Arbeitsvorrat priorisieren</small></div></article>
+          <article class="kpi-card" data-kpi-tone="positive"><div class="kpi-icon">⇄</div><div><span>Abholungen heute</span><strong id="metricPickups">–</strong><small>geplante Abholungen</small><small class="kpi-context">Tagesfenster im Blick</small></div></article>
+          <article class="kpi-card" data-kpi-tone="warning"><div class="kpi-icon">▤</div><div><span>Fehlende Dokumente</span><strong id="metricDocuments">–</strong><small>über alle Pflichtdokumente</small><small class="kpi-context">vor Freigabe schließen</small></div></article>
+          <article class="kpi-card attention" data-kpi-tone="critical"><div class="kpi-icon">!</div><div><span>Handlungsbedarf</span><strong id="metricAction">–</strong><small>Vorgänge mit offenem Punkt</small><small class="kpi-context">zuerst bearbeiten</small></div></article>
+        </div>
+
+        <div class="overview-grid">
+          <section class="panel focus-panel">
+            <header class="panel-head"><div><span class="eyebrow">PRIORISIERT</span><h3>Heute im Versand</h3></div><button type="button" class="text-btn" data-open-view="shipments">Alle Sendungen →</button></header>
+            <div class="shipment-focus-list" id="priorityShipmentList"></div>
+          </section>
+
+          <section class="panel action-panel">
+            <header class="panel-head"><div><span class="eyebrow">PRÜFEN</span><h3>Handlungsbedarf</h3></div><span class="count-badge" id="actionCountBadge">0 offen</span></header>
+            <div class="action-list" id="actionList"></div>
+          </section>
+        </div>
+
+        <div class="overview-grid lower-grid">
+          <section class="panel quick-panel">
+            <header class="panel-head"><div><span class="eyebrow">SCHNELLSTART</span><h3>Nächster Arbeitsschritt</h3></div></header>
+            <div class="quick-actions">
+              <button type="button" data-open-view="shipments"><span>＋</span><strong>Sendung bearbeiten</strong><small>Priorisierte Vorgänge öffnen</small></button>
+              <button type="button" data-open-view="documents"><span>▤</span><strong>Dokumente prüfen</strong><small>Fehlende Nachweise erkennen</small></button>
+              <button type="button" data-open-view="tasks"><span>✓</span><strong>Aufgaben planen</strong><small>Zuständigkeit und Fälligkeit</small></button>
+              <button type="button" data-open-view="avis"><span>↗</span><strong>Kunden-Avis</strong><small>Externe Ansicht vorbereiten</small></button>
+            </div>
+          </section>
+
+          <section class="panel activity-panel">
+            <header class="panel-head"><div><span class="eyebrow">NACHVOLLZIEHBAR</span><h3>Letzte Aktivitäten</h3></div></header>
+            <div class="activity-list" id="activityList"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" data-demo-view="shipments">
+        <div class="shipment-page-head">
+          <div><span class="eyebrow">OPERATIVE SENDUNGSSTEUERUNG</span><h3>Sendungen im Arbeitsfluss</h3><p>Fiktive Vorgänge von Entwurf über ABD und Abholung bis POD und Abschluss.</p></div>
+          <div class="shipment-head-actions"><div class="shipment-head-meta"><span class="status-chip neutral">DEMO / MUSTER</span><small>Änderungen bleiben nur in diesem Browser.</small></div><button type="button" class="shipment-create-trigger" id="shipmentCreateBtn">＋ Neue Demo-Sendung</button></div>
+        </div>
+        <div id="shipmentMessage" class="shipment-message" hidden></div>
+        <div class="shipment-filter-bar">
+          <label class="shipment-search-field"><span>Suche</span><input id="shipmentSearch" type="search" placeholder="Referenz, Kunde, Ziel oder Verantwortlicher"></label>
+          <label><span>Status</span><select id="shipmentStatusFilter"><option value="all">Alle Status</option><option>Entwurf</option><option>Erstellt</option><option>Bereit zur Abholung</option><option>Abgeholt</option><option>POD vorhanden</option><option>Abgeschlossen</option><option>Archiviert</option></select></label>
+          <label><span>Verantwortlich</span><select id="shipmentOwnerFilter"><option value="all">Alle Verantwortlichen</option></select></label>
+          <label><span>Region</span><select id="shipmentRegionFilter"><option value="all">EU & Nicht-EU</option><option value="eu">EU</option><option value="non-eu">Nicht-EU</option></select></label>
+          <label class="shipment-check"><input id="shipmentAttentionFilter" type="checkbox"><span>Nur Handlungsbedarf</span></label>
+        </div>
+        <div class="shipment-workspace" id="shipmentWorkspace">
+          <section class="shipment-master panel">
+            <header class="shipment-master-head"><div><span class="eyebrow">SENDUNGSLISTE</span><h4>Arbeitsvorrat</h4></div><span id="shipmentResultMeta">0 Sendungen</span></header>
+            <div id="shipmentList" class="shipment-list"></div>
+          </section>
+          <aside class="shipment-detail panel" id="shipmentDetail"></aside>
+        </div>
+        <div class="shipment-create-backdrop" id="shipmentCreateDrawer" hidden>
+          <aside class="shipment-create-drawer" role="dialog" aria-modal="true" aria-label="Neue Demo-Sendung erstellen"><div id="shipmentCreateForm"></div></aside>
+        </div>
+      </section>
+
+      <section class="view" data-demo-view="tasks">
+        <div class="ops-page-head"><div><span class="eyebrow">AUFGABEN & PLANUNG</span><h3>Arbeit nach Priorität und Zuständigkeit</h3><p>Offene Schritte sind direkt mit den fiktiven Sendungen verknüpft und können lokal abgeschlossen werden.</p></div><div id="taskSummary" class="ops-summary"></div></div>
+        <div id="taskWorkspace" class="task-workspace"></div>
+      </section>
+
+      <section class="view" data-demo-view="documents">
+        <div class="ops-page-head"><div><span class="eyebrow">DOKUMENTENKONTROLLE</span><h3>Pflichtunterlagen auf einen Blick</h3><p>Pflichtunterlagen werden je nach Sendungsart und Status geprüft. Die internen ExportHUB-Ausgaben L1 und L2 werden hier direkt erklärt.</p></div><div id="documentSummary" class="ops-summary"></div></div>
+        <div class="document-guide-grid" aria-label="Dokumentarten erklärt">
+          <article><span>LS</span><div><strong>Lieferschein</strong><small>Waren- und Liefernachweis zur Sendung.</small></div><b>Basis</b></article>
+          <article class="internal"><span>L1</span><div><strong>L1 / QR · Interne L1-Ausgabe</strong><small>QR-Code für Abholung und Verladung; unterstützt den Abholprozess.</small></div><b>ExportHUB</b></article>
+          <article class="internal"><span>L2</span><div><strong>Interne L2-Ausgabe</strong><small>Versand-/Speditionsunterlage für die operative Weitergabe.</small></div><b>ExportHUB</b></article>
+          <article><span>CMR</span><div><strong>CMR-Frachtbrief</strong><small>Frachtbrief für grenzüberschreitende Straßentransporte.</small></div><b>Ausland</b></article>
+          <article><span>ABD</span><div><strong>Ausfuhrbegleitdokument</strong><small>Nachweis für ausfuhrpflichtige Nicht-EU-Sendungen.</small></div><b>bei Pflicht</b></article>
+          <article><span>POD</span><div><strong>Proof of Delivery</strong><small>Zustell- bzw. Abliefernachweis nach der Abholung.</small></div><b>nach Abholung</b></article>
+        </div>
+        <div class="document-legend"><span><i class="legend-dot present"></i>vorhanden</span><span><i class="legend-dot missing"></i>fehlt / erforderlich</span><strong>DEMO / MUSTER</strong></div>
+        <div id="documentWorkspace" class="document-workspace"></div>
+      </section>
+
+      <section class="view" data-demo-view="customers">
+        <div class="ops-page-head"><div><span class="eyebrow">KUNDENSTAMM</span><h3>Kunden mit operativem Kontext</h3><p>Die Demo zeigt Kunden, Standorte und Sendungsbezug kompakt, ohne produktive Stammdaten zu verwenden.</p></div><div class="ops-summary"><strong>8</strong><span>8 Demo-Kunden</span></div></div>
+        <div class="masterdata-demo-workspace" id="customerWorkspace">
+          <section class="panel masterdata-demo-list"><header class="ops-panel-head"><div><span class="eyebrow">KUNDEN</span><h3>Fiktiver Kundenbestand</h3></div><span class="status-chip neutral">nur Demo</span></header><div id="customerList"></div></section>
+          <aside class="panel masterdata-demo-detail" id="customerDetail"></aside>
+        </div>
+      </section>
+
+      <section class="view" data-demo-view="locations">
+        <div class="ops-page-head"><div><span class="eyebrow">LIEFERSTANDORTE</span><h3>Ziele nach Kunde und Land prüfen</h3><p>Jeder Standort ist einem fiktiven Kunden zugeordnet und wird mit seiner Nutzung im Demo-Sendungsbestand gezeigt.</p></div><div class="ops-summary"><strong>12</strong><span>12 Demo-Standorte</span></div></div>
+        <div id="locationQualitySummary" class="location-quality-summary"></div>
+        <div id="locationWorkspace" class="location-demo-grid"></div>
+      </section>
+
+      <section class="view" data-demo-view="avis">
+        <div class="ops-page-head"><div><span class="eyebrow">KUNDEN-AVIS</span><h3>Externe Abholinformation sicher präsentieren</h3><p>Der Ablauf wird vollständig lokal simuliert. Es entsteht weder ein öffentlicher Token noch ein echter Mailversand.</p></div><span class="status-chip good">Nur Demo-Vorschau</span></div>
+        <div id="avisWorkspace" class="avis-workspace"></div>
+      </section>
+
+      <section class="view" data-demo-view="team">
+        <div class="ops-page-head"><div><span class="eyebrow">TEAM & ROLLEN</span><h3>Unterschiedliche Arbeitskontexte präsentieren</h3><p>Der Rollenwechsel ist eine rein lokale Präsentationsfunktion. Er verändert nur, welche Demo-Aktionen sichtbar sind.</p></div><div id="teamRoleSummary" class="ops-summary"></div></div>
+        <div id="teamWorkspace" class="team-workspace">
+          <section class="panel role-selector-panel">
+            <header class="ops-panel-head"><div><span class="eyebrow">ROLLE WÄHLEN</span><h3>Präsentationsansicht</h3></div><span class="status-chip neutral">lokal</span></header>
+            <div class="role-selector-grid">
+              <button type="button" data-demo-role="Firmenadmin" data-demo-employee="emp-01"><span>FA</span><strong>Firmenadmin</strong><small>Gesamtüberblick & Stammdaten</small></button>
+              <button type="button" data-demo-role="Exportkoordination" data-demo-employee="emp-02"><span>EX</span><strong>Exportkoordination</strong><small>Sendungen, Aufgaben & Avis</small></button>
+              <button type="button" data-demo-role="Teamleitung" data-demo-employee="emp-03"><span>TL</span><strong>Teamleitung</strong><small>Teamarbeit & Priorisierung</small></button>
+              <button type="button" data-demo-role="Lager" data-demo-employee="emp-06"><span>LA</span><strong>Lager</strong><small>Abholung & POD</small></button>
+              <button type="button" data-demo-role="Sachbearbeitung" data-demo-employee="emp-04"><span>SB</span><strong>Sachbearbeitung</strong><small>Operative Sendungsarbeit</small></button>
+              <button type="button" data-demo-role="Auditor" data-demo-employee="emp-10"><span>AU</span><strong>Auditor</strong><small>Nur lesen & nachvollziehen</small></button>
+            </div>
+          </section>
+          <section class="panel role-context-panel"><header class="ops-panel-head"><div><span class="eyebrow">AKTIVER KONTEXT</span><h3 id="teamActiveRole">Exportkoordination</h3></div></header><div id="teamRoleDetail"></div></section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="demo-pickup-backdrop" id="demoPickupDrawer" hidden>
+    <aside class="demo-pickup-panel" role="dialog" aria-modal="true" aria-label="Externe Abholansicht">
+      <header class="demo-pickup-toolbar">
+        <div><span>EXTERNE ABHOLANSICHT</span><strong>QR-Abholung & POD</strong><small>Lokale Präsentation ohne Kamera, Backend oder öffentliche Freigabe</small></div>
+        <button type="button" data-demo-pickup-close aria-label="Abholansicht schließen">×</button>
+      </header>
+      <div id="demoPickupWorkspace" class="demo-pickup-workspace"></div>
+    </aside>
+  </div>
+
+  <aside class="tour-dock" id="tourDock" hidden aria-live="polite">
+    <div class="tour-progress"><span>GEFÜHRTE EXPORT-HUB-TOUR</span><strong id="tourStepCount">1 / 10</strong></div>
+    <h3 id="tourStepTitle">Unternehmensüberblick</h3>
+    <p id="tourStepText">Die Demo führt durch die wichtigsten ExportHUB-Abläufe.</p>
+    <div class="tour-controls"><button type="button" id="tourPrevBtn">Zurück</button><button type="button" class="tour-next" id="tourNextBtn">Weiter</button><button type="button" class="tour-close" id="tourCloseBtn" aria-label="Tour schließen">×</button></div>
+  </aside>
+
+  <div class="demo-notice" id="demoNotice" hidden><strong>Demo zurückgesetzt</strong><span>Der lokale Ausgangsstand wurde wiederhergestellt.</span><button type="button" id="demoNoticeClose">×</button></div>
+
+  <script type="module" src="./demo-ui.js"></script>
+</body>
+</html>

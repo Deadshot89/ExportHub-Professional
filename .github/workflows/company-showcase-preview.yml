@@ -1,0 +1,177 @@
+name: ExportHUB Company Showcase Preview
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, closed]
+    paths:
+      - 'demo/**'
+      - 'test/company-showcase*.test.mjs'
+      - '.github/workflows/professional-ci.yml'
+      - '.github/workflows/company-showcase-preview.yml'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: exporthub-company-showcase-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-deploy:
+    if: github.event.action != 'closed' && github.head_ref == 'demo/company-showcase'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout showcase branch
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run complete Professional test suite
+        run: npm test
+
+      - name: Validate every demo runtime module
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check demo/demo-data.js
+          node --check demo/demo-store.js
+          node --check demo/demo-ui.js
+          node --check demo/demo-shipments.js
+          node --check demo/demo-pickup.js
+          node --check demo/demo-shipment-create.js
+          node --check demo/demo-documents.js
+          node --check demo/demo-document-output.js
+          node --check demo/demo-document-bundle.js
+          node --check demo/demo-avis.js
+          node --check demo/demo-management.js
+          node --check demo/presentation-guide.js
+
+      - name: Verify fictional markers and runtime isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'Rheinwerk Industrial Solutions GmbH' demo/index.html
+          grep -Fq 'DEMO / MUSTER' demo/index.html
+          node - <<'NODE'
+          const fs = require('fs');
+          const files = [
+            'demo/demo-data.js',
+            'demo/demo-store.js',
+            'demo/demo-ui.js',
+            'demo/demo-shipments.js',
+            'demo/demo-pickup.js',
+            'demo/demo-shipment-create.js',
+            'demo/demo-documents.js',
+            'demo/demo-document-output.js',
+            'demo/demo-document-bundle.js',
+            'demo/demo-avis.js',
+            'demo/demo-management.js',
+            'demo/presentation-guide.js'
+          ];
+          const forbidden = [
+            { name: 'Professional API', re: /\/api\//i },
+            { name: 'Auth endpoint', re: /\/\.auth\//i },
+            { name: 'fetch', re: /fetch\s*\(/i },
+            { name: 'network or camera transport', re: /XMLHttpRequest|WebSocket|EventSource|sendBeacon|getUserMedia/i },
+            { name: 'real mail', re: /mailto:/i }
+          ];
+          for (const file of files) {
+            const source = fs.readFileSync(file, 'utf8');
+            for (const check of forbidden) {
+              if (check.re.test(source)) throw new Error(`${file}: verbotene ${check.name}-Verbindung gefunden`);
+            }
+          }
+          console.log(`OK: ${files.length} Demo-Module ohne API/Auth/Netzwerk/Kamera/Mail-Verbindung`);
+          NODE
+
+      - name: Prepare isolated slash demo payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .showcase-preview
+          mkdir -p .showcase-preview
+          cp -R demo .showcase-preview/demo
+          cat > .showcase-preview/index.html <<'HTML'
+          <!doctype html>
+          <html lang="de">
+          <head>
+            <meta charset="utf-8">
+            <meta http-equiv="refresh" content="0;url=/demo/">
+            <meta name="robots" content="noindex,nofollow">
+            <title>ExportHUB Professional · Demo</title>
+          </head>
+          <body><p><a href="/demo/">ExportHUB Professional Demo öffnen</a></p></body>
+          </html>
+          HTML
+          test -f .showcase-preview/index.html
+          test -f .showcase-preview/demo/index.html
+          test -f .showcase-preview/demo/demo.css
+          test -f .showcase-preview/demo/demo-data.js
+          test -f .showcase-preview/demo/demo-store.js
+          test -f .showcase-preview/demo/demo-ui.js
+          test -f .showcase-preview/demo/demo-shipments.js
+          test -f .showcase-preview/demo/demo-pickup.js
+          test -f .showcase-preview/demo/demo-pickup.css
+          test -f .showcase-preview/demo/demo-shipment-create.js
+          test -f .showcase-preview/demo/demo-documents.js
+          test -f .showcase-preview/demo/demo-document-output.js
+          test -f .showcase-preview/demo/demo-document-output.css
+          test -f .showcase-preview/demo/demo-document-bundle.js
+          test -f .showcase-preview/demo/demo-document-bundle.css
+          test -f .showcase-preview/demo/demo-avis.js
+          test -f .showcase-preview/demo/demo-management.js
+          test -f .showcase-preview/demo/demo-management.css
+          test -f .showcase-preview/demo/presentation-guide.js
+          grep -Fq 'DEMO / MUSTER' .showcase-preview/demo/index.html
+
+      - name: Verify Azure deployment token
+        shell: bash
+        env:
+          AZURE_STATIC_WEB_APPS_API_TOKEN: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+        run: |
+          if [[ -z "${AZURE_STATIC_WEB_APPS_API_TOKEN}" ]]; then
+            echo '::error::AZURE_STATIC_WEB_APPS_API_TOKEN fehlt; Demo-Preview kann nicht bereitgestellt werden.'
+            exit 1
+          fi
+
+      - name: Deploy isolated company showcase preview
+        id: deploy
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: .showcase-preview
+          output_location: ''
+          skip_app_build: true
+
+      - name: Smoke-check deployed slash demo
+        shell: bash
+        env:
+          STATIC_WEB_APP_URL: ${{ steps.deploy.outputs.static_web_app_url }}
+        run: |
+          set -euo pipefail
+          test -n "${STATIC_WEB_APP_URL}"
+          demo_url="${STATIC_WEB_APP_URL%/}/demo/"
+          body_file="$(mktemp)"
+          curl --fail --silent --show-error --location --retry 6 --retry-delay 3 --retry-all-errors "${demo_url}" --output "${body_file}"
+          grep -Fq 'ExportHUB Professional' "${body_file}"
+          grep -Fq 'DEMO / MUSTER' "${body_file}"
+          grep -Fq 'Rheinwerk Industrial Solutions GmbH' "${body_file}"
+          echo "Company showcase verified: ${demo_url}"
+
+  close-preview:
+    if: github.event.action == 'closed' && github.head_ref == 'demo/company-showcase'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close showcase preview environment
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: close
