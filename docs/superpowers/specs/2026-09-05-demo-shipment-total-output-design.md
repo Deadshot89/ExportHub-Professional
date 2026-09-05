@@ -31,3 +31,11 @@ Die Firmen-Demo erhält pro Sendung zusätzlich zum bestehenden Einzel-Dokument-
 - POD nur nach Abholung
 - offene Dokumente werden auf dem Deckblatt als Handlungsbedarf ausgewiesen
 - vollständiger Professional-Testlauf, Syntaxprüfung, Demo-Isolationsscan, Azure-Preview und HTTP-Smoke-Test müssen grün sein
+
+## Verifikation
+
+Verifizierter Funktionsstand vor Dokumentationsabschluss:
+
+- Professional Tests: 139/139 PASS
+- Demo-Isolation: 10/10 Runtime-Module ohne API/Auth/Netzwerk/Mail
+- Azure Company Showcase Preview und HTTP-Smoke-Test: PASS
