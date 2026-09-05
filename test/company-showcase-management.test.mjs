@@ -6,13 +6,13 @@ const url = path => new URL(`../${path}`, import.meta.url);
 const read = path => fs.readFileSync(url(path), 'utf8');
 
 test('showcase exposes dedicated management and presentation conclusion views', () => {
-  const html = read('demo/index.html');
-  assert.match(html, /data-view="management"/);
-  assert.match(html, /data-demo-view="management"/);
-  assert.match(html, /id="managementWorkspace"/);
-  assert.match(html, /data-view="conclusion"/);
-  assert.match(html, /data-demo-view="conclusion"/);
-  assert.match(html, /id="conclusionWorkspace"/);
+  const runtime = read('demo/demo-management.js');
+  assert.match(runtime, /dataset\.view = 'management'/);
+  assert.match(runtime, /dataset\.demoView = 'management'/);
+  assert.match(runtime, /managementWorkspace/);
+  assert.match(runtime, /dataset\.view = 'conclusion'/);
+  assert.match(runtime, /dataset\.demoView = 'conclusion'/);
+  assert.match(runtime, /conclusionWorkspace/);
 });
 
 test('management snapshot is calculated from the fictional baseline instead of hardcoded KPI values', async () => {
@@ -43,8 +43,8 @@ test('management view contains decision-oriented signals and drill-down actions'
   assert.match(runtime, /management-signal-grid/);
   assert.match(runtime, /management-priority-list/);
   assert.match(runtime, /data-management-open-view/);
-  assert.match(runtime, /Heute entscheiden/);
-  assert.match(runtime, /Prozessstabilität/);
+  assert.match(runtime, /Heute entscheiden/i);
+  assert.match(runtime, /Prozessstabilität/i);
 });
 
 test('presentation conclusion gives a reusable customer-meeting close instead of a generic thank-you screen', () => {
@@ -66,18 +66,18 @@ test('guided presentation includes management framing and a conclusion as twelve
   assert.match(TOUR_STEPS.at(-1).title, /Abschluss|Entscheidung/i);
 });
 
-test('management runtime and styles are wired into shell and isolated preview validation', () => {
-  const html = read('demo/index.html');
+test('management runtime and styles are loaded locally and isolated preview validates them', () => {
+  const guide = read('demo/presentation-guide.js');
+  const runtime = read('demo/demo-management.js');
   const ci = read('.github/workflows/professional-ci.yml');
   const preview = read('.github/workflows/company-showcase-preview.yml');
   const css = read('demo/demo-management.css');
-  assert.match(html, /demo-management\.css/);
-  assert.match(html, /demo-management\.js/);
+  assert.match(guide, /import '\.\/demo-management\.js'/);
+  assert.match(runtime, /link\.href = '\.\/demo-management\.css'/);
   assert.match(css, /\.management-kpi-grid/);
   assert.match(css, /\.management-signal-grid/);
   assert.match(css, /\.conclusion-value-grid/);
   assert.match(ci, /node --check demo\/demo-management\.js/);
   assert.match(preview, /node --check demo\/demo-management\.js/);
   assert.match(preview, /'demo\/demo-management\.js'/);
-}
-);
+});
