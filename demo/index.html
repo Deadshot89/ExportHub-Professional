@@ -7,6 +7,7 @@
   <title>ExportHUB Professional · Firmen-Demo</title>
   <link rel="stylesheet" href="./demo.css">
   <link rel="stylesheet" href="./demo-shipments.css">
+  <link rel="stylesheet" href="./demo-pickup.css">
   <link rel="stylesheet" href="./demo-operations.css">
   <link rel="stylesheet" href="./demo-presentation.css">
   <link rel="stylesheet" href="./demo-commercial-polish.css">
@@ -222,6 +223,16 @@
         </div>
       </section>
     </main>
+  </div>
+
+  <div class="demo-pickup-backdrop" id="demoPickupDrawer" hidden>
+    <aside class="demo-pickup-panel" role="dialog" aria-modal="true" aria-label="Externe Abholansicht">
+      <header class="demo-pickup-toolbar">
+        <div><span>EXTERNE ABHOLANSICHT</span><strong>QR-Abholung & POD</strong><small>Lokale Präsentation ohne Kamera, Backend oder öffentliche Freigabe</small></div>
+        <button type="button" data-demo-pickup-close aria-label="Abholansicht schließen">×</button>
+      </header>
+      <div id="demoPickupWorkspace" class="demo-pickup-workspace"></div>
+    </aside>
   </div>
 
   <aside class="tour-dock" id="tourDock" hidden aria-live="polite">
