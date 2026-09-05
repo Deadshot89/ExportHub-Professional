@@ -94,6 +94,7 @@ jobs:
           node --check demo/demo-document-output.js
           node --check demo/demo-document-bundle.js
           node --check demo/demo-avis.js
+          node --check demo/demo-management.js
           node --check demo/presentation-guide.js
       - name: Verify Logistics Control Center invariants
         shell: bash
