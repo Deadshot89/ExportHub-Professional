@@ -47,8 +47,8 @@ Die Implementierung deckt folgende Fälle ab:
 - RED: 147 Tests gesamt, 139 PASS, exakt 8 neue Pickup/POD-Verträge FAIL
 - GREEN: **147/147 PASS**
 - **11/11 Demo-Runtime-Module** ohne API/Auth/Netzwerk/Kamera/Mail
-- Professional CI **#306** / Run `33975103941`: PASS
-- Company Showcase Preview **#65** / Run `33975103947`: PASS
+- Professional CI: PASS
+- Company Showcase Preview: PASS
 - Azure-Deployment: Succeeded
 - Azure Functions/API im Preview: nicht erstellt
 - veröffentlichter `/demo/`-Endpunkt: HTTP-Smoke-Test PASS
