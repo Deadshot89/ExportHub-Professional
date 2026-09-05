@@ -1,3 +1,5 @@
+import './demo-management.js';
+
 export const TOUR_STEPS = Object.freeze([
   Object.freeze({
     view: 'management',
@@ -67,6 +69,19 @@ export const TOUR_STEPS = Object.freeze([
   })
 ]);
 
+function activatePresentationView(view) {
+  const titles = {
+    management: 'Management',
+    conclusion: 'Präsentationsabschluss'
+  };
+  document.querySelectorAll('.view').forEach(section => section.classList.toggle('active', section.dataset.demoView === view));
+  document.querySelectorAll('.demo-nav button[data-view]').forEach(button => button.classList.toggle('active', button.dataset.view === view));
+  const viewTitle = document.getElementById('viewTitle');
+  if (viewTitle && titles[view]) viewTitle.textContent = titles[view];
+  document.getElementById('demoSidebar')?.classList.remove('open');
+  document.getElementById('demoApp')?.scrollIntoView({ block: 'start' });
+}
+
 export function initPresentationGuide({ openView, openShipment, setPresentationRole } = {}) {
   const dock = document.getElementById('tourDock');
   const count = document.getElementById('tourStepCount');
@@ -81,7 +96,8 @@ export function initPresentationGuide({ openView, openShipment, setPresentationR
   function applyStep() {
     const step = TOUR_STEPS[index];
     if (!step) return;
-    openView?.(step.view);
+    if (step.view === 'management' || step.view === 'conclusion') activatePresentationView(step.view);
+    else openView?.(step.view);
     if (step.shipmentId && step.view === 'shipments') openShipment?.(step.shipmentId, { preserveScroll: true });
     if (step.role && step.employeeId) setPresentationRole?.(step.role, step.employeeId);
     if (count) count.textContent = `${index + 1} / ${TOUR_STEPS.length}`;
