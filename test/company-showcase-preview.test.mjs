@@ -15,6 +15,7 @@ const DEMO_JS = [
   'demo/demo-documents.js',
   'demo/demo-document-output.js',
   'demo/demo-avis.js',
+  'demo/demo-management.js',
   'demo/presentation-guide.js'
 ];
 
