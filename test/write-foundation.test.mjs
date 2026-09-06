@@ -29,8 +29,8 @@ test('schema adds tenant-RLS protected persistent operational_tasks',()=>{
   assert.match(schema,/create table if not exists operational_tasks\s*\(/i);
   for(const column of ['tenant_id uuid not null','title text not null','priority text not null','status text not null','due_at timestamptz','created_by uuid','completed_at timestamptz']) assert.match(schema,new RegExp(column,'i'));
   assert.match(schema,/operational_tasks_tenant/i);
-  const rls=schema.match(/foreach t in array array\[([^\]]+)\]/s)?.[1]||'';
-  assert.match(rls,/operational_tasks/);
+  assert.match(schema,/alter table operational_tasks enable row level security/i);
+  assert.match(schema,/create policy tenant_isolation on operational_tasks[\s\S]*current_setting\('app\.tenant_id'/i);
 });
 
 test('task store mutates only through tenant write transactions and never accepts tenant scope from input',()=>{
