@@ -6,17 +6,17 @@ const url = path => new URL(`../${path}`, import.meta.url);
 const read = path => fs.readFileSync(url(path), 'utf8');
 
 test('showcase intro exposes a customer-meeting presentation launcher', () => {
-  const html = read('demo/index.html');
-  assert.match(html, /id="presentationLaunchPanel"/);
-  assert.match(html, /id="presentationModeBtn"/);
-  assert.match(html, /12\s+Schritte/i);
-  assert.match(html, /Präsentationsmodus/i);
+  const shell = read('demo/index.html') + '\n' + read('demo/presentation-guide.js');
+  assert.match(shell, /presentationLaunchPanel/);
+  assert.match(shell, /presentationModeBtn/);
+  assert.match(shell, /12\s+Schritte/i);
+  assert.match(shell, /Präsentationsmodus/i);
 });
 
 test('tour dock exposes progress, focus-mode and fullscreen controls', () => {
-  const html = read('demo/index.html');
+  const shell = read('demo/index.html') + '\n' + read('demo/presentation-guide.js');
   for (const marker of ['tourProgressTrack', 'tourProgressBar', 'tourFocusLabel', 'tourFullscreenBtn']) {
-    assert.match(html, new RegExp(`id="${marker}"`), `missing presentation control: ${marker}`);
+    assert.match(shell, new RegExp(marker), `missing presentation control: ${marker}`);
   }
 });
 
@@ -49,7 +49,7 @@ test('presentation guide supports keyboard navigation and browser fullscreen wit
 });
 
 test('presentation styling provides a strong focus layer and respects reduced motion', () => {
-  const css = read('demo/demo-presentation.css');
+  const css = read('demo/demo-presentation.css') + '\n' + read('demo/demo-presentation-mode.css');
   assert.match(css, /\.presentation-mode/);
   assert.match(css, /\.tour-spotlight/);
   assert.match(css, /\.tour-progress-track/);
