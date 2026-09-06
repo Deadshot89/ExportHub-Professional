@@ -2,9 +2,12 @@ const db=require('./database');
 
 const PRIORITIES=new Set(['P0','P1','P2','P3','P4']);
 const STATUSES=new Set(['OPEN','DONE']);
+const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function text(value){return String(value??'').trim();}
 function invalid(message){throw Object.assign(new Error(message),{code:'INPUT_INVALID'});}
+function optionalUuid(value,label){const id=text(value);if(!id)return null;if(!UUID.test(id))invalid(`${label} ist ungültig.`);return id;}
+function requiredUuid(value,label){const id=optionalUuid(value,label);if(!id)invalid(`${label} fehlt.`);return id;}
 function writeTenant(tenantId,fn){return db.withTenantClient(tenantId,fn,{write:true});}
 function validDate(value){
   const raw=text(value);if(!raw)return null;
@@ -15,7 +18,7 @@ function validateTaskInput(value={}){
   const title=text(value.title);if(title.length<2||title.length>200)invalid('Aufgabentitel muss zwischen 2 und 200 Zeichen lang sein.');
   const description=text(value.description);if(description.length>2000)invalid('Aufgabenbeschreibung ist zu lang.');
   const priority=text(value.priority||'P2').toUpperCase();if(!PRIORITIES.has(priority))invalid('Aufgabenpriorität ist ungültig.');
-  const shipmentId=text(value.shipmentId)||null;
+  const shipmentId=optionalUuid(value.shipmentId,'Sendungs-ID');
   return {title,description:description||null,priority,status:'OPEN',dueAt:validDate(value.dueAt),shipmentId};
 }
 function normalizeTaskStatus(value){const status=text(value).toUpperCase();if(!STATUSES.has(status))invalid('Aufgabenstatus ist ungültig.');return status;}
@@ -55,7 +58,7 @@ async function createTask(tenantId,userId,value={}){
 }
 
 async function setTaskStatus(tenantId,taskId,status,userId){
-  const id=text(taskId);if(!id)invalid('Aufgaben-ID fehlt.');
+  const id=requiredUuid(taskId,'Aufgaben-ID');
   const next=normalizeTaskStatus(status),actor=text(userId)||null;
   return writeTenant(tenantId,async client=>{
     const result=await client.query(`
