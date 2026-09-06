@@ -1,5 +1,5 @@
 const authz=require('../shared/authorization');
-const store=require('../shared/operations-store');
+const store=require('../shared/operations-write-store');
 const http=require('../shared/http');
 
 module.exports=async function(context,req){
