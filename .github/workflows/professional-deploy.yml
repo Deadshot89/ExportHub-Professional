@@ -46,8 +46,9 @@ jobs:
           set -euo pipefail
           test -f api/host.json
           node -e "const c=require('./staticwebapp.config.json'); if(c.platform?.apiRuntime!=='node:20') process.exit(1); console.log('OK: Azure API runtime node:20');"
+          for f in api/shared/operations-store.js api/shared/tasks-store.js api/tasks-list/index.js api/task-create/index.js api/task-status/index.js api/shipment-create/index.js; do node --check "$f"; done
           cd api
-          node -e "require('./shared/database.js'); require('./shared/auth-security.js'); require('./shared/auth-store.js'); require('./shared/authorization.js'); require('./shared/user-admin-store.js'); require('pg'); console.log('OK: Professional API runtime loads');"
+          node -e "require('./shared/database.js'); require('./shared/auth-security.js'); require('./shared/auth-store.js'); require('./shared/authorization.js'); require('./shared/user-admin-store.js'); require('./shared/operations-store.js'); require('./shared/tasks-store.js'); require('pg'); console.log('OK: Professional API runtime loads');"
 
       - name: Prepare public frontend payload
         shell: bash
@@ -63,9 +64,11 @@ jobs:
           test -f .deploy/assets/js/app.js
           test -f .deploy/assets/js/ui-kit.js
           test -f .deploy/assets/js/overview.js
+          test -f .deploy/assets/js/operations.js
           test -f .deploy/assets/css/app.css
           test -f .deploy/assets/css/control-center.css
           test -f .deploy/shared/migration-core.js
+          node --check .deploy/assets/js/operations.js
           node - <<'NODE'
           const fs=require('fs');
           const path=require('path');
@@ -79,7 +82,11 @@ jobs:
               process.exit(1);
             }
           }
-          console.log(`OK: ${imports.length} relative frontend import(s) are present in deploy payload`);
+          const operations=fs.readFileSync('.deploy/assets/js/operations.js','utf8');
+          if(/PROFESSIONAL_ENABLE_WRITES\s*=|PROFESSIONAL_DATA_MODE\s*=/.test(operations)) throw new Error('frontend must never alter Professional environment gates');
+          if(/tenantId\s*:/.test(operations)) throw new Error('frontend must never provide tenant scope');
+          if(!/\/api\/professional-meta/.test(operations)||!/writesEnabled/.test(operations)||!/x-professional-csrf/i.test(operations)) throw new Error('gated operational write contract missing from deploy payload');
+          console.log(`OK: ${imports.length} relative frontend import(s) are present and write-gate contract is intact`);
           NODE
 
       - name: Verify Azure deployment token
