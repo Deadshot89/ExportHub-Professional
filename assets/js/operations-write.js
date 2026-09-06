@@ -5,6 +5,7 @@ const TASK_WRITE_ROLES=new Set(['TENANT_ADMIN','EXPORT_ADMIN','TEAM_LEAD','OPERA
 let currentSession=null;
 let writesEnabled=false;
 let enhancementSequence=0;
+let sessionSequence=0;
 let drawerMode='';
 
 function esc(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));}
@@ -157,14 +158,21 @@ async function setTaskStatus(taskId,status,button){
   try{await apiJson(`/api/professional-tasks/${encodeURIComponent(taskId)}/status`,{method:'PATCH',headers:csrfHeaders(),body:JSON.stringify({status})});emitChanged('task');}
   catch(error){alert(error.message||'Aufgabenstatus konnte nicht geändert werden.');if(button)button.disabled=false;}
 }
-
-window.addEventListener('professional:session-ready',async event=>{
-  if(event.detail?.local){currentSession=null;writesEnabled=false;closeDrawer();return;}
-  currentSession=event.detail?.session||null;if(!currentSession)return;
+async function activateWriteSession(session){
+  const sequence=++sessionSequence;currentSession=session||null;writesEnabled=false;
+  if(!currentSession)return;
   try{await loadProfessionalMeta();}catch{writesEnabled=false;}
+  if(sequence!==sessionSequence)return;
   if(writesEnabled)enhanceCurrentSurfaces();
+}
+
+window.addEventListener('professional:session-ready',event=>{
+  if(event.detail?.local){sessionSequence++;currentSession=null;writesEnabled=false;closeDrawer();return;}
+  if(event.detail?.session)activateWriteSession(event.detail.session);
 });
 window.addEventListener('professional:operations-rendered',event=>enhanceRenderedView(event.detail?.view));
 window.addEventListener('professional:operations-changed',event=>{if(writesEnabled&&event.detail?.kind==='task')setTimeout(()=>enhanceTasks(),0);});
+
+apiJson('/api/professional-auth/session').then(session=>{if(!currentSession)activateWriteSession(session);}).catch(()=>{});
 
 export {loadProfessionalMeta,loadPersistentTasks,enhanceShipments,enhanceTasks};
