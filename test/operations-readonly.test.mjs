@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createRequire} from 'node:module';
+import {fileURLToPath} from 'node:url';
 
 const require=createRequire(import.meta.url);
 const rootPath=path=>new URL(`../${path}`,import.meta.url);
@@ -10,7 +11,7 @@ const read=path=>fs.readFileSync(rootPath(path),'utf8');
 
 function requireFile(path){
   assert.ok(exists(path),`${path} fehlt`);
-  return require(rootPath(path));
+  return require(fileURLToPath(rootPath(path)));
 }
 
 test('Professional exposes a tenant-scoped read-only operational store',()=>{
