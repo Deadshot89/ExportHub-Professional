@@ -66,7 +66,7 @@ test('persistent task APIs use GET read plus CSRF protected POST and PATCH write
 });
 
 test('shipment create validation enforces exact six-character uppercase reference and required masterdata ids',()=>{
-  const store=requireFile('api/shared/operations-store.js');
+  const store=requireFile('api/shared/operations-write-store.js');
   const valid=store.validateShipmentCreateInput({reference:'AB12CD',customerId:'c1',locationId:'l1'});
   assert.equal(valid.reference,'AB12CD');
   assert.equal(valid.customerId,'c1');
@@ -79,7 +79,7 @@ test('shipment create validation enforces exact six-character uppercase referenc
 });
 
 test('shipment creation is tenant-safe gated write and validates customer-location ownership before insert',()=>{
-  const source=read('api/shared/operations-store.js');
+  const source=read('api/shared/operations-write-store.js');
   assert.match(source,/createShipment/);
   assert.match(source,/withTenantClient\([^\n]+\{\s*write\s*:\s*true\s*\}/s);
   assert.match(source,/from customers c[\s\S]+customer_locations l/i);
@@ -92,19 +92,26 @@ test('shipment creation is tenant-safe gated write and validates customer-locati
 test('shipment POST API requires shipments.write plus CSRF and never accepts browser tenant scope',()=>{
   expectWriteHandler('shipment-create','post','professional-operations/shipments','shipments.write');
   const source=read('api/shipment-create/index.js');
+  assert.match(source,/operations-write-store/);
   assert.match(source,/createShipment\(session\.tenant_id/);
   assert.match(source,/bodyOf\(req\)/);
 });
 
 test('live operations UI exposes writes only from server meta gate and never changes environment settings',()=>{
-  const source=read('assets/js/operations.js');
+  assert.ok(exists('assets/js/operations-write.js'),'operations write frontend fehlt');
+  const source=read('assets/js/operations-write.js');
   assert.match(source,/writesEnabled/);
   assert.match(source,/Sendung erstellen/);
   assert.match(source,/Aufgabe anlegen/);
   assert.match(source,/x-professional-csrf/i);
   assert.match(source,/professional-meta/);
+  assert.match(source,/method\s*:\s*['"]POST['"]/i);
+  assert.match(source,/method\s*:\s*['"]PATCH['"]/i);
   assert.doesNotMatch(source,/PROFESSIONAL_ENABLE_WRITES\s*=|PROFESSIONAL_DATA_MODE\s*=/);
   assert.doesNotMatch(source,/tenantId\s*:/);
+  const readOnly=read('assets/js/operations.js');
+  assert.match(readOnly,/operations-write\.js/);
+  assert.doesNotMatch(readOnly,/method\s*:\s*['"](?:POST|PUT|PATCH|DELETE)/i);
 });
 
 test('write foundation errors have deterministic HTTP mappings',()=>{
