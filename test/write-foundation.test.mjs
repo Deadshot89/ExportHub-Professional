@@ -106,3 +106,10 @@ test('live operations UI exposes writes only from server meta gate and never cha
   assert.doesNotMatch(source,/PROFESSIONAL_ENABLE_WRITES\s*=|PROFESSIONAL_DATA_MODE\s*=/);
   assert.doesNotMatch(source,/tenantId\s*:/);
 });
+
+test('write foundation errors have deterministic HTTP mappings',()=>{
+  const http=read('api/shared/http.js');
+  for(const [code,status] of Object.entries({WRITE_DISABLED_MIGRATION_MODE:503,SHIPMENT_EXISTS:409,SHIPMENT_NOT_FOUND:404,TASK_NOT_FOUND:404})){
+    assert.match(http,new RegExp(`${code}:${status}`));
+  }
+});
