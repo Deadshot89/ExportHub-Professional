@@ -1,14 +1,16 @@
 const db=require('./database');
 
+const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function normalized(value){return String(value||'').trim();}
 function invalid(message){throw Object.assign(new Error(message),{code:'INPUT_INVALID'});}
+function requiredUuid(value,label){const id=normalized(value);if(!id||!UUID.test(id))invalid(`${label} ist ungültig.`);return id;}
 function writeTenant(tenantId,fn){return db.withTenantClient(tenantId,fn,{write:true});}
 
 function validateShipmentCreateInput(value={}){
   const reference=normalized(value.reference);
   if(!/^[A-Z0-9]{6}$/.test(reference))invalid('Referenz muss exakt 6 Zeichen aus A-Z und 0-9 enthalten.');
-  const customerId=normalized(value.customerId);if(!customerId)invalid('Kunde ist erforderlich.');
-  const locationId=normalized(value.locationId);if(!locationId)invalid('Standort ist erforderlich.');
+  const customerId=requiredUuid(value.customerId,'Kunde');
+  const locationId=requiredUuid(value.locationId,'Standort');
   return {reference,customerId,locationId};
 }
 
