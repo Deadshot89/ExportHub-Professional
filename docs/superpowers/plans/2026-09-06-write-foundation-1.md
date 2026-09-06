@@ -53,8 +53,9 @@
 - [x] Diagnose architecture coupling regression #358 instead of weakening existing read-only tests.
 - [x] Separated-module GREEN #368: 101/101 PASS.
 - [x] UUID-hardening RED #369: 99 PASS / exactly 2 expected FAIL.
-- [x] Final GREEN #372: 101/101 PASS, 0 FAIL; frontend syntax, invariants and API runtime PASS.
+- [x] Final implementation GREEN #372: 101/101 PASS, 0 FAIL; frontend syntax, invariants and API runtime PASS.
 - [x] Verify branch is ahead of main with no unrelated project or environment changes.
+- [ ] Require fresh CI on the final documentation head before merge.
 - [ ] Merge verified dormant code to `main`.
 - [ ] Run fresh main CI and production deploy.
 - [ ] Keep `PROFESSIONAL_DATA_MODE` and `PROFESSIONAL_ENABLE_WRITES` unchanged during deployment.
