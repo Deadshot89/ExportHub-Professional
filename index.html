@@ -1,42 +1,56 @@
 <!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0c1f35"><title>ExportHUB Professional 0.7</title><link rel="stylesheet" href="/assets/css/app.css"><link rel="stylesheet" href="/assets/css/control-center.css"></head><body>
 <div id="authGate" class="auth-gate">
-  <div class="auth-card">
-    <div class="auth-brand"><div class="kicker">EXPORT & LOGISTICS MANAGEMENT</div><h1>ExportHUB Professional</h1><p>Serverseitige Anmeldung mit Firmen-Workspace und Benutzerkonto.</p></div>
-    <div id="identityStatus" class="auth-status">Identity Service wird geprüft …</div>
-    <section id="credentialActionPanel" class="credential-action hidden">
-      <div class="auth-subhead"><strong id="credentialActionTitle">Zugang einrichten</strong><span id="credentialActionHint">Sicherer Einmal-Link.</span></div>
-      <form id="credentialActionForm" class="auth-form">
-        <div><label for="credentialPassword">Neues Passwort</label><input id="credentialPassword" type="password" autocomplete="new-password" minlength="12" required><small>Mindestens 12 Zeichen.</small></div>
-        <div><label for="credentialPassword2">Passwort wiederholen</label><input id="credentialPassword2" type="password" autocomplete="new-password" minlength="12" required></div>
-        <button class="btn" type="submit">Passwort sicher setzen</button>
-        <div id="credentialActionMessage" class="muted"></div>
-      </form>
-      <button id="cancelCredentialAction" class="ghost compact" type="button">Zur normalen Anmeldung</button>
+  <div class="professional-entry-layout">
+    <section class="entry-story" aria-label="ExportHUB Professional Überblick">
+      <div class="kicker">EXPORT & LOGISTICS MANAGEMENT</div>
+      <h1>ExportHUB Professional</h1>
+      <p>Ein gemeinsamer Arbeitsbereich für Exportsteuerung, Stammdaten, Verantwortlichkeiten und Nachweise – mit serverseitiger Anmeldung und klarer Mandantentrennung.</p>
+      <div class="entry-proof-row"><span>Rollenbasierter Zugriff</span><span>Mandantengetrennte Daten</span><span>Nachvollziehbare Prozesszustände</span></div>
+      <div class="entry-capability-grid">
+        <article><b>01</b><strong>Exportsteuerung</strong><span>Operative Vorgänge, Prioritäten und nächste Arbeitsschritte in einem gemeinsamen Kontext.</span></article>
+        <article><b>02</b><strong>Dokumentenkontrolle</strong><span>Pflichtunterlagen und Freigabestatus werden transparent entlang des Versandprozesses geführt.</span></article>
+        <article><b>03</b><strong>Rollen & Mandanten</strong><span>Firmen-Workspace, Benutzerrollen und serverseitige Berechtigungen bleiben sauber getrennt.</span></article>
+        <article><b>04</b><strong>Abholung & Nachweise</strong><span>Der Prozess ist auf kontrollierte Abholung, POD und nachvollziehbaren Abschluss ausgerichtet.</span></article>
+      </div>
     </section>
-    <form id="loginForm" class="auth-form" autocomplete="on">
-      <div><label for="loginWorkspace">Workspace</label><input id="loginWorkspace" name="workspace" autocomplete="organization" placeholder="z. B. muster-gmbh" required></div>
-      <div><label for="loginName">Benutzer / E-Mail</label><input id="loginName" name="username" autocomplete="username" required></div>
-      <div><label for="loginPassword">Passwort</label><input id="loginPassword" type="password" name="password" autocomplete="current-password" required></div>
-      <button class="btn auth-primary" type="submit">Anmelden</button>
-      <div id="loginMessage" class="muted"></div>
-    </form>
-    <div class="auth-actions">
-      <button id="openOnboardingBtn" type="button" class="ghost hidden">Ersteinrichtung</button>
-      <button id="openMigrationLabBtn" type="button" class="ghost">Lokales Migrationslabor</button>
+    <div class="auth-card">
+      <div class="auth-brand"><div class="kicker">SICHERER ZUGANG</div><h2>Im Firmen-Workspace anmelden</h2><p>Serverseitige Anmeldung mit Workspace und Benutzerkonto.</p></div>
+      <div id="identityStatus" class="auth-status">Identity Service wird geprüft …</div>
+      <section id="credentialActionPanel" class="credential-action hidden">
+        <div class="auth-subhead"><strong id="credentialActionTitle">Zugang einrichten</strong><span id="credentialActionHint">Sicherer Einmal-Link.</span></div>
+        <form id="credentialActionForm" class="auth-form">
+          <div><label for="credentialPassword">Neues Passwort</label><input id="credentialPassword" type="password" autocomplete="new-password" minlength="12" required><small>Mindestens 12 Zeichen.</small></div>
+          <div><label for="credentialPassword2">Passwort wiederholen</label><input id="credentialPassword2" type="password" autocomplete="new-password" minlength="12" required></div>
+          <button class="btn" type="submit">Passwort sicher setzen</button>
+          <div id="credentialActionMessage" class="muted"></div>
+        </form>
+        <button id="cancelCredentialAction" class="ghost compact" type="button">Zur normalen Anmeldung</button>
+      </section>
+      <form id="loginForm" class="auth-form" autocomplete="on">
+        <div><label for="loginWorkspace">Workspace</label><input id="loginWorkspace" name="workspace" autocomplete="organization" placeholder="z. B. muster-gmbh" required></div>
+        <div><label for="loginName">Benutzer / E-Mail</label><input id="loginName" name="username" autocomplete="username" required></div>
+        <div><label for="loginPassword">Passwort</label><input id="loginPassword" type="password" name="password" autocomplete="current-password" required></div>
+        <button class="btn auth-primary" type="submit">Anmelden</button>
+        <div id="loginMessage" class="muted"></div>
+      </form>
+      <div class="auth-actions">
+        <button id="openOnboardingBtn" type="button" class="ghost hidden">Ersteinrichtung</button>
+        <button id="openMigrationLabBtn" type="button" class="ghost">Lokales Migrationslabor</button>
+      </div>
+      <form id="onboardingForm" class="auth-form onboarding hidden">
+        <div class="auth-subhead"><strong>Ersteinrichtung der Professional-Instanz</strong><span>Nur für den ersten Firmenmandanten.</span></div>
+        <div><label for="companyName">Firma</label><input id="companyName" required></div>
+        <div><label for="workspaceName">Workspace-ID</label><input id="workspaceName" placeholder="muster-gmbh" required></div>
+        <div><label for="adminName">Administrator</label><input id="adminName" required></div>
+        <div><label for="adminEmail">E-Mail</label><input id="adminEmail" type="email" autocomplete="email" required></div>
+        <div><label for="adminLogin">Anmeldename</label><input id="adminLogin" autocomplete="username" required></div>
+        <div><label for="adminPassword">Neues Passwort</label><input id="adminPassword" type="password" autocomplete="new-password" minlength="12" required><small>Mindestens 12 Zeichen.</small></div>
+        <div><label for="bootstrapToken">Bootstrap-Code</label><input id="bootstrapToken" type="password" autocomplete="off" required></div>
+        <button class="btn" type="submit">Ersten Firmenmandanten anlegen</button>
+        <div id="onboardingMessage" class="muted"></div>
+      </form>
+      <div class="auth-foot">Professional 0.7 · Benutzerverwaltung aktivierbar, operative Bestandsdaten bleiben schreibgeschützt.</div>
     </div>
-    <form id="onboardingForm" class="auth-form onboarding hidden">
-      <div class="auth-subhead"><strong>Ersteinrichtung der Professional-Instanz</strong><span>Nur für den ersten Firmenmandanten.</span></div>
-      <div><label for="companyName">Firma</label><input id="companyName" required></div>
-      <div><label for="workspaceName">Workspace-ID</label><input id="workspaceName" placeholder="muster-gmbh" required></div>
-      <div><label for="adminName">Administrator</label><input id="adminName" required></div>
-      <div><label for="adminEmail">E-Mail</label><input id="adminEmail" type="email" autocomplete="email" required></div>
-      <div><label for="adminLogin">Anmeldename</label><input id="adminLogin" autocomplete="username" required></div>
-      <div><label for="adminPassword">Neues Passwort</label><input id="adminPassword" type="password" autocomplete="new-password" minlength="12" required><small>Mindestens 12 Zeichen.</small></div>
-      <div><label for="bootstrapToken">Bootstrap-Code</label><input id="bootstrapToken" type="password" autocomplete="off" required></div>
-      <button class="btn" type="submit">Ersten Firmenmandanten anlegen</button>
-      <div id="onboardingMessage" class="muted"></div>
-    </form>
-    <div class="auth-foot">Professional 0.7 · Benutzerverwaltung aktivierbar, operative Bestandsdaten bleiben schreibgeschützt.</div>
   </div>
 </div>
 <div id="appShell" class="shell control-center-shell hidden">
@@ -65,12 +79,26 @@
           <div class="cc-today-meta"><span id="overviewWorkspace">Workspace –</span><span id="overviewUser">Benutzer –</span></div>
           <div class="cc-system-state"><span id="overviewDatabaseState" class="cc-status">Datenbank –</span><span id="overviewDataModeState" class="cc-status">Modus –</span><span id="overviewMasterdataState" class="cc-status">Stammdaten –</span></div>
         </div>
-        <div class="cc-kpi-grid cc-overview-kpis">
-          <article class="cc-kpi"><span class="cc-kpi-icon" data-cc-icon="shipment"></span><div><span class="cc-kpi-label">Offene Sendungen</span><strong id="overviewOpenShipments" class="cc-kpi-value">–</strong><small>Datenquelle noch nicht live</small></div></article>
-          <article class="cc-kpi"><span class="cc-kpi-icon" data-cc-icon="shipment"></span><div><span class="cc-kpi-label">Abholungen heute</span><strong id="overviewPickupsToday" class="cc-kpi-value">–</strong><small>Datenquelle noch nicht live</small></div></article>
-          <article class="cc-kpi"><span class="cc-kpi-icon" data-cc-icon="document"></span><div><span class="cc-kpi-label">Fehlende Dokumente</span><strong id="overviewMissingDocuments" class="cc-kpi-value">–</strong><small>Datenquelle noch nicht live</small></div></article>
-          <article class="cc-kpi"><span class="cc-kpi-icon" data-cc-icon="warning"></span><div><span class="cc-kpi-label">Handlungsbedarf</span><strong id="overviewActionRequired" class="cc-kpi-value">–</strong><small>aus echten Stammdaten</small></div></article>
+        <div id="overviewSignalStrip" class="cc-signal-strip" aria-label="Operative System- und Datenlage">
+          <article id="overviewSignalSystem" class="cc-signal neutral"><span>SYS</span><div><strong>Systemstatus wird geladen</strong><small>Datenbank- und Betriebsmodus werden live geprüft.</small></div></article>
+          <article id="overviewSignalMasterdata" class="cc-signal neutral"><span>MD</span><div><strong>Stammdaten werden geprüft</strong><small>Aktive Standorte und offene Qualitätsmerkmale werden ausgewertet.</small></div></article>
+          <article id="overviewSignalCoverage" class="cc-signal neutral"><span>LIVE</span><div><strong>Funktionsabdeckung wird geprüft</strong><small>Nicht freigegebene Live-Funktionen bleiben klar gekennzeichnet.</small></div></article>
         </div>
+        <div class="cc-kpi-grid cc-overview-kpis">
+          <article class="cc-kpi" data-kpi-tone="info"><span class="cc-kpi-icon" data-cc-icon="shipment"></span><div><span class="cc-kpi-label">Offene Sendungen</span><strong id="overviewOpenShipments" class="cc-kpi-value">–</strong><small>Datenquelle noch nicht live</small><small class="cc-kpi-context">Livequelle nicht vortäuschen</small></div></article>
+          <article class="cc-kpi" data-kpi-tone="positive"><span class="cc-kpi-icon" data-cc-icon="shipment"></span><div><span class="cc-kpi-label">Abholungen heute</span><strong id="overviewPickupsToday" class="cc-kpi-value">–</strong><small>Datenquelle noch nicht live</small><small class="cc-kpi-context">Abholstatus folgt mit Live-Sendungen</small></div></article>
+          <article class="cc-kpi" data-kpi-tone="warning"><span class="cc-kpi-icon" data-cc-icon="document"></span><div><span class="cc-kpi-label">Fehlende Dokumente</span><strong id="overviewMissingDocuments" class="cc-kpi-value">–</strong><small>Datenquelle noch nicht live</small><small class="cc-kpi-context">Dokumentenquelle vorbereitet</small></div></article>
+          <article class="cc-kpi" data-kpi-tone="critical"><span class="cc-kpi-icon" data-cc-icon="warning"></span><div><span class="cc-kpi-label">Handlungsbedarf</span><strong id="overviewActionRequired" class="cc-kpi-value">–</strong><small>aus echten Stammdaten</small><small class="cc-kpi-context">reale Hinweise zuerst bearbeiten</small></div></article>
+        </div>
+        <section id="overviewProcessRail" class="cc-panel cc-process-rail" aria-label="Professional Prozessabdeckung">
+          <header><div><span class="kicker">PROZESSABDECKUNG</span><h2>Vom Stammdatensatz bis zum Nachweis</h2><p>Der aktuelle Professional-Stand zeigt klar, welche Bereiche bereits live sind und welche erst mit der nächsten operativen Freigabe Daten liefern.</p></div><span class="cc-status neutral cc-process-state">ohne Platzhalterdaten</span></header>
+          <div class="cc-process-steps">
+            <article class="cc-process-step live"><small>01 · live</small><strong>Stammdaten</strong><span>Kunden, Standorte, Qualität und Rollen sind mit den freigegebenen Professional-Daten verknüpft.</span></article>
+            <article class="cc-process-step prepared"><small>02 · vorbereitet</small><strong>Sendungen</strong><span>Der Arbeitsbereich ist vorhanden; operative Live-Sendungsdaten werden bis zur Freigabe nicht simuliert.</span></article>
+            <article class="cc-process-step prepared"><small>03 · vorbereitet</small><strong>Dokumente</strong><span>Dokumentenprozesse bleiben sichtbar, ohne nicht vorhandene Live-Dokumentkennzahlen zu erfinden.</span></article>
+            <article class="cc-process-step prepared"><small>04 · Folgeprozess</small><strong>Abholung & POD</strong><span>Abholung und Nachweis schließen künftig auf dem freigegebenen Sendungs- und Dokumentstatus auf.</span></article>
+          </div>
+        </section>
         <div class="cc-overview-workgrid">
           <section id="overviewShippingWork" class="cc-panel cc-work-panel"><header><div><span class="kicker">HEUTE IM VERSAND</span><h2>Operative Vorgänge</h2></div><span class="cc-status neutral">Livequelle folgt</span></header><div class="cc-empty">Sendungsdaten sind noch nicht als Live-Arbeitsquelle verfügbar. Es werden keine Platzhalter-Sendungen erzeugt.</div></section>
           <section class="cc-panel cc-action-panel"><header><div><span class="kicker">PRÜFEN</span><h2>Handlungsbedarf</h2></div></header><div id="overviewActionList"><div class="cc-empty">Stammdaten werden geprüft …</div></div></section>

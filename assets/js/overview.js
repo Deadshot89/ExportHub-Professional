@@ -44,12 +44,52 @@ function buildRecentActivity(customers=[],locations=[]){
     ...locations.map(location=>({type:'Standort',title:`${location.customer_name||'Kunde'} · ${location.name||'Standort'}`,updatedAt:location.updated_at||'',customerId:location.customer_id,locationId:location.id}))
   ].filter(item=>item.updatedAt).sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt)).slice(0,8);
 }
+function buildOperationalSignals(meta,locations=[],error=null){
+  const db=meta?.database||{};
+  const activeLocations=locations.filter(location=>location.active!==false);
+  const actions=buildMasterdataActions(locations);
+  if(error){
+    return {
+      system:{kind:'bad',label:'Systemstatus nicht verfügbar',detail:'Live-Status konnte nicht geladen werden.'},
+      masterdata:{kind:'bad',label:'Stammdaten nicht geprüft',detail:'Kunden- und Standortdaten konnten nicht ausgewertet werden.'},
+      coverage:{kind:'neutral',label:'Live-Abdeckung unbekannt',detail:'Keine Funktionsfreigabe wird vorgetäuscht.'}
+    };
+  }
+  const system=db.configured
+    ? {kind:'good',label:'Datenbank verbunden',detail:db.dataMode?`Aktiver Modus: ${db.dataMode}`:'Professional-Datenbank ist erreichbar.'}
+    : {kind:'bad',label:'Datenbank nicht konfiguriert',detail:'Operative Live-Daten stehen noch nicht bereit.'};
+  let masterdata;
+  if(!activeLocations.length){
+    masterdata={kind:'neutral',label:'Noch keine aktiven Standorte',detail:'Stammdaten können nach der Einrichtung aufgebaut werden.'};
+  }else if(actions.length){
+    masterdata={kind:'warn',label:`${fmt(actions.length)} Stammdatenhinweise`,detail:`${fmt(activeLocations.length)} aktive Standorte wurden geprüft.`};
+  }else{
+    masterdata={kind:'good',label:'Stammdaten ohne offene Hinweise',detail:`${fmt(activeLocations.length)} aktive Standorte wurden geprüft.`};
+  }
+  const coverage=db.masterdataWritesEnabled
+    ? {kind:'good',label:'Stammdaten live bearbeitbar',detail:'Sendungs- und Dokument-Livequellen bleiben bis zur Freigabe klar als vorbereitet markiert.'}
+    : {kind:'warn',label:'Stammdaten schreibgeschützt',detail:'Sendungs- und Dokument-Livequellen werden nicht vorgetäuscht.'};
+  return {system,masterdata,coverage};
+}
 function renderIcons(){
   document.querySelectorAll('[data-cc-icon]').forEach(host=>{host.innerHTML=icon(host.dataset.ccIcon||'activity');});
 }
 function setStatus(id,text,kind='neutral'){
   const node=$(id);if(!node)return;
   node.className=`cc-status ${kind}`;node.textContent=text;
+}
+function setOperationalSignal(id,signal){
+  const node=$(id);if(!node||!signal)return;
+  node.className=`cc-signal ${signal.kind||'neutral'}`;
+  const strong=node.querySelector('strong');if(strong)strong.textContent=signal.label||'–';
+  const small=node.querySelector('small');if(small)small.textContent=signal.detail||'';
+}
+function renderOperationalSignals(meta,locations=[],error=null){
+  const signals=buildOperationalSignals(meta,locations,error);
+  setOperationalSignal('#overviewSignalSystem',signals.system);
+  setOperationalSignal('#overviewSignalMasterdata',signals.masterdata);
+  setOperationalSignal('#overviewSignalCoverage',signals.coverage);
+  return signals;
 }
 function renderOverview({meta=null,customers=[],locations=[],error=null}={}){
   const session=sessionState.session;
@@ -61,6 +101,7 @@ function renderOverview({meta=null,customers=[],locations=[],error=null}={}){
   setStatus('#overviewDataModeState',db.dataMode?`Modus ${db.dataMode}`:'Modus –',db.dataMode==='migration-read-only'?'warn':'neutral');
   setStatus('#overviewMasterdataState',db.masterdataWritesEnabled?'Stammdaten Schreiben aktiv':'Stammdaten Schreiben gesperrt',db.masterdataWritesEnabled?'good':'warn');
   const actions=buildMasterdataActions(locations);
+  renderOperationalSignals(meta,locations,error);
   if($('#overviewActionRequired'))$('#overviewActionRequired').textContent=error?'–':fmt(actions.length);
   const actionHost=$('#overviewActionList');
   if(actionHost){
@@ -131,4 +172,4 @@ document.querySelector('[data-nav="overview"]')?.addEventListener('click',()=>se
 const shell=$('#appShell');if(shell)new MutationObserver(()=>{if(!shell.classList.contains('hidden'))resolveSessionAndLoad();}).observe(shell,{attributes:true,attributeFilter:['class']});
 setTimeout(resolveSessionAndLoad,0);
 
-export {controlCenterIcon,buildMasterdataActions,buildRecentActivity,loadOverview,renderOverview};
+export {controlCenterIcon,buildMasterdataActions,buildRecentActivity,buildOperationalSignals,renderOperationalSignals,loadOverview,renderOverview};
