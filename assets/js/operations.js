@@ -97,3 +97,5 @@ window.addEventListener('professional:session-ready',event=>{
 window.addEventListener('professional:operations-changed',event=>refreshReadOnlyOperations(event.detail?.kind||'all'));
 
 export {loadOperationsSummary,loadShipments,loadDocuments,loadTasks,activateOperationsSession,renderShipmentsWorkspace,renderDocumentsWorkspace,renderTasksWorkspace};
+
+import('./operations-write.js').catch(()=>{});
