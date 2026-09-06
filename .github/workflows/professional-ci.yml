@@ -79,6 +79,7 @@ jobs:
           node --check assets/js/app.js
           node --check assets/js/locations.js
           node --check assets/js/ui-kit.js
+          node --check assets/js/operations.js
           node --check assets/js/overview.js
       - name: Verify Logistics Control Center invariants
         shell: bash
@@ -89,6 +90,7 @@ jobs:
           const html=fs.readFileSync('index.html','utf8');
           const app=fs.readFileSync('assets/js/app.js','utf8');
           const loc=fs.readFileSync('assets/js/locations.js','utf8');
+          const operations=fs.readFileSync('assets/js/operations.js','utf8');
           const overview=html.match(/<section class="view active" data-view="overview">([\s\S]*?)<section class="view" data-view="migration">/)?.[1]||'';
           if(/class="hero"/.test(overview)) throw new Error('legacy overview hero still present');
           for(const id of ['overviewOpenShipments','overviewPickupsToday','overviewMissingDocuments']){
@@ -96,7 +98,8 @@ jobs:
           }
           if(/deleteCustomer|deleteLocation|Kunde löschen|Standort löschen/i.test(app+loc)) throw new Error('hard-delete UI introduced');
           if(/method:\s*['"]POST['"]/.test(loc)) throw new Error('duplicate location editor mutation introduced');
-          console.log('OK: no fake metrics, hard deletes or duplicate location mutation UI');
+          if(/method\s*:\s*['"](?:POST|PUT|PATCH|DELETE)/i.test(operations)) throw new Error('read-only operations frontend contains mutation method');
+          console.log('OK: no fake metrics, hard deletes, duplicate location mutation or operational writes');
           NODE
       - name: Install Professional API dependencies
         run: npm install --prefix api --ignore-scripts --no-audit --no-fund
@@ -107,16 +110,17 @@ jobs:
           files=(
             api/health/index.js api/professional-meta/index.js
             api/shared/database.js api/shared/auth-security.js api/shared/auth-store.js api/shared/authorization.js api/shared/user-admin-store.js api/shared/http.js
-            api/shared/masterdata-validation.js api/shared/masterdata-store.js
+            api/shared/masterdata-validation.js api/shared/masterdata-store.js api/shared/operations-store.js
             api/auth-login/index.js api/auth-session/index.js api/auth-logout/index.js api/onboarding-status/index.js api/onboarding-create/index.js
             api/admin-users-list/index.js api/admin-user-invite/index.js api/admin-user-role/index.js api/admin-user-status/index.js api/admin-password-reset/index.js api/admin-identity-audit/index.js
             api/invite-redeem/index.js api/password-reset-redeem/index.js
             api/masterdata-customers/index.js api/masterdata-customer/index.js api/masterdata-customer-status/index.js api/masterdata-customer-locations/index.js
             api/masterdata-location/index.js api/masterdata-location-status/index.js api/masterdata-locations/index.js
+            api/operations-summary/index.js api/operations-shipments/index.js api/operations-documents/index.js api/operations-tasks/index.js
           )
           for f in "${files[@]}"; do node --check "$f"; done
           cd api
-          node -e "require('./shared/database.js'); require('./shared/auth-security.js'); require('./shared/auth-store.js'); require('./shared/authorization.js'); require('./shared/user-admin-store.js'); require('./shared/masterdata-validation.js'); require('./shared/masterdata-store.js'); require('pg'); console.log('OK: Professional 0.7 API runtime loads');"
+          node -e "require('./shared/database.js'); require('./shared/auth-security.js'); require('./shared/auth-store.js'); require('./shared/authorization.js'); require('./shared/user-admin-store.js'); require('./shared/masterdata-validation.js'); require('./shared/masterdata-store.js'); require('./shared/operations-store.js'); require('pg'); console.log('OK: Professional 0.7 API runtime loads');"
       - name: Verify no legacy source backup is committed
         shell: bash
         run: |
