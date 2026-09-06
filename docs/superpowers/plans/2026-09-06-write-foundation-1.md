@@ -55,7 +55,7 @@
 - [x] UUID-hardening RED #369: 99 PASS / exactly 2 expected FAIL.
 - [x] Final implementation GREEN #372: 101/101 PASS, 0 FAIL; frontend syntax, invariants and API runtime PASS.
 - [x] Verify branch is ahead of main with no unrelated project or environment changes.
-- [ ] Require fresh CI on this final documentation head before merge.
+- [ ] Require a fresh green CI run on the final PR head before merge.
 - [ ] Merge verified dormant code to `main`.
 - [ ] Run fresh main CI and production deploy.
 - [ ] Keep `PROFESSIONAL_DATA_MODE` and `PROFESSIONAL_ENABLE_WRITES` unchanged during deployment.
