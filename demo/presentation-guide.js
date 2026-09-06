@@ -121,38 +121,38 @@ function ensureCommercialStory() {
   const intro = document.getElementById('showcaseIntro');
   if (!intro) return null;
 
-  const panel = document.createElement('section');
-  panel.id = 'commercialStoryPanel';
-  panel.className = 'commercial-story-panel';
-  panel.setAttribute('aria-label', 'ExportHUB Prozess- und Modulübersicht');
-  panel.innerHTML = `
-    <div class="commercial-story-inner">
-      <header class="commercial-story-head">
-        <span>WARUM EXPORTHUB?</span>
-        <h2>Ein Exportprozess, ein gemeinsamer Arbeitskontext.</h2>
-        <p>Die Demo zeigt nicht nur einzelne Funktionen, sondern wie operative Informationen entlang eines zusammenhängenden Prozesses sichtbar bleiben.</p>
-      </header>
-      <div class="commercial-process-grid" aria-label="Prozessvergleich">
-        <article class="commercial-process-card before"><small>01 · Vorher</small><strong>Informationen müssen zusammengeführt werden</strong><p>Wenn Sendungsstatus, Aufgaben, Dokumente, Abholung und Nachweise in getrennten Arbeitsständen liegen, fehlt der gemeinsame Vorgangskontext.</p></article>
-        <article class="commercial-process-card hub"><small>02 · Mit ExportHUB</small><strong>Vorgänge werden im Kontext gesteuert</strong><p>Sendung, Zuständigkeit, Pflichtdokumente und nächster Prozessschritt werden in einem gemeinsamen Arbeitsbereich verbunden.</p></article>
-        <article class="commercial-process-card outcome"><small>03 · Ergebnis im Prozess</small><strong>Offene Punkte bleiben sichtbar</strong><p>Die Präsentation macht nachvollziehbar, was freigegeben ist, was blockiert und welcher Nachweis für den Abschluss noch fehlt.</p></article>
-      </div>
-      <div class="commercial-module-section">
-        <div class="commercial-section-label"><span>MODULE IM ZUSAMMENHANG</span><strong>Welche Bereiche im Kundentermin gezeigt werden können</strong></div>
-        <div class="commercial-module-map" id="commercialModuleMap">
-          <article><b>SE</b><div><strong>Sendungssteuerung</strong><span>Status, Verantwortlichkeit und nächster Arbeitsschritt.</span></div></article>
-          <article><b>AP</b><div><strong>Aufgaben &amp; Planung</strong><span>Prioritäten, Fälligkeiten und direkte Sendungszuordnung.</span></div></article>
-          <article><b>DO</b><div><strong>Dokumentenkontrolle</strong><span>Pflichtunterlagen, ABD-Sperren und Nachweisstatus.</span></div></article>
-          <article><b>PO</b><div><strong>QR-Abholung &amp; POD</strong><span>Kontrollierte Übergabe und getrennter Nachweisschritt.</span></div></article>
-          <article><b>AV</b><div><strong>Kunden-Avis</strong><span>Getrennte externe Ansicht für freigegebene Abholinformationen.</span></div></article>
-          <article><b>RO</b><div><strong>Rollen &amp; Mandanten</strong><span>Passender Arbeitskontext je Rolle und Firmen-Workspace.</span></div></article>
+  const template = document.createElement('template');
+  template.innerHTML = `
+    <section id="commercialStoryPanel" class="commercial-story-panel" aria-label="ExportHUB Prozess- und Modulübersicht">
+      <div class="commercial-story-inner">
+        <header class="commercial-story-head">
+          <span>WARUM EXPORTHUB?</span>
+          <h2>Ein Exportprozess, ein gemeinsamer Arbeitskontext.</h2>
+          <p>Die Demo zeigt nicht nur einzelne Funktionen, sondern wie operative Informationen entlang eines zusammenhängenden Prozesses sichtbar bleiben.</p>
+        </header>
+        <div class="commercial-process-grid" aria-label="Prozessvergleich">
+          <article class="commercial-process-card before"><small>01 · Vorher</small><strong>Informationen müssen zusammengeführt werden</strong><p>Wenn Sendungsstatus, Aufgaben, Dokumente, Abholung und Nachweise in getrennten Arbeitsständen liegen, fehlt der gemeinsame Vorgangskontext.</p></article>
+          <article class="commercial-process-card hub"><small>02 · Mit ExportHUB</small><strong>Vorgänge werden im Kontext gesteuert</strong><p>Sendung, Zuständigkeit, Pflichtdokumente und nächster Prozessschritt werden in einem gemeinsamen Arbeitsbereich verbunden.</p></article>
+          <article class="commercial-process-card outcome"><small>03 · Ergebnis im Prozess</small><strong>Offene Punkte bleiben sichtbar</strong><p>Die Präsentation macht nachvollziehbar, was freigegeben ist, was blockiert und welcher Nachweis für den Abschluss noch fehlt.</p></article>
+        </div>
+        <div class="commercial-module-section">
+          <div class="commercial-section-label"><span>MODULE IM ZUSAMMENHANG</span><strong>Welche Bereiche im Kundentermin gezeigt werden können</strong></div>
+          <div class="commercial-module-map" id="commercialModuleMap">
+            <article><b>SE</b><div><strong>Sendungssteuerung</strong><span>Status, Verantwortlichkeit und nächster Arbeitsschritt.</span></div></article>
+            <article><b>AP</b><div><strong>Aufgaben &amp; Planung</strong><span>Prioritäten, Fälligkeiten und direkte Sendungszuordnung.</span></div></article>
+            <article><b>DO</b><div><strong>Dokumentenkontrolle</strong><span>Pflichtunterlagen, ABD-Sperren und Nachweisstatus.</span></div></article>
+            <article><b>PO</b><div><strong>QR-Abholung &amp; POD</strong><span>Kontrollierte Übergabe und getrennter Nachweisschritt.</span></div></article>
+            <article><b>AV</b><div><strong>Kunden-Avis</strong><span>Getrennte externe Ansicht für freigegebene Abholinformationen.</span></div></article>
+            <article><b>RO</b><div><strong>Rollen &amp; Mandanten</strong><span>Passender Arbeitskontext je Rolle und Firmen-Workspace.</span></div></article>
+          </div>
+        </div>
+        <div class="commercial-decision-panel">
+          <div><span>NÄCHSTER SCHRITT IM KUNDENTERMIN</span><strong>Den eigenen Exportablauf gegen den Demo-Prozess spiegeln.</strong><small>Die 12-Schritt-Tour verbindet Management, operative Steuerung, Dokumente, Abholung, Nachweise und Rollen in einem durchgängigen Beispiel.</small></div>
+          <button type="button" id="commercialStartTourBtn">12-Schritt-Tour starten</button>
         </div>
       </div>
-      <div class="commercial-decision-panel">
-        <div><span>NÄCHSTER SCHRITT IM KUNDENTERMIN</span><strong>Den eigenen Exportablauf gegen den Demo-Prozess spiegeln.</strong><small>Die 12-Schritt-Tour verbindet Management, operative Steuerung, Dokumente, Abholung, Nachweise und Rollen in einem durchgängigen Beispiel.</small></div>
-        <button type="button" id="commercialStartTourBtn">12-Schritt-Tour starten</button>
-      </div>
-    </div>`;
+    </section>`;
+  const panel = template.content.firstElementChild;
   intro.insertAdjacentElement('afterend', panel);
   return panel;
 }
