@@ -5,6 +5,7 @@ const STATUSES=new Set(['OPEN','DONE']);
 
 function text(value){return String(value??'').trim();}
 function invalid(message){throw Object.assign(new Error(message),{code:'INPUT_INVALID'});}
+function writeTenant(tenantId,fn){return db.withTenantClient(tenantId,fn,{write:true});}
 function validDate(value){
   const raw=text(value);if(!raw)return null;
   const date=new Date(raw);if(Number.isNaN(date.getTime()))invalid('Aufgabentermin ist ungültig.');
@@ -39,7 +40,7 @@ async function listTasks(tenantId,{status='all'}={}){
 
 async function createTask(tenantId,userId,value={}){
   const task=validateTaskInput(value),actor=text(userId)||null;
-  return db.withTenantClient(tenantId,async client=>{
+  return writeTenant(tenantId,async client=>{
     if(task.shipmentId){
       const linked=await client.query('select id from shipments where id=$1 limit 1',[task.shipmentId]);
       if(!linked.rows[0])throw Object.assign(new Error('Verknüpfte Sendung wurde nicht gefunden.'),{code:'SHIPMENT_NOT_FOUND'});
@@ -50,13 +51,13 @@ async function createTask(tenantId,userId,value={}){
       returning id,shipment_id,title,description,priority,status,due_at,created_by,completed_by,completed_at,created_at,updated_at`,
       [task.shipmentId,task.title,task.description,task.priority,task.dueAt,actor]);
     return result.rows[0];
-  },{write:true});
+  });
 }
 
 async function setTaskStatus(tenantId,taskId,status,userId){
   const id=text(taskId);if(!id)invalid('Aufgaben-ID fehlt.');
   const next=normalizeTaskStatus(status),actor=text(userId)||null;
-  return db.withTenantClient(tenantId,async client=>{
+  return writeTenant(tenantId,async client=>{
     const result=await client.query(`
       update operational_tasks
          set status=$2,
@@ -68,7 +69,7 @@ async function setTaskStatus(tenantId,taskId,status,userId){
       [id,next,actor]);
     if(!result.rows[0])throw Object.assign(new Error('Aufgabe wurde nicht gefunden.'),{code:'TASK_NOT_FOUND'});
     return result.rows[0];
-  },{write:true});
+  });
 }
 
 module.exports={listTasks,createTask,setTaskStatus,validateTaskInput,normalizeTaskStatus};
