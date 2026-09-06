@@ -41,7 +41,6 @@ create table if not exists tenant_memberships (
   primary key(tenant_id,user_id)
 );
 
-
 create table if not exists app_user_auth (
   tenant_id uuid not null references tenants(id),
   user_id uuid not null references app_users(id) on delete cascade,
@@ -209,6 +208,7 @@ create table if not exists shipments (
   unique(tenant_id, reference)
 );
 create index if not exists shipments_tenant_idx on shipments(tenant_id);
+create unique index if not exists shipments_tenant_id_id_uq on shipments(tenant_id,id);
 
 create table if not exists documents (
   id uuid primary key default gen_random_uuid(),
@@ -289,3 +289,29 @@ begin
     execute format('create policy tenant_isolation on %I using (tenant_id::text = current_setting(''app.tenant_id'', true)) with check (tenant_id::text = current_setting(''app.tenant_id'', true))',t);
   end loop;
 end $$;
+
+-- Persistente operative Aufgaben werden vorbereitet, aber erst mit dem bestehenden globalen Professional-Write-Gate beschrieben.
+create table if not exists operational_tasks (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references tenants(id),
+  shipment_id uuid,
+  title text not null,
+  description text,
+  priority text not null default 'P2' check (priority in ('P0','P1','P2','P3','P4')),
+  status text not null default 'OPEN' check (status in ('OPEN','DONE')),
+  due_at timestamptz,
+  created_by uuid references app_users(id),
+  completed_by uuid references app_users(id),
+  completed_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint operational_tasks_tenant_shipment_fk
+    foreign key (tenant_id,shipment_id)
+    references shipments(tenant_id,id)
+);
+create index if not exists operational_tasks_tenant_status_idx on operational_tasks(tenant_id,status,due_at);
+alter table operational_tasks enable row level security;
+drop policy if exists tenant_isolation on operational_tasks;
+create policy tenant_isolation on operational_tasks
+  using (tenant_id::text = current_setting('app.tenant_id', true))
+  with check (tenant_id::text = current_setting('app.tenant_id', true));
