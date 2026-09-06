@@ -9,6 +9,9 @@ const rootPath=path=>new URL(`../${path}`,import.meta.url);
 const exists=path=>fs.existsSync(rootPath(path));
 const read=path=>fs.readFileSync(rootPath(path),'utf8');
 const requireFile=path=>require(fileURLToPath(rootPath(path)));
+const CUSTOMER_ID='11111111-1111-4111-8111-111111111111';
+const LOCATION_ID='22222222-2222-4222-8222-222222222222';
+const SHIPMENT_ID='33333333-3333-4333-8333-333333333333';
 
 function expectWriteHandler(dir,method,route,permission){
   assert.ok(exists(`api/${dir}/function.json`),`${dir}/function.json fehlt`);
@@ -42,14 +45,16 @@ test('task store mutates only through tenant write transactions and never accept
   assert.doesNotMatch(source,/payload\.(?:tenant|tenantId|tenant_id)/);
 });
 
-test('task validation requires a meaningful title and normalizes priority',()=>{
+test('task validation requires a meaningful title, valid shipment UUID and normalized priority',()=>{
   const store=requireFile('api/shared/tasks-store.js');
   assert.throws(()=>store.validateTaskInput({title:'   '}),error=>error?.code==='INPUT_INVALID');
-  const task=store.validateTaskInput({title:'  ABD prüfen  ',priority:'p1',dueAt:'2026-09-07T08:00:00.000Z'});
+  const task=store.validateTaskInput({title:'  ABD prüfen  ',priority:'p1',dueAt:'2026-09-07T08:00:00.000Z',shipmentId:SHIPMENT_ID});
   assert.equal(task.title,'ABD prüfen');
   assert.equal(task.priority,'P1');
   assert.equal(task.status,'OPEN');
   assert.equal(task.dueAt,'2026-09-07T08:00:00.000Z');
+  assert.equal(task.shipmentId,SHIPMENT_ID);
+  assert.throws(()=>store.validateTaskInput({title:'ABD prüfen',shipmentId:'not-a-uuid'}),error=>error?.code==='INPUT_INVALID');
 });
 
 test('persistent task APIs use GET read plus CSRF protected POST and PATCH writes',()=>{
@@ -65,17 +70,19 @@ test('persistent task APIs use GET read plus CSRF protected POST and PATCH write
   expectWriteHandler('task-status','patch','professional-tasks/{id}/status','tasks.write');
 });
 
-test('shipment create validation enforces exact six-character uppercase reference and required masterdata ids',()=>{
+test('shipment create validation enforces exact six-character uppercase reference and canonical masterdata UUIDs',()=>{
   const store=requireFile('api/shared/operations-write-store.js');
-  const valid=store.validateShipmentCreateInput({reference:'AB12CD',customerId:'c1',locationId:'l1'});
+  const valid=store.validateShipmentCreateInput({reference:'AB12CD',customerId:CUSTOMER_ID,locationId:LOCATION_ID});
   assert.equal(valid.reference,'AB12CD');
-  assert.equal(valid.customerId,'c1');
-  assert.equal(valid.locationId,'l1');
+  assert.equal(valid.customerId,CUSTOMER_ID);
+  assert.equal(valid.locationId,LOCATION_ID);
   for(const reference of ['ABC12','ABC1234','abc123','ABC-12','ABC 12']){
-    assert.throws(()=>store.validateShipmentCreateInput({reference,customerId:'c1',locationId:'l1'}),error=>error?.code==='INPUT_INVALID');
+    assert.throws(()=>store.validateShipmentCreateInput({reference,customerId:CUSTOMER_ID,locationId:LOCATION_ID}),error=>error?.code==='INPUT_INVALID');
   }
-  assert.throws(()=>store.validateShipmentCreateInput({reference:'ABC123',customerId:'',locationId:'l1'}),error=>error?.code==='INPUT_INVALID');
-  assert.throws(()=>store.validateShipmentCreateInput({reference:'ABC123',customerId:'c1',locationId:''}),error=>error?.code==='INPUT_INVALID');
+  assert.throws(()=>store.validateShipmentCreateInput({reference:'ABC123',customerId:'',locationId:LOCATION_ID}),error=>error?.code==='INPUT_INVALID');
+  assert.throws(()=>store.validateShipmentCreateInput({reference:'ABC123',customerId:CUSTOMER_ID,locationId:''}),error=>error?.code==='INPUT_INVALID');
+  assert.throws(()=>store.validateShipmentCreateInput({reference:'ABC123',customerId:'not-a-uuid',locationId:LOCATION_ID}),error=>error?.code==='INPUT_INVALID');
+  assert.throws(()=>store.validateShipmentCreateInput({reference:'ABC123',customerId:CUSTOMER_ID,locationId:'not-a-uuid'}),error=>error?.code==='INPUT_INVALID');
 });
 
 test('shipment creation is tenant-safe gated write and validates customer-location ownership before insert',()=>{
